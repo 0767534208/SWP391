@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import './Booking.css';
 
 const Booking = () => {
+  const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [selectedService, setSelectedService] = useState<number | null>(null);
@@ -16,9 +19,9 @@ const Booking = () => {
   ];
 
   const services = [
-    { id: 1, name: 'STIs Testing', duration: '60 min', price: '$100' },
-    { id: 2, name: 'Health Consultation', duration: '30 min', price: '$50' },
-    { id: 3, name: 'Reproductive Health Check', duration: '45 min', price: '$75' }
+    { id: 1, name: t('booking.services.stis.name'), duration: t('booking.services.stis.duration'), price: t('booking.services.stis.price') },
+    { id: 2, name: t('booking.services.consultation.name'), duration: t('booking.services.consultation.duration'), price: t('booking.services.consultation.price') },
+    { id: 3, name: t('booking.services.reproductiveHealth.name'), duration: t('booking.services.reproductiveHealth.duration'), price: t('booking.services.reproductiveHealth.price') }
   ];
 
   const handlePersonalDetails = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -45,15 +48,15 @@ const Booking = () => {
     <div className="booking-page">
       <div className="booking-container">
         <div className="booking-header">
-          <h1>Schedule an Appointment</h1>
-          <p>Book your consultation with our healthcare professionals</p>
+          <h1>{t('booking.title')}</h1>
+          <p>{t('booking.subtitle')}</p>
         </div>
 
         <div className="booking-grid">
           {/* Left Column */}
           <div className="booking-details">
             <div className="form-section">
-              <h3>Select Service</h3>
+              <h3>{t('booking.selectService')}</h3>
               <div className="services-list">
                 {services.map((service) => (
                   <div
@@ -80,8 +83,8 @@ const Booking = () => {
               </div>
             </div>
 
-            <div className="form-section datetime-section">
-              <h3>Select Date & Time</h3>
+            <div className="form-section">
+              <h3>{t('booking.selectDateTime')}</h3>
               <input 
                 type="date" 
                 value={selectedDate}
@@ -105,53 +108,53 @@ const Booking = () => {
           </div>
 
           {/* Right Column */}
-          <div className="personal-details-section">
+          <div className="booking-form">
             <div className="form-section">
-              <h3>Personal Information</h3>
+              <h3>{t('booking.personalInfo')}</h3>
               <div className="form-grid">
                 <div className="input-group">
-                  <label>Full Name</label>
+                  <label>{t('booking.form.fullName')}</label>
                   <input
                     type="text"
                     name="name"
                     value={personalDetails.name}
                     onChange={handlePersonalDetails}
-                    placeholder="Enter your full name"
+                    placeholder={t('booking.form.fullNamePlaceholder')}
                     required
                     className="form-input"
                   />
                 </div>
                 <div className="input-group">
-                  <label>Phone Number</label>
+                  <label>{t('booking.form.phone')}</label>
                   <input
                     type="tel"
                     name="phone"
                     value={personalDetails.phone}
                     onChange={handlePersonalDetails}
-                    placeholder="Enter your phone number"
+                    placeholder={t('booking.form.phonePlaceholder')}
                     required
                     className="form-input"
                   />
                 </div>
                 <div className="input-group full-width">
-                  <label>Email</label>
+                  <label>{t('booking.form.email')}</label>
                   <input
                     type="email"
                     name="email"
                     value={personalDetails.email}
                     onChange={handlePersonalDetails}
-                    placeholder="Enter your email"
+                    placeholder={t('booking.form.emailPlaceholder')}
                     required
                     className="form-input"
                   />
                 </div>
                 <div className="input-group full-width">
-                  <label>Additional Notes</label>
+                  <label>{t('booking.form.notes')}</label>
                   <textarea
                     name="notes"
                     value={personalDetails.notes}
                     onChange={handlePersonalDetails}
-                    placeholder="Any specific concerns or requests?"
+                    placeholder={t('booking.form.notesPlaceholder')}
                     className="form-input notes"
                   />
                 </div>
@@ -162,7 +165,7 @@ const Booking = () => {
               className="booking-submit"
               disabled={!selectedDate || !selectedTime || selectedService === null || !personalDetails.name || !personalDetails.phone}
             >
-              Confirm Appointment
+              {t('booking.form.confirmButton')}
             </button>
           </div>
         </div>

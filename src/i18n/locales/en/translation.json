@@ -1,0 +1,156 @@
+{
+  "brand": {
+    "name": "HealthCare Center",
+    "fullName": "Reproductive HealthCare Center"
+  },
+  "nav": {
+    "home": "Home",
+    "services": "Services",
+    "blog": "Blog",
+    "booking": "Book Appointment",
+    "contact": "Contact"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "forgotPassword": "Forgot Password?",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "createAccount": "Create Account",
+    "rememberMe": "Remember me",
+    "loginWith": "Login with",
+    "pleaseSignIn": "Please sign in to continue",
+    "joinUs": "Join us to get started",
+    "fullName": "Full Name",
+    "enterEmail": "Enter your email",
+    "enterPassword": "Enter your password",
+    "enterFullName": "Enter your full name",
+    "createPassword": "Create a password",
+    "confirmPasswordPlaceholder": "Confirm your password"
+  },
+  "home": {
+    "hero": {
+      "title": "Comprehensive Reproductive Healthcare",
+      "subtitle": "Your trusted partner in reproductive and sexual health",
+      "bookNow": "Book Now",
+      "learnMore": "Learn More"
+    },
+    "services": {
+      "title": "Our Services",
+      "cycleTracking": "Cycle Tracking",
+      "cycleTrackingDesc": "Track menstrual cycles and predict ovulation periods",
+      "consultation": "Online Consultation",
+      "consultationDesc": "Access healthcare experts 24/7",
+      "testing": "STIs Testing",
+      "testingDesc": "Comprehensive testing services for sexually transmitted infections",
+      "advisory": "Health Advisory",
+      "advisoryDesc": "Expert guidance on reproductive health matters"
+    },
+    "blog": {
+      "title": "Latest Articles",
+      "readMore": "Read More",
+      "articles": {
+        "sexEd": {
+          "title": "Sexual Education for Adolescents",
+          "desc": "Understanding effective approaches to sexual education..."
+        },
+        "reproHealth": {
+          "title": "Understanding Reproductive Health",
+          "desc": "Essential guide to maintaining reproductive wellness..."
+        },
+        "stisPrev": {
+          "title": "STIs Prevention Guide",
+          "desc": "Learn about prevention methods and early detection..."
+        }
+      }
+    },
+    "tools": {
+      "title": "Useful Tools",
+      "ovulationCalc": "Ovulation Calculator",
+      "askQuestion": "Ask a Question",
+      "consultHistory": "Consultation History",
+      "testResults": "Test Results"
+    }
+  },
+  "booking": {
+    "title": "Schedule an Appointment",
+    "subtitle": "Book your consultation with our healthcare professionals",
+    "selectService": "Select Service",
+    "selectDateTime": "Select Date & Time",
+    "personalInfo": "Personal Information",
+    "services": {
+      "stis": {
+        "name": "STIs Testing",
+        "duration": "60 min",
+        "price": "$100"
+      },
+      "consultation": {
+        "name": "Health Consultation",
+        "duration": "30 min",
+        "price": "$50"
+      },
+      "reproductiveHealth": {
+        "name": "Reproductive Health Check",
+        "duration": "45 min",
+        "price": "$75"
+      }
+    },
+    "form": {
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "Enter your full name",
+      "phone": "Phone Number",
+      "phonePlaceholder": "Enter your phone number",
+      "email": "Email",
+      "emailPlaceholder": "Enter your email",
+      "notes": "Additional Notes",
+      "notesPlaceholder": "Any specific concerns or requests?",
+      "confirmButton": "Confirm Appointment"
+    }
+  },
+  "footer": {
+    "quickLinks": "Quick Links",
+    "aboutUs": "About Us",
+    "ourServices": "Our Services",
+    "ourDoctors": "Our Doctors",
+    "blogNews": "Blog & News",
+    "contactUs": "Contact Us",
+    "services": {
+      "title": "Our Services",
+      "consultation": "Health Consultation",
+      "testing": "STIs Testing",
+      "reproductive": "Reproductive Health",
+      "education": "Sexual Education",
+      "counseling": "Health Counseling"
+    },
+    "contact": {
+      "title": "Contact Information",
+      "address": "123 Healthcare Street, City, Country",
+      "phone": "+1 234 567 890",
+      "email": "contact@healthcare.com",
+      "hours": "Mon - Fri: 8:00 AM - 8:00 PM"
+    },
+    "rights": "© 2024 HealthCare Center. All rights reserved.",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "sitemap": "Sitemap"
+  },
+  "blog": {
+    "title": "Health & Wellness Blog",
+    "readMore": "Read More",
+    "sexualEducation": {
+      "title": "Sexual Education for Adolescents",
+      "description": "Understanding effective approaches to sexual education and promoting healthy relationships among young people."
+    },
+    "reproductiveHealth": {
+      "title": "Understanding Reproductive Health",
+      "description": "Essential guide to maintaining reproductive wellness and making informed healthcare decisions."
+    },
+    "stisPrevention": {
+      "title": "STIs Prevention Guide",
+      "description": "Learn about prevention methods and early detection of sexually transmitted infections."
+    }
+  }
+} 
