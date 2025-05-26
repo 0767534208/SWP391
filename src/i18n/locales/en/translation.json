@@ -152,5 +152,13 @@
       "title": "STIs Prevention Guide",
       "description": "Learn about prevention methods and early detection of sexually transmitted infections."
     }
+  },
+  "cycleTracker": {
+    "title": "Menstrual Cycle Tracker",
+    "day": "Day {{date}}",
+    "noteLabel": "Cycle note:",
+    "notePlaceholder": "E.g. Start day, cramps, etc.",
+    "cancel": "Cancel",
+    "save": "Save"
   }
 } 

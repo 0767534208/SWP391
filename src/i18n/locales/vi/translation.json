@@ -152,5 +152,13 @@
       "title": "Hướng dẫn Phòng ngừa STIs",
       "description": "Tìm hiểu về các phương pháp phòng ngừa và phát hiện sớm các bệnh lây truyền qua đường tình dục."
     }
+  },
+  "cycleTracker": {
+    "title": "Theo dõi chu kỳ kinh nguyệt",
+    "day": "Ngày {{date}}",
+    "noteLabel": "Ghi chú chu kỳ:",
+    "notePlaceholder": "Ví dụ: Ngày bắt đầu, đau bụng, v.v.",
+    "cancel": "Hủy",
+    "save": "Lưu"
   }
 } 

@@ -20,10 +20,12 @@ const Home = () => {
       <section className="features-section">
         <h2>{t('home.services.title')}</h2>
         <div className="features-grid">
-          <div className="feature-card">
-            <h3>{t('home.services.cycleTracking')}</h3>
-            <p>{t('home.services.cycleTrackingDesc')}</p>
-          </div>
+          <Link to="/cycleTracker" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <div className="feature-card service-card">
+              <h3>{t('home.services.cycleTracking')}</h3>
+              <p>{t('home.services.cycleTrackingDesc')}</p>
+            </div>
+          </Link>
           <div className="feature-card">
             <h3>{t('home.services.consultation')}</h3>
             <p>{t('home.services.consultationDesc')}</p>
@@ -43,17 +45,17 @@ const Home = () => {
         <h2>{t('home.blog.title')}</h2>
         <div className="blog-grid">
           <div className="blog-card">
-            <img src="/blog-1.jpg" alt={t('home.blog.articles.sexEd.title')} />
+            <img src="/blog-1.pngpng" alt={t('home.blog.articles.sexEd.title')} />
             <h3>{t('home.blog.articles.sexEd.title')}</h3>
             <p>{t('home.blog.articles.sexEd.desc')}</p>
           </div>
           <div className="blog-card">
-            <img src="/blog-2.jpg" alt={t('home.blog.articles.reproHealth.title')} />
+            <img src="/blog-2.pngpng" alt={t('home.blog.articles.reproHealth.title')} />
             <h3>{t('home.blog.articles.reproHealth.title')}</h3>
             <p>{t('home.blog.articles.reproHealth.desc')}</p>
           </div>
           <div className="blog-card">
-            <img src="/blog-3.jpg" alt={t('home.blog.articles.stisPrev.title')} />
+            <img src="/blog-3.png" alt={t('home.blog.articles.stisPrev.title')} />
             <h3>{t('home.blog.articles.stisPrev.title')}</h3>
             <p>{t('home.blog.articles.stisPrev.desc')}</p>
           </div>
