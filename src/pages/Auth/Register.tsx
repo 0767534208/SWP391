@@ -16,8 +16,9 @@ const Register = () => {
         
         <form className="auth-form">
           <div className="form-group">
-            <label>{t('auth.fullName')}</label>
+            <label htmlFor="register-fullname">{t('auth.fullName')}</label>
             <input 
+              id="register-fullname"
               type="text" 
               className="form-input"
               placeholder={t('auth.enterFullName')} 
@@ -26,8 +27,9 @@ const Register = () => {
           </div>
 
           <div className="form-group">
-            <label>{t('auth.email')}</label>
+            <label htmlFor="register-email">{t('auth.email')}</label>
             <input 
+              id="register-email"
               type="email" 
               className="form-input"
               placeholder={t('auth.enterEmail')} 
@@ -36,8 +38,9 @@ const Register = () => {
           </div>
 
           <div className="form-group">
-            <label>{t('auth.password')}</label>
+            <label htmlFor="register-password">{t('auth.password')}</label>
             <input 
+              id="register-password"
               type="password" 
               className="form-input"
               placeholder={t('auth.createPassword')} 
@@ -46,8 +49,9 @@ const Register = () => {
           </div>
 
           <div className="form-group">
-            <label>{t('auth.confirmPassword')}</label>
+            <label htmlFor="register-confirm">{t('auth.confirmPassword')}</label>
             <input 
+              id="register-confirm"
               type="password" 
               className="form-input"
               placeholder={t('auth.confirmPasswordPlaceholder')} 
@@ -61,8 +65,12 @@ const Register = () => {
         </form>
 
         <div className="auth-switch">
-          <span>{t('auth.haveAccount')} </span>
-          <Link to="/auth/login" className="switch-link">{t('auth.signIn')}</Link>
+          <p>
+            {t('auth.haveAccount')}{' '}
+            <Link to="/auth/login" className="switch-link">
+              {t('auth.signIn')}
+            </Link>
+          </p>
         </div>
       </div>
     </div>

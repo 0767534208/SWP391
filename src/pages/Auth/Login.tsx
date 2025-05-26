@@ -16,8 +16,9 @@ const Login = () => {
         
         <form className="auth-form">
           <div className="form-group">
-            <label>{t('auth.email')}</label>
+            <label htmlFor="login-email">{t('auth.email')}</label>
             <input 
+              id="login-email"
               type="email" 
               className="form-input"
               placeholder={t('auth.enterEmail')} 
@@ -26,8 +27,9 @@ const Login = () => {
           </div>
 
           <div className="form-group">
-            <label>{t('auth.password')}</label>
+            <label htmlFor="login-password">{t('auth.password')}</label>
             <input 
+              id="login-password"
               type="password" 
               className="form-input"
               placeholder={t('auth.enterPassword')} 
@@ -48,7 +50,12 @@ const Login = () => {
           </button>
 
           <div className="auth-switch">
-            <p>{t('auth.noAccount')} <Link to="/auth/register" className="switch-link">{t('auth.createAccount')}</Link></p>
+            <p>
+              {t('auth.noAccount')}{' '}
+              <Link to="/auth/register" className="switch-link">
+                {t('auth.createAccount')}
+              </Link>
+            </p>
           </div>
         </form>
       </div>
