@@ -11,6 +11,7 @@ import Register from './pages/Auth/Register';
 import Booking from './pages/Booking/Booking';
 import Blog from './pages/Blog/Blog';
 import BlogDetail from './pages/Blog/BlogDetail';
+import ConfirmBooking from './pages/Booking/ConfirmBooking';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
             <Route path="booking" element={<Booking />} />
             <Route path="blog" element={<Blog />} />
             <Route path="/blog/:id" element={<BlogDetail />} />
+            <Route path="/confirm-booking" element={<ConfirmBooking />} />
           </Route>
 
           {/* Route dành cho admin */}

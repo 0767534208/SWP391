@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+ import { useNavigate } from 'react-router-dom';
 import './Booking.css';
 
 const Booking = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate(); // thêm hook useNavigate
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [selectedService, setSelectedService] = useState<number | null>(null);
@@ -59,6 +61,31 @@ const Booking = () => {
     setSelectedService(serviceId);
   };
 
+ const handleConfirmClick = () => {
+   if (
+     !selectedDate ||
+     !selectedTime ||
+     selectedService === null ||
+     !personalDetails.name ||
+     !personalDetails.phone
+   ) {
+     return;
+   }
+
+   // Lấy đối tượng service đã chọn
+   const serviceObj = services.find(s => s.id === selectedService);
+
+   // Chuyển hướng kèm dữ liệu qua state
+   navigate('/confirm-booking', {
+     state: {
+       service: serviceObj,
+       date: selectedDate,
+       time: selectedTime,
+       personal: personalDetails
+     }
+   });
+ };
+
   return (
     <div className="booking-page">
       <div className="booking-container">
@@ -89,9 +116,6 @@ const Booking = () => {
                     <div className="service-info">
                       <div className="service-header">
                         <h4>{service.name}</h4>
-                        {selectedService === service.id && (
-                          <span className="checkmark">✓</span>
-                        )}
                       </div>
                       <div className="service-details">
                         <span className="duration">{service.duration}</span>
@@ -190,6 +214,7 @@ const Booking = () => {
 
             <button
               className="booking-submit"
+              onClick={handleConfirmClick}
               disabled={
                 !selectedDate ||
                 !selectedTime ||
