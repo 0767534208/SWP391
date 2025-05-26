@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaClock, FaFacebook, FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa';
-import LanguageSwitcher from './LanguageSwitcher';
+import LanguageSwitcher from '../langswitcher/LanguageSwitcher';
 import './Navbar.css';
 
 const Navbar = () => {
