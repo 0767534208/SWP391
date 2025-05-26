@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import './Blog.css';
 
 const Blog = () => {
@@ -26,18 +27,22 @@ const Blog = () => {
   return (
     <div className="blog-page">
       <div className="blog-container">
-        <h1 className="blog-title">{t('blog.title')}</h1>
+        <header className="blog-header">
+          <h1 className="blog-title">{t('blog.title')}</h1>
+        </header>
+
         <div className="blog-grid">
-          {blogPosts.map((post) => (
-            <div key={post.id} className="blog-card">
-              <div className="blog-content">
-                <h2>{post.title}</h2>
-                <p>{post.description}</p>
-                <button className="read-more-btn">
-                  {t('blog.readMore')}
-                </button>
+          {blogPosts.map(post => (
+            <article key={post.id} className="blog-card">
+              <div className="blog-card-content">
+                <h2 className="card-title">{post.title}</h2>
+                <p className="card-description">{post.description}</p>
               </div>
-            </div>
+              <Link to={`/blog/${post.id}`} className="read-more-btn">
+                {t('blog.readMore')}
+                <span className="btn-arrow">→</span>
+              </Link>
+            </article>
           ))}
         </div>
       </div>
@@ -45,4 +50,4 @@ const Blog = () => {
   );
 };
 
-export default Blog; 
+export default Blog;
