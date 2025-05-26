@@ -1,123 +1,153 @@
+:root {
+  --primary-color: #4f46e5;       /* Xanh chàm */
+  --secondary-color: #6366f1;     /* Xanh nhạt hơn */
+  --accent-color: #3b82f6;        /* Xanh dương nhạt */
+  --background-color: #ffffff;    /* Trắng */
+  --hover-color: #f3f4f6;         /* Xám rất nhạt */
+  --border-color: #d1d5db;        /* Xám nhạt */
+  --text-color: #111827;          /* Gần đen */
+  --text-light: #6b7280;          /* Xám trung bình */
+  --selected-color: #4338ca;      /* Màu nền khi hover, focus */
+}
+
+/* -------------------------------------------
+   Toàn trang / Container chính
+   ------------------------------------------- */
 .booking-page {
   min-height: 100vh;
   background: var(--hover-color);
-  padding: 2rem;
+  padding: 6rem 1rem 2rem;
 }
 
 .booking-container {
   max-width: 1200px;
-  margin: 2rem auto;
+  margin: 0 auto;
   background: var(--background-color);
   border-radius: 16px;
-  padding: 2rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  padding: 2rem 2.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+/* -------------------------------------------
+   Header (tiêu đề + mô tả)
+   ------------------------------------------- */
 .booking-header {
   text-align: center;
   margin-bottom: 3rem;
 }
 
 .booking-header h1 {
-  font-size: 2.5rem;
+  font-size: 2.75rem;
+  font-weight: 700;
   color: var(--text-color);
   margin-bottom: 0.5rem;
 }
 
 .booking-header p {
+  font-size: 1.125rem;
   color: var(--text-light);
-  font-size: 1.1rem;
 }
 
+/* -------------------------------------------
+   Lưới chính: sidebar + form
+   ------------------------------------------- */
 .booking-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3rem;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 2.5rem;
 }
 
-.service-card {
+/* -------------------------------------------
+   Sidebar (Services + Date/Time)
+   ------------------------------------------- */
+.booking-sidebar {
   display: flex;
-  align-items: center;
-  padding: 1.5rem;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.form-section h3 {
+  font-size: 1.375rem;
+  margin-bottom: 1rem;
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+/* Dịch vụ: hiển thị theo grid 2 cột, gap */
+.services-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Card dịch vụ */
+.service-card {
+  padding: 1.25rem;
   border: 2px solid var(--border-color);
   border-radius: 12px;
-  margin-bottom: 1rem;
+  background: var(--background-color);
   cursor: pointer;
+  display: flex;
+  align-items: center;
   transition: all 0.3s ease;
-  background-color: var(--background-color) !important;
 }
 
 .service-card:hover {
   border-color: var(--primary-color);
-  background-color: var(--hover-color) !important;
+  background-color: var(--hover-color);
 }
 
 .service-card.selected {
   border-color: var(--primary-color);
-  background-color: var(--primary-color) !important;
-  color: white;
+  background-color: var(--primary-color);
+  color: #ffffff;
 }
 
 .service-card.selected .service-info h4,
 .service-card.selected .service-details .duration,
 .service-card.selected .service-details .price {
-  color: white;
+  color: #ffffff;
 }
 
+/* Header trong card */
 .service-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
+}
+
+.service-header h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
 }
 
 .checkmark {
-  display: none;
+  font-size: 1.2rem;
+  color: inherit;
 }
 
-.service-icon {
-  width: 48px;
-  height: 48px;
-  background: var(--hover-color);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 1rem;
-}
-
-.service-info {
-  flex: 1;
-}
-
-.service-info h4 {
-  color: var(--text-color);
-  font-size: 1.1rem;
-  margin-bottom: 0.5rem;
-}
-
+/* Chi tiết dịch vụ: duration & price */
 .service-details {
   display: flex;
   justify-content: space-between;
-  align-items: center;
   margin-top: 0.5rem;
 }
 
+.service-details .duration {
+  font-size: 0.875rem;
+  color: var(--text-light);
+}
+
 .service-details .price {
+  font-size: 1rem;
   color: var(--primary-color);
   font-weight: 600;
-  font-size: 1.1rem;
 }
 
-.service-details .duration {
-  color: var(--text-light);
-  font-size: 0.9rem;
-}
-
-.datetime-section {
-  margin-top: 2rem;
-}
-
+/* -------------------------------------------
+   Date picker
+   ------------------------------------------- */
 .date-picker {
   width: 100%;
   padding: 0.8rem 1rem;
@@ -126,49 +156,67 @@
   font-size: 1rem;
   color: var(--text-color);
   background: var(--background-color);
+  transition: all 0.2s ease;
 }
 
-.date-picker::-webkit-calendar-picker-indicator {
-  filter: invert(0.8);
-  cursor: pointer;
-  padding: 5px;
-  background-color: transparent;
+.date-picker:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
+/* Ẩn spinner mặc định, tùy biến biểu tượng calendar */
 .date-picker::-webkit-inner-spin-button {
   display: none;
 }
 
-.date-picker::-webkit-calendar-picker-indicator:hover {
-  opacity: 0.7;
+.date-picker::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(0.5);
 }
 
+/* -------------------------------------------
+   Time slots (nút giờ)
+   ------------------------------------------- */
 .time-slots {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   gap: 0.75rem;
+  margin-top: 1rem;
 }
 
 .time-slot {
   padding: 0.75rem;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  background-color: var(--background-color) !important;
+  background: var(--background-color);
   color: var(--text-color);
   font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .time-slot:hover {
-  background-color: var(--hover-color) !important;
+  background-color: var(--hover-color);
   border-color: var(--primary-color);
 }
 
 .time-slot.selected {
-  background-color: var(--primary-color) !important;
+  background-color: var(--primary-color);
   border-color: var(--primary-color);
-  color: white;
+  color: #ffffff;
+}
+
+/* -------------------------------------------
+   Column phải: Thông tin cá nhân + nút submit
+   ------------------------------------------- */
+.booking-form {
+  background: var(--hover-color);
+  padding: 1.5rem;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .form-grid {
@@ -177,13 +225,20 @@
   gap: 1.5rem;
 }
 
-.input-group.full-width {
-  grid-column: 1 / -1;
+.input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.4rem;
+  color: var(--text-color);
 }
 
 .form-input {
-  width: 100%;
-  padding: 1rem;
+  padding: 0.85rem 1rem;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 1rem;
@@ -193,44 +248,83 @@
 }
 
 .form-input:focus {
+  outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(44, 127, 184, 0.1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 .form-input::placeholder {
   color: var(--text-light);
 }
 
+/* Textarea dành cho ghi chú */
+.notes {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Khi input chiếm cả hàng */
+.input-group.full-width {
+  grid-column: 1 / -1;
+}
+
+/* Nút xác nhận */
 .booking-submit {
-  width: 100%;
-  padding: 1.2rem;
-  background-color: var(--primary-color) !important;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 1.1rem;
-  font-weight: 500;
   margin-top: 2rem;
+  width: 100%;
+  padding: 1rem;
+  background-color: var(--primary-color);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.booking-submit:hover {
-  background-color: var(--selected-color) !important;
+.booking-submit:hover:not(:disabled) {
+  background-color: var(--selected-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .booking-submit:disabled {
-  background-color: var(--border-color) !important;
+  background-color: var(--border-color);
   color: var(--text-light);
   cursor: not-allowed;
 }
 
-@media (max-width: 768px) {
+/* -------------------------------------------
+   Responsive
+   ------------------------------------------- */
+@media (max-width: 1024px) {
   .booking-grid {
     grid-template-columns: 1fr;
   }
-  
+
+  .booking-form {
+    margin-top: 2rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
+
   .form-grid {
     grid-template-columns: 1fr;
   }
-} 
+
+  .booking-container {
+    padding: 1.5rem 1rem;
+  }
+
+  .booking-header h1 {
+    font-size: 2.25rem;
+  }
+
+  .booking-header p {
+    font-size: 1rem;
+  }
+}

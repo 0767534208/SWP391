@@ -15,25 +15,40 @@ const Booking = () => {
   });
 
   const timeSlots = [
-    '08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00', '18:00'
+    '08:00', '09:00', '10:00', '11:00',
+    '14:00', '15:00', '16:00', '17:00', '18:00'
   ];
 
   const services = [
-    { id: 1, name: t('booking.services.stis.name'), duration: t('booking.services.stis.duration'), price: t('booking.services.stis.price') },
-    { id: 2, name: t('booking.services.consultation.name'), duration: t('booking.services.consultation.duration'), price: t('booking.services.consultation.price') },
-    { id: 3, name: t('booking.services.reproductiveHealth.name'), duration: t('booking.services.reproductiveHealth.duration'), price: t('booking.services.reproductiveHealth.price') }
+    {
+      id: 1,
+      name: t('booking.services.stis.name'),
+      duration: t('booking.services.stis.duration'),
+      price: t('booking.services.stis.price')
+    },
+    {
+      id: 2,
+      name: t('booking.services.consultation.name'),
+      duration: t('booking.services.consultation.duration'),
+      price: t('booking.services.consultation.price')
+    },
+    {
+      id: 3,
+      name: t('booking.services.reproductiveHealth.name'),
+      duration: t('booking.services.reproductiveHealth.duration'),
+      price: t('booking.services.reproductiveHealth.price')
+    }
   ];
 
-  const handlePersonalDetails = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handlePersonalDetails = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setPersonalDetails(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setPersonalDetails(prev => ({ ...prev, [name]: value }));
   };
 
   useEffect(() => {
-    // Configure date picker to use English locale
+    // Đặt locale cho date picker
     const dateInputs = document.querySelectorAll('input[type="date"]');
     dateInputs.forEach(input => {
       input.setAttribute('lang', 'en-US');
@@ -47,21 +62,26 @@ const Booking = () => {
   return (
     <div className="booking-page">
       <div className="booking-container">
-        <div className="booking-header">
+        {/* Header */}
+        <header className="booking-header">
           <h1>{t('booking.title')}</h1>
           <p>{t('booking.subtitle')}</p>
-        </div>
+        </header>
 
+        {/* Main Grid */}
         <div className="booking-grid">
-          {/* Left Column */}
-          <div className="booking-details">
+          {/* Left Column: Service & Date/Time */}
+          <section className="booking-sidebar">
+            {/* Chọn dịch vụ */}
             <div className="form-section">
               <h3>{t('booking.selectService')}</h3>
-              <div className="services-list">
-                {services.map((service) => (
+              <div className="services-grid">
+                {services.map(service => (
                   <div
                     key={service.id}
-                    className={`service-card ${selectedService === service.id ? 'selected' : ''}`}
+                    className={`service-card ${
+                      selectedService === service.id ? 'selected' : ''
+                    }`}
                     onClick={() => handleServiceSelect(service.id)}
                     role="button"
                     tabIndex={0}
@@ -83,21 +103,24 @@ const Booking = () => {
               </div>
             </div>
 
+            {/* Chọn ngày giờ */}
             <div className="form-section">
               <h3>{t('booking.selectDateTime')}</h3>
-              <input 
-                type="date" 
+              <input
+                type="date"
                 value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
+                onChange={e => setSelectedDate(e.target.value)}
                 className="date-picker"
                 min={new Date().toISOString().split('T')[0]}
                 lang="en-US"
               />
               <div className="time-slots">
-                {timeSlots.map((time) => (
+                {timeSlots.map(time => (
                   <button
                     key={time}
-                    className={`time-slot ${selectedTime === time ? 'selected' : ''}`}
+                    className={`time-slot ${
+                      selectedTime === time ? 'selected' : ''
+                    }`}
                     onClick={() => setSelectedTime(time)}
                   >
                     {time}
@@ -105,16 +128,17 @@ const Booking = () => {
                 ))}
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Right Column */}
-          <div className="booking-form">
+          {/* Right Column: Thông tin cá nhân & Submit */}
+          <section className="booking-form">
             <div className="form-section">
               <h3>{t('booking.personalInfo')}</h3>
               <div className="form-grid">
                 <div className="input-group">
-                  <label>{t('booking.form.fullName')}</label>
+                  <label htmlFor="name">{t('booking.form.fullName')}</label>
                   <input
+                    id="name"
                     type="text"
                     name="name"
                     value={personalDetails.name}
@@ -125,8 +149,9 @@ const Booking = () => {
                   />
                 </div>
                 <div className="input-group">
-                  <label>{t('booking.form.phone')}</label>
+                  <label htmlFor="phone">{t('booking.form.phone')}</label>
                   <input
+                    id="phone"
                     type="tel"
                     name="phone"
                     value={personalDetails.phone}
@@ -137,8 +162,9 @@ const Booking = () => {
                   />
                 </div>
                 <div className="input-group full-width">
-                  <label>{t('booking.form.email')}</label>
+                  <label htmlFor="email">{t('booking.form.email')}</label>
                   <input
+                    id="email"
                     type="email"
                     name="email"
                     value={personalDetails.email}
@@ -149,8 +175,9 @@ const Booking = () => {
                   />
                 </div>
                 <div className="input-group full-width">
-                  <label>{t('booking.form.notes')}</label>
+                  <label htmlFor="notes">{t('booking.form.notes')}</label>
                   <textarea
+                    id="notes"
                     name="notes"
                     value={personalDetails.notes}
                     onChange={handlePersonalDetails}
@@ -161,13 +188,19 @@ const Booking = () => {
               </div>
             </div>
 
-            <button 
+            <button
               className="booking-submit"
-              disabled={!selectedDate || !selectedTime || selectedService === null || !personalDetails.name || !personalDetails.phone}
+              disabled={
+                !selectedDate ||
+                !selectedTime ||
+                selectedService === null ||
+                !personalDetails.name ||
+                !personalDetails.phone
+              }
             >
               {t('booking.form.confirmButton')}
             </button>
-          </div>
+          </section>
         </div>
       </div>
     </div>
