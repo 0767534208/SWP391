@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './Consultants.css';
 
 const Consultants = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,21 +56,21 @@ const Consultants = () => {
   // Status badge class
   const getStatusBadgeClass = (status: string) => {
     return status === 'active' 
-      ? 'admin-badge admin-badge-success' 
-      : 'admin-badge admin-badge-danger';
+      ? 'status-badge status-badge-success' 
+      : 'status-badge status-badge-danger';
   };
 
   // Specialty badge class
   const getSpecialtyBadgeClass = (specialty: string) => {
     switch(specialty) {
       case 'Reproductive Health':
-        return 'admin-badge admin-badge-primary';
+        return 'status-badge status-badge-primary';
       case 'HIV/AIDS':
-        return 'admin-badge admin-badge-info';
+        return 'status-badge status-badge-info';
       case 'STI Treatment':
-        return 'admin-badge admin-badge-warning';
+        return 'status-badge status-badge-warning';
       default:
-        return 'admin-badge admin-badge-secondary';
+        return 'status-badge status-badge-secondary';
     }
   };
 
@@ -90,19 +91,19 @@ const Consultants = () => {
   };
 
   return (
-    <div className="admin-dashboard">
+    <div className="consultants-container">
       <div className="flex justify-between items-center mb-4">
         <div>
           <h1 className="text-xl font-bold mb-1">Specialist Management</h1>
-          <p className="admin-text-muted admin-text-sm">
+          <p className="text-sm text-gray-500">
             Manage healthcare specialists in the system
           </p>
         </div>
         <button 
           onClick={handleAddNew}
-          className="flex items-center px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-xs font-medium"
+          className="add-consultant-button"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
           </svg>
           Add Specialist
@@ -110,75 +111,75 @@ const Consultants = () => {
       </div>
 
       {/* Stats Summary */}
-      <div className="admin-stats-summary mb-5">
-        <div className="admin-stats-item">
-          <div className="admin-stats-item-icon admin-icon-bg-primary">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+      <div className="stats-summary">
+        <div className="stats-item">
+          <div className="stats-item-icon icon-bg-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
             </svg>
           </div>
-          <div className="admin-stats-item-info">
-            <div className="admin-stats-item-title">Total Specialists</div>
-            <div className="admin-stats-item-value">{stats.totalConsultants}</div>
+          <div className="stats-item-info">
+            <div className="stats-item-title">Total Specialists</div>
+            <div className="stats-item-value">{stats.totalConsultants}</div>
           </div>
         </div>
 
-        <div className="admin-stats-item">
-          <div className="admin-stats-item-icon admin-icon-bg-success">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+        <div className="stats-item">
+          <div className="stats-item-icon icon-bg-success">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
           </div>
-          <div className="admin-stats-item-info">
-            <div className="admin-stats-item-title">Active</div>
-            <div className="admin-stats-item-value">{stats.activeConsultants}</div>
+          <div className="stats-item-info">
+            <div className="stats-item-title">Active</div>
+            <div className="stats-item-value">{stats.activeConsultants}</div>
           </div>
         </div>
 
-        <div className="admin-stats-item">
-          <div className="admin-stats-item-icon admin-icon-bg-info">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+        <div className="stats-item">
+          <div className="stats-item-icon icon-bg-info">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z" clipRule="evenodd" />
             </svg>
           </div>
-          <div className="admin-stats-item-info">
-            <div className="admin-stats-item-title">Total Consultations</div>
-            <div className="admin-stats-item-value">{stats.totalConsultations}</div>
+          <div className="stats-item-info">
+            <div className="stats-item-title">Total Consultations</div>
+            <div className="stats-item-value">{stats.totalConsultations}</div>
           </div>
         </div>
 
-        <div className="admin-stats-item">
-          <div className="admin-stats-item-icon admin-icon-bg-warning">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+        <div className="stats-item">
+          <div className="stats-item-icon icon-bg-warning">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
           </div>
-          <div className="admin-stats-item-info">
-            <div className="admin-stats-item-title">Average Rating</div>
-            <div className="admin-stats-item-value">{stats.avgRating}</div>
+          <div className="stats-item-info">
+            <div className="stats-item-title">Average Rating</div>
+            <div className="stats-item-value">{stats.avgRating}</div>
           </div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="admin-card p-3 mb-4">
+      <div className="consultants-card p-3 mb-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="admin-search-container">
+          <div className="search-container">
             <input
               type="text"
               placeholder="Search by name, email, phone..."
-              className="admin-search-input"
+              className="search-input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <svg xmlns="http://www.w3.org/2000/svg" className="admin-search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
           
           <div className="flex gap-3">
             <select 
-              className="admin-select"
+              className="filter-select"
               value={filterSpecialty}
               onChange={(e) => setFilterSpecialty(e.target.value)}
             >
@@ -189,7 +190,7 @@ const Consultants = () => {
             </select>
             
             <select 
-              className="admin-select"
+              className="filter-select"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
             >
@@ -200,81 +201,78 @@ const Consultants = () => {
           </div>
           
           <div className="text-right hidden md:block">
-            <span className="admin-text-sm admin-text-muted">Total: <span className="font-semibold text-gray-800">{filteredConsultants.length} specialists</span></span>
+            <span className="text-sm text-gray-500">
+              Showing <span className="font-semibold text-gray-700">{currentConsultants.length}</span> of <span className="font-semibold text-gray-700">{filteredConsultants.length}</span> specialists
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Consultants Grid - Updated with larger, centered cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+      {/* Consultants Grid */}
+      <div className="consultants-grid mb-4">
         {currentConsultants.map(consultant => (
-          <div key={consultant.id} className="admin-card overflow-hidden transition-all duration-200 hover:shadow-lg">
-            <div className="relative p-3 text-center">
-              <div className="w-24 h-24 mx-auto rounded-full overflow-hidden mb-3 border-2 border-indigo-100 shadow-sm">
-                <img 
-                  src={consultant.image} 
-                  alt={consultant.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className={getStatusBadgeClass(consultant.status) + " absolute top-2 right-2 text-xs"}>
-                {consultant.status === 'active' ? 'Active' : 'Inactive'}
-              </div>
-              <h3 className="text-sm font-semibold text-gray-800 mb-1">{consultant.name}</h3>
-              <div className={getSpecialtyBadgeClass(consultant.specialty) + " mb-2 inline-block text-xs"}>
-                    {consultant.specialty}
-              </div>
-              
-              <div className="flex justify-center items-center space-x-1 mb-2">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <svg 
-                    key={index}
-                    className={`h-3 w-3 ${index < Math.floor(consultant.ratings) ? 'text-yellow-400' : 'text-gray-300'}`}
-                    xmlns="http://www.w3.org/2000/svg" 
-                    viewBox="0 0 20 20" 
-                    fill="currentColor"
-                  >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                ))}
-                <span className="text-xs font-medium text-gray-600">{consultant.ratings}</span>
-              </div>
-              
-              <div className="text-xs text-gray-600 mb-1">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 inline mr-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                </svg>
-                {consultant.email}
-              </div>
-              <div className="text-xs text-gray-600 mb-1">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 inline mr-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                </svg>
-                {consultant.phone}
-              </div>
-              <div className="text-xs text-gray-600 mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 inline mr-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z" clipRule="evenodd" />
-                </svg>
-                {consultant.consultations} consultations
-              </div>
+          <div key={consultant.id} className="consultant-profile">
+            <div className="consultant-header">
+              <img 
+                src={consultant.image} 
+                alt={consultant.name} 
+                className="consultant-image"
+              />
             </div>
-            
-            <div className="flex border-t border-gray-200">
-                  <button 
-                    onClick={() => handleEdit(consultant.id)}
-                className="flex-1 px-4 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
-                  >
-                Edit
-                  </button>
-              <div className="border-r border-gray-200"></div>
-                  <button 
-                    onClick={() => handleDelete(consultant.id)}
-                className="flex-1 px-4 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
-                  >
-                Delete
-                  </button>
+            <div className="consultant-body">
+              <h3 className="consultant-name">{consultant.name}</h3>
+              <div className="consultant-specialty">
+                <span className={getSpecialtyBadgeClass(consultant.specialty)}>
+                  {consultant.specialty}
+                </span>
+              </div>
+              <div className="consultant-info">
+                <div className="consultant-info-item">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="consultant-info-icon" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                  </svg>
+                  {consultant.email}
+                </div>
+                <div className="consultant-info-item">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="consultant-info-icon" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                  </svg>
+                  {consultant.phone}
+                </div>
+                <div className="consultant-info-item">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="consultant-info-icon" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                  </svg>
+                  Status: <span className={getStatusBadgeClass(consultant.status)} style={{ marginLeft: '0.25rem' }}>
+                    {consultant.status}
+                  </span>
+                </div>
+              </div>
+              <div className="consultant-stats">
+                <div className="consultant-stat">
+                  <div className="consultant-stat-value">{consultant.ratings}</div>
+                  <div className="consultant-stat-label">Rating</div>
+                </div>
+                <div className="consultant-stat">
+                  <div className="consultant-stat-value">{consultant.consultations}</div>
+                  <div className="consultant-stat-label">Consultations</div>
+                </div>
+              </div>
+              <div className="consultant-actions">
+                <button 
+                  onClick={() => handleEdit(consultant.id)}
+                  className="consultant-action-button action-button-edit"
+                >
+                  Edit
+                </button>
+                <button 
+                  onClick={() => handleDelete(consultant.id)}
+                  className="consultant-action-button action-button-delete"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         ))}
@@ -282,32 +280,56 @@ const Consultants = () => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-          <div className="admin-pagination">
-            <button
-            className="admin-pagination-btn"
-              disabled={currentPage === 1}
+        <div className="pagination">
+          <button 
+            className="pagination-button"
+            onClick={() => paginate(1)}
+            disabled={currentPage === 1}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M15.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 010 1.414zm-6 0a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 011.414 1.414L5.414 10l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+          <button 
+            className="pagination-button"
             onClick={() => paginate(currentPage - 1)}
-            >
-            Previous
-            </button>
+            disabled={currentPage === 1}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          </button>
           
-          {Array.from({ length: totalPages }).map((_, index) => (
+          {/* Page numbers */}
+          {[...Array(totalPages)].map((_, i) => (
             <button
-              key={index}
-              className={`admin-pagination-btn ${currentPage === index + 1 ? 'active' : ''}`}
-              onClick={() => paginate(index + 1)}
+              key={i + 1}
+              onClick={() => paginate(i + 1)}
+              className={`pagination-button ${currentPage === i + 1 ? 'active' : ''}`}
             >
-              {index + 1}
+              {i + 1}
             </button>
           ))}
           
-              <button 
-            className="admin-pagination-btn"
-            disabled={currentPage === totalPages}
+          <button 
+            className="pagination-button"
             onClick={() => paginate(currentPage + 1)}
+            disabled={currentPage === totalPages}
           >
-            Next
-              </button>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+            </svg>
+          </button>
+          <button 
+            className="pagination-button"
+            onClick={() => paginate(totalPages)}
+            disabled={currentPage === totalPages}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              <path fillRule="evenodd" d="M4.293 15.707a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clipRule="evenodd" />
+            </svg>
+          </button>
         </div>
       )}
     </div>

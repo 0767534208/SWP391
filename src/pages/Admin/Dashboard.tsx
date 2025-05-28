@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title, BarElement } from 'chart.js';
 import { Doughnut, Line, Bar } from 'react-chartjs-2';
+import './Dashboard.css';
 
 // Register Chart.js components
 ChartJS.register(
@@ -244,31 +245,40 @@ const Dashboard = () => {
     }).format(value);
   };
 
+  // Recent activity data
+  const recentActivities = [
+    { action: 'New user registered', user: 'John Doe', time: '5 minutes ago', icon: 'user' },
+    { action: 'Appointment booked', user: 'Sarah Johnson', time: '15 minutes ago', icon: 'calendar' },
+    { action: 'Test result uploaded', user: 'Dr. Emily Davis', time: '45 minutes ago', icon: 'document' },
+    { action: 'New blog post published', user: 'Admin', time: '1 hour ago', icon: 'blog' },
+    { action: 'User updated profile', user: 'Michael Brown', time: '2 hours ago', icon: 'profile' }
+  ];
+
   return (
-    <div className="admin-dashboard">
+    <div className="dashboard-container">
       <div className="flex justify-between items-center mb-4">
         <div>
           <h1 className="text-xl font-bold mb-1">Dashboard</h1>
-          <p className="admin-text-muted admin-text-sm">
+          <p className="text-sm text-gray-500">
             Overview of health service center analytics
           </p>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex border border-gray-200 rounded-md overflow-hidden">
           <button 
             onClick={() => setTimeRange('week')} 
-            className={`admin-btn-sm ${timeRange === 'week' ? 'admin-btn-active' : 'admin-btn-light'}`}
+            className={`px-3 py-1 text-xs font-medium ${timeRange === 'week' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
           >
             Week
           </button>
           <button 
             onClick={() => setTimeRange('month')}
-            className={`admin-btn-sm ${timeRange === 'month' ? 'admin-btn-active' : 'admin-btn-light'}`}
+            className={`px-3 py-1 text-xs font-medium ${timeRange === 'month' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
           >
             Month
           </button>
           <button 
             onClick={() => setTimeRange('year')}
-            className={`admin-btn-sm ${timeRange === 'year' ? 'admin-btn-active' : 'admin-btn-light'}`}
+            className={`px-3 py-1 text-xs font-medium ${timeRange === 'year' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
           >
             Year
           </button>
@@ -276,184 +286,187 @@ const Dashboard = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
-        <div className="admin-card overflow-hidden">
-          <div className="p-3 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-gray-700">Total Users</h3>
-              <span className="bg-blue-50 text-blue-600 text-[10px] font-medium px-2 py-0.5 rounded-full">
-                +{stats.newUserGrowth}%
-              </span>
-            </div>
-            <div className="mt-2">
-              <span className="text-2xl font-bold text-gray-800">{stats.totalUsers}</span>
-              <span className="text-xs text-gray-500 ml-1">users</span>
-            </div>
-          </div>
-          <div className="px-3 py-2 bg-gray-50">
-            <div className="flex items-center text-xs text-gray-600">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-gray-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-              </svg>
-              <span>Updated 3 hours ago</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="admin-card overflow-hidden">
-          <div className="p-3 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-gray-700">Active Consultations</h3>
-              <span className="bg-green-50 text-green-600 text-[10px] font-medium px-2 py-0.5 rounded-full">
-                Live
-              </span>
-            </div>
-            <div className="mt-2">
-              <span className="text-2xl font-bold text-gray-800">{stats.activeConsultations}</span>
-              <span className="text-xs text-gray-500 ml-1">sessions</span>
-            </div>
-          </div>
-          <div className="px-3 py-2 bg-gray-50">
-            <div className="flex items-center text-xs text-gray-600">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-gray-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-              </svg>
-              <span>Real-time data</span>
+      <div className="stats-grid">
+        {/* Total Users */}
+        <div className="stats-card">
+          <div className="dashboard-card stats-card-inner border-l-4 border-blue-500">
+            <div className="p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-gray-700">Total Users</h3>
+                <span className="status-badge status-badge-blue">
+                  +{stats.newUserGrowth}%
+                </span>
+              </div>
+              <div className="mt-2">
+                <span className="text-2xl font-bold text-gray-800">{stats.totalUsers}</span>
+                <span className="text-xs text-gray-500 ml-1">users</span>
+              </div>
+              <div className="mt-3 flex items-center text-xs text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" className="icon-sm mr-1.5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                </svg>
+                <span>Updated 3 hours ago</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="admin-card overflow-hidden">
-          <div className="p-3 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-gray-700">Pending Bookings</h3>
-              <span className="bg-amber-50 text-amber-600 text-[10px] font-medium px-2 py-0.5 rounded-full">
-                Pending
-              </span>
-            </div>
-            <div className="mt-2">
-              <span className="text-2xl font-bold text-gray-800">{stats.pendingBookings}</span>
-              <span className="text-xs text-gray-500 ml-1">appointments</span>
-            </div>
-          </div>
-          <div className="px-3 py-2 bg-gray-50">
-            <div className="flex items-center text-xs text-gray-600">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-gray-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-              </svg>
-              <span>Updated 30 minutes ago</span>
+        {/* Active Consultations */}
+        <div className="stats-card">
+          <div className="dashboard-card stats-card-inner border-l-4 border-green-500">
+            <div className="p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-gray-700">Active Consultations</h3>
+                <span className="status-badge status-badge-green">
+                  Live
+                </span>
+              </div>
+              <div className="mt-2">
+                <span className="text-2xl font-bold text-gray-800">{stats.activeConsultations}</span>
+                <span className="text-xs text-gray-500 ml-1">sessions</span>
+              </div>
+              <div className="mt-3 flex items-center text-xs text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" className="icon-sm mr-1.5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                </svg>
+                <span>Real-time data</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="admin-card overflow-hidden">
-          <div className="p-3 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-gray-700">Revenue</h3>
-              <span className="bg-indigo-50 text-indigo-600 text-[10px] font-medium px-2 py-0.5 rounded-full">
-                +{stats.revenueGrowth}%
-              </span>
-            </div>
-            <div className="mt-2">
-              <span className="text-2xl font-bold text-gray-800">{formatCurrency(stats.totalRevenue)}</span>
-              <span className="text-xs text-gray-500 ml-1">total</span>
+        {/* Pending Bookings */}
+        <div className="stats-card">
+          <div className="dashboard-card stats-card-inner border-l-4 border-amber-500">
+            <div className="p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-gray-700">Pending Bookings</h3>
+                <span className="status-badge status-badge-amber">
+                  Pending
+                </span>
+              </div>
+              <div className="mt-2">
+                <span className="text-2xl font-bold text-gray-800">{stats.pendingBookings}</span>
+                <span className="text-xs text-gray-500 ml-1">appointments</span>
+              </div>
+              <div className="mt-3 flex items-center text-xs text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" className="icon-sm mr-1.5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                </svg>
+                <span>Updated 30 minutes ago</span>
+              </div>
             </div>
           </div>
-          <div className="px-3 py-2 bg-gray-50">
-            <div className="flex items-center text-xs text-gray-600">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-gray-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-              </svg>
-              <span>Last calculated today</span>
+        </div>
+
+        {/* Revenue */}
+        <div className="stats-card">
+          <div className="dashboard-card stats-card-inner border-l-4 border-indigo-500">
+            <div className="p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-gray-700">Revenue</h3>
+                <span className="status-badge status-badge-indigo">
+                  +{stats.revenueGrowth}%
+                </span>
+              </div>
+              <div className="mt-2">
+                <span className="text-2xl font-bold text-gray-800">{formatCurrency(stats.totalRevenue)}</span>
+                <span className="text-xs text-gray-500 ml-1">total</span>
+              </div>
+              <div className="mt-3 flex items-center text-xs text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" className="icon-sm mr-1.5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                </svg>
+                <span>Last calculated today</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* Line Chart */}
-        <div className="admin-card lg:col-span-2">
-          <div className="admin-card-header">
-            <h3 className="admin-card-title">Website Traffic</h3>
+        <div className="dashboard-card lg:col-span-2">
+          <div className="dashboard-card-header">
+            <h3 className="dashboard-card-title">Website Traffic</h3>
           </div>
-          <div className="p-3" style={{ height: '240px' }}>
+          <div className="chart-container">
             <Line options={lineOptions} data={visitData[timeRange]} />
           </div>
         </div>
 
         {/* Doughnut Chart */}
-        <div className="admin-card">
-          <div className="admin-card-header">
-            <h3 className="admin-card-title">Gender Distribution</h3>
+        <div className="dashboard-card">
+          <div className="dashboard-card-header">
+            <h3 className="dashboard-card-title">Gender Distribution</h3>
           </div>
-          <div className="p-3" style={{ height: '240px' }}>
+          <div className="chart-container">
             <Doughnut options={doughnutOptions} data={genderData} />
           </div>
         </div>
       </div>
 
       {/* Second row of charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Age Distribution */}
-        <div className="admin-card">
-          <div className="admin-card-header">
-            <h3 className="admin-card-title">Age Distribution</h3>
+        <div className="dashboard-card">
+          <div className="dashboard-card-header">
+            <h3 className="dashboard-card-title">Age Distribution</h3>
           </div>
-          <div className="p-3" style={{ height: '220px' }}>
+          <div className="chart-container-sm">
             <Bar options={barOptions} data={ageData} />
           </div>
         </div>
 
         {/* Bookings by Day */}
-        <div className="admin-card">
-          <div className="admin-card-header">
-            <h3 className="admin-card-title">Weekly Appointments</h3>
+        <div className="dashboard-card">
+          <div className="dashboard-card-header">
+            <h3 className="dashboard-card-title">Weekly Appointments</h3>
           </div>
-          <div className="p-3" style={{ height: '220px' }}>
+          <div className="chart-container-sm">
             <Bar options={barOptions} data={bookingData} />
           </div>
         </div>
       </div>
 
       {/* Recent Activity */}
-      <div className="admin-card">
-        <div className="admin-card-header">
-          <h3 className="admin-card-title">Recent Activity</h3>
+      <div className="dashboard-card mb-8">
+        <div className="dashboard-card-header">
+          <h3 className="dashboard-card-title">Recent Activity</h3>
         </div>
-        <div className="divide-y divide-gray-100">
-          {[
-            { action: 'New user registered', user: 'John Doe', time: '5 minutes ago', icon: 'user' },
-            { action: 'Appointment booked', user: 'Sarah Johnson', time: '15 minutes ago', icon: 'calendar' },
-            { action: 'Test result uploaded', user: 'Dr. Emily Davis', time: '45 minutes ago', icon: 'document' },
-            { action: 'New blog post published', user: 'Admin', time: '1 hour ago', icon: 'blog' },
-            { action: 'User updated profile', user: 'Michael Brown', time: '2 hours ago', icon: 'profile' }
-          ].map((activity, index) => (
-            <div key={index} className="px-3 py-2 flex items-start">
-              <div className={`mt-0.5 admin-activity-icon ${
-                activity.icon === 'user' ? 'admin-icon-bg-primary' :
-                activity.icon === 'calendar' ? 'admin-icon-bg-success' :
-                activity.icon === 'document' ? 'admin-icon-bg-info' :
-                activity.icon === 'blog' ? 'admin-icon-bg-warning' : 'admin-icon-bg-secondary'
-              }`}>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
-                  {activity.icon === 'user' && <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />}
-                  {activity.icon === 'calendar' && <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />}
-                  {activity.icon === 'document' && <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />}
-                  {activity.icon === 'blog' && <path fillRule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clipRule="evenodd" />}
-                  {activity.icon === 'profile' && <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />}
-                </svg>
-              </div>
-              <div className="ml-2">
-                <p className="text-xs font-medium text-gray-800">{activity.action}</p>
-                <div className="flex text-[10px] text-gray-500">
-                  <span>{activity.user}</span>
-                  <span className="mx-1">•</span>
-                  <span>{activity.time}</span>
+        <div className="p-4">
+          <div className="activity-scroll">
+            {recentActivities.map((activity, index) => (
+              <div key={index} className="activity-card">
+                <div className="flex items-start">
+                  <div className={`activity-icon ${
+                    activity.icon === 'user' ? 'activity-icon-blue' :
+                    activity.icon === 'calendar' ? 'activity-icon-green' :
+                    activity.icon === 'document' ? 'activity-icon-cyan' :
+                    activity.icon === 'blog' ? 'activity-icon-amber' : 'activity-icon-purple'
+                  }`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                      {activity.icon === 'user' && <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />}
+                      {activity.icon === 'calendar' && <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />}
+                      {activity.icon === 'document' && <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />}
+                      {activity.icon === 'blog' && <path fillRule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clipRule="evenodd" />}
+                      {activity.icon === 'profile' && <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />}
+                    </svg>
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <p className="text-xs font-medium text-gray-800">{activity.action}</p>
+                    <p className="text-xs text-gray-500 mt-1">{activity.user}</p>
+                    <div className="mt-2">
+                      <span className="text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full">
+                        {activity.time}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>

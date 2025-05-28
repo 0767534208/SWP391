@@ -10,12 +10,15 @@
 }
 
 .auth-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 120px); /* Subtract approximate navbar and footer height */
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-  padding: 1rem;
+  padding: 2rem;
+  margin: 0 auto;
+  flex: 1;
 }
 
 .auth-container {
@@ -26,6 +29,7 @@
   max-width: 500px; /* Tăng từ 380px lên 500px */
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease;
+  margin: 0 auto; /* Center horizontally */
 }
 
 .auth-container:hover {
@@ -227,5 +231,6 @@
 
 .auth-note {
   max-width: 400px;
-  margin: 0 auto;
+  margin: 1rem auto 0;
+  text-align: center;
 }

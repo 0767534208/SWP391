@@ -23,6 +23,12 @@
   --admin-sidebar-border: #3730a3; /* indigo-800 */
   --admin-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --admin-sidebar-width: 8rem;
+  --admin-card-padding: 1.25rem;
+  --admin-card-spacing: 1.25rem;
+  --admin-content-spacing: 1.5rem;
+  --admin-chart-height: 280px;
+  --admin-chart-height-sm: 220px;
+  --admin-border-radius: 0.5rem;
 }
 
 /* Admin Layout */
@@ -91,9 +97,12 @@
 }
 
 .admin-nav-icon {
-  height: 0.875rem;
-  width: 0.875rem;
+  height: 1.25rem;
+  width: 1.25rem;
   transition: var(--admin-transition);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .admin-nav-text {
@@ -131,7 +140,7 @@
 
 .admin-header-container {
   height: 100%;
-  padding: 0 1rem;
+  padding: 0 1.25rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -145,8 +154,8 @@
 
 /* Admin Content Spacing */
 .admin-content {
-  padding: 1rem;
-  padding-top: 3.5rem;
+  padding: var(--admin-content-spacing);
+  padding-top: calc(2.75rem + var(--admin-content-spacing));
   position: relative;
   z-index: 5;
 }
@@ -164,7 +173,7 @@
 /* Dashboard Cards */
 .admin-card {
   background-color: var(--admin-card-bg);
-  border-radius: 0.5rem;
+  border-radius: var(--admin-border-radius);
   box-shadow: var(--admin-shadow);
   transition: var(--admin-transition);
   overflow: hidden;
@@ -179,7 +188,7 @@
 
 .admin-card-header {
   border-bottom: 1px solid var(--admin-border);
-  padding: 0.75rem;
+  padding: 0.875rem var(--admin-card-padding);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -194,15 +203,15 @@
 /* Stats Cards */
 .admin-stats-summary {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: var(--admin-card-spacing);
 }
 
 .admin-stats-item {
   background-color: white;
-  border-radius: 0.5rem;
-  padding: 0.875rem;
+  border-radius: var(--admin-border-radius);
+  padding: 1rem;
   display: flex;
   align-items: center;
   box-shadow: var(--admin-shadow);
@@ -216,18 +225,18 @@
 }
 
 .admin-stats-item-icon {
-  width: 2rem;
-  height: 2rem;
-  border-radius: 0.25rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.375rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 0.75rem;
+  margin-right: 0.875rem;
 }
 
 .admin-stats-item-icon svg {
-  width: 0.875rem;
-  height: 0.875rem;
+  width: 1rem;
+  height: 1rem;
 }
 
 .admin-stats-item-info {
@@ -242,7 +251,7 @@
 }
 
 .admin-stats-item-value {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--admin-text-dark);
   line-height: 1.2;
@@ -299,7 +308,7 @@
 
 .admin-table th {
   text-align: left;
-  padding: 0.65rem 0.875rem;
+  padding: 0.75rem 1rem;
   font-weight: 600;
   color: var(--admin-text-dark);
   border-bottom: 1px solid var(--admin-border);
@@ -311,7 +320,7 @@
 }
 
 .admin-table td {
-  padding: 0.75rem 0.875rem;
+  padding: 0.875rem 1rem;
   border-bottom: 1px solid var(--admin-border);
   color: var(--admin-text-dark);
   vertical-align: middle;
@@ -503,8 +512,8 @@
   left: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
-  width: 0.625rem;
-  height: 0.625rem;
+  width: 0.75rem;
+  height: 0.75rem;
   color: var(--admin-text-muted);
 }
 
@@ -538,7 +547,7 @@
 /* Modern Table Styles */
 .admin-table {
   box-shadow: var(--admin-shadow);
-  border-radius: 0.5rem;
+  border-radius: var(--admin-border-radius);
   overflow: hidden;
 }
 
@@ -694,8 +703,11 @@
 }
 
 .admin-icon-md {
-  width: 1rem;
-  height: 1rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .admin-icon-lg {
@@ -710,13 +722,30 @@
 
 /* Define a specific class for sidebar icons to ensure consistency */
 .admin-sidebar-icon {
-  width: 1rem;
-  height: 1rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.5rem;
+}
+
+/* Chart Container Styles */
+.admin-chart-container {
+  height: var(--admin-chart-height);
+  position: relative;
+  padding: 1rem;
+}
+
+.admin-chart-container-sm {
+  height: var(--admin-chart-height-sm);
+  position: relative;
+  padding: 1rem;
 }
 
 /* Card Content Styles */
 .admin-card-content {
-  padding: 1.25rem;
+  padding: var(--admin-card-padding);
 }
 
 .admin-card-compact {

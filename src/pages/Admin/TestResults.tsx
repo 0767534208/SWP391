@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from 'chart.js';
 import { Doughnut, Bar } from 'react-chartjs-2';
+import './TestResults.css';
 
 ChartJS.register(
   ArcElement,
@@ -20,18 +21,18 @@ const TestResults = () => {
 
   // Mock data
   const testResults = [
-    { id: 1, patientName: 'Nguyễn Văn A', patientPhone: '0901234567', testType: 'HIV', date: '10/06/2023', result: 'negative', reviewed: true, reviewedBy: 'Bs. Trần Văn C', notes: 'Kết quả âm tính' },
-    { id: 2, patientName: 'Trần Thị B', patientPhone: '0912345678', testType: 'Syphilis', date: '11/06/2023', result: 'positive', reviewed: true, reviewedBy: 'Bs. Lê Thị D', notes: 'Cần điều trị ngay' },
-    { id: 3, patientName: 'Lê Văn C', patientPhone: '0923456789', testType: 'Chlamydia', date: '12/06/2023', result: 'negative', reviewed: true, reviewedBy: 'Bs. Phạm Văn F', notes: '' },
-    { id: 4, patientName: 'Phạm Thị D', patientPhone: '0934567890', testType: 'Gonorrhea', date: '13/06/2023', result: 'pending', reviewed: false, reviewedBy: '', notes: 'Đang chờ kết quả từ phòng lab' },
-    { id: 5, patientName: 'Hoàng Văn E', patientPhone: '0945678901', testType: 'HIV', date: '14/06/2023', result: 'negative', reviewed: true, reviewedBy: 'Bs. Trần Văn C', notes: '' },
-    { id: 6, patientName: 'Ngô Thị F', patientPhone: '0956789012', testType: 'Hepatitis B', date: '15/06/2023', result: 'positive', reviewed: true, reviewedBy: 'Bs. Lê Thị D', notes: 'Đã tư vấn và chuyển điều trị' },
-    { id: 7, patientName: 'Đỗ Văn G', patientPhone: '0967890123', testType: 'HIV', date: '16/06/2023', result: 'pending', reviewed: false, reviewedBy: '', notes: '' },
-    { id: 8, patientName: 'Lý Thị H', patientPhone: '0978901234', testType: 'HPV', date: '17/06/2023', result: 'positive', reviewed: true, reviewedBy: 'Bs. Phạm Văn F', notes: 'Cần theo dõi định kỳ' },
-    { id: 9, patientName: 'Vũ Văn I', patientPhone: '0989012345', testType: 'Syphilis', date: '18/06/2023', result: 'negative', reviewed: true, reviewedBy: 'Bs. Trần Văn C', notes: '' },
-    { id: 10, patientName: 'Mai Thị K', patientPhone: '0990123456', testType: 'HIV', date: '19/06/2023', result: 'negative', reviewed: true, reviewedBy: 'Bs. Lê Thị D', notes: '' },
-    { id: 11, patientName: 'Trịnh Văn L', patientPhone: '0901234560', testType: 'Gonorrhea', date: '20/06/2023', result: 'pending', reviewed: false, reviewedBy: '', notes: '' },
-    { id: 12, patientName: 'Đinh Thị M', patientPhone: '0912345670', testType: 'Chlamydia', date: '21/06/2023', result: 'positive', reviewed: true, reviewedBy: 'Bs. Phạm Văn F', notes: 'Đã tư vấn và kê đơn' },
+    { id: 1, patientName: 'John Smith', patientPhone: '0901234567', testType: 'HIV', date: '10/06/2023', result: 'negative', reviewed: true, reviewedBy: 'Dr. Robert Brown', notes: 'Negative result' },
+    { id: 2, patientName: 'Sarah Johnson', patientPhone: '0912345678', testType: 'Syphilis', date: '11/06/2023', result: 'positive', reviewed: true, reviewedBy: 'Dr. Emily Davis', notes: 'Immediate treatment required' },
+    { id: 3, patientName: 'Michael Lee', patientPhone: '0923456789', testType: 'Chlamydia', date: '12/06/2023', result: 'negative', reviewed: true, reviewedBy: 'Dr. James Wilson', notes: '' },
+    { id: 4, patientName: 'Jessica Taylor', patientPhone: '0934567890', testType: 'Gonorrhea', date: '13/06/2023', result: 'pending', reviewed: false, reviewedBy: '', notes: 'Waiting for lab results' },
+    { id: 5, patientName: 'David Martinez', patientPhone: '0945678901', testType: 'HIV', date: '14/06/2023', result: 'negative', reviewed: true, reviewedBy: 'Dr. Robert Brown', notes: '' },
+    { id: 6, patientName: 'Jennifer Garcia', patientPhone: '0956789012', testType: 'Hepatitis B', date: '15/06/2023', result: 'positive', reviewed: true, reviewedBy: 'Dr. Emily Davis', notes: 'Counseled and referred for treatment' },
+    { id: 7, patientName: 'Thomas Rodriguez', patientPhone: '0967890123', testType: 'HIV', date: '16/06/2023', result: 'pending', reviewed: false, reviewedBy: '', notes: '' },
+    { id: 8, patientName: 'Lisa Anderson', patientPhone: '0978901234', testType: 'HPV', date: '17/06/2023', result: 'positive', reviewed: true, reviewedBy: 'Dr. James Wilson', notes: 'Regular monitoring required' },
+    { id: 9, patientName: 'William Thompson', patientPhone: '0989012345', testType: 'Syphilis', date: '18/06/2023', result: 'negative', reviewed: true, reviewedBy: 'Dr. Robert Brown', notes: '' },
+    { id: 10, patientName: 'Mary White', patientPhone: '0990123456', testType: 'HIV', date: '19/06/2023', result: 'negative', reviewed: true, reviewedBy: 'Dr. Emily Davis', notes: '' },
+    { id: 11, patientName: 'Daniel Harris', patientPhone: '0901234560', testType: 'Gonorrhea', date: '20/06/2023', result: 'pending', reviewed: false, reviewedBy: '', notes: '' },
+    { id: 12, patientName: 'Patricia Clark', patientPhone: '0912345670', testType: 'Chlamydia', date: '21/06/2023', result: 'positive', reviewed: true, reviewedBy: 'Dr. James Wilson', notes: 'Counseled and prescribed treatment' },
   ];
 
   // Statistics data
@@ -48,7 +49,7 @@ const TestResults = () => {
     labels: ['HIV', 'Syphilis', 'Chlamydia', 'Gonorrhea', 'HPV', 'Hepatitis B'],
     datasets: [
       {
-        label: 'Số lượng xét nghiệm',
+        label: 'Number of tests',
         data: [4, 2, 2, 2, 1, 1],
         backgroundColor: [
           'rgba(54, 162, 235, 0.7)',
@@ -72,10 +73,10 @@ const TestResults = () => {
   };
 
   const resultData = {
-    labels: ['Âm tính', 'Dương tính', 'Đang chờ'],
+    labels: ['Negative', 'Positive', 'Pending'],
     datasets: [
       {
-        label: 'Kết quả xét nghiệm',
+        label: 'Test Results',
         data: [
           testResults.filter(test => test.result === 'negative').length,
           testResults.filter(test => test.result === 'positive').length,
@@ -97,10 +98,10 @@ const TestResults = () => {
   };
 
   const monthlyTestsData = {
-    labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
     datasets: [
       {
-        label: 'Xét nghiệm theo tháng',
+        label: 'Monthly Tests',
         data: [8, 12, 15, 10, 8, 12, 0, 0, 0, 0, 0, 0],
         backgroundColor: 'rgba(79, 70, 229, 0.7)',
         borderRadius: 4,
@@ -139,13 +140,13 @@ const TestResults = () => {
   const getResultBadgeClass = (result: string) => {
     switch (result) {
       case 'negative':
-        return 'admin-badge admin-badge-success';
+        return 'status-badge status-badge-success';
       case 'positive':
-        return 'admin-badge admin-badge-danger';
+        return 'status-badge status-badge-danger';
       case 'pending':
-        return 'admin-badge admin-badge-warning';
+        return 'status-badge status-badge-warning';
       default:
-        return 'admin-badge admin-badge-info';
+        return 'status-badge status-badge-info';
     }
   };
 
@@ -192,152 +193,135 @@ const TestResults = () => {
   };
 
   return (
-    <div className="admin-dashboard">
-      <div className="mb-4">
-        <h1 className="text-xl font-bold mb-1">Quản lý kết quả xét nghiệm STI</h1>
-        <p className="admin-text-muted admin-text-sm">
-          Xem và quản lý các xét nghiệm STI trong hệ thống
+    <div className="test-results-container">
+      <div className="mb-6">
+        <h1 className="text-xl font-bold mb-1">STI Test Results Management</h1>
+        <p className="text-sm text-gray-500">
+          View and manage STI test results in the system
         </p>
       </div>
 
       {/* Stats Summary */}
-      <div className="admin-stats-summary mb-5">
-        <div className="admin-stats-item">
-          <div className="admin-stats-item-icon admin-icon-bg-primary">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+      <div className="stats-grid mb-8">
+        <div className="stats-item">
+          <div className="stats-item-icon icon-bg-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M6 3a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm.293 7.707a1 1 0 011.414 0L10 12.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
               <path d="M10 4a1 1 0 00-1 1v6a1 1 0 002 0V5a1 1 0 00-1-1z" />
             </svg>
           </div>
-          <div className="admin-stats-item-info">
-            <div className="admin-stats-item-title">Tổng xét nghiệm</div>
-            <div className="admin-stats-item-value">{stats.totalTests}</div>
+          <div className="stats-item-info">
+            <div className="stats-item-title">Total Tests</div>
+            <div className="stats-item-value">{stats.totalTests}</div>
           </div>
         </div>
 
-        <div className="admin-stats-item">
-          <div className="admin-stats-item-icon admin-icon-bg-success">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+        <div className="stats-item">
+          <div className="stats-item-icon icon-bg-success">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
           </div>
-          <div className="admin-stats-item-info">
-            <div className="admin-stats-item-title">Hoàn thành</div>
-            <div className="admin-stats-item-value">{stats.completedTests}</div>
+          <div className="stats-item-info">
+            <div className="stats-item-title">Completed</div>
+            <div className="stats-item-value">{stats.completedTests}</div>
           </div>
         </div>
 
-        <div className="admin-stats-item">
-          <div className="admin-stats-item-icon admin-icon-bg-danger">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+        <div className="stats-item">
+          <div className="stats-item-icon icon-bg-danger">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
           </div>
-          <div className="admin-stats-item-info">
-            <div className="admin-stats-item-title">Dương tính</div>
-            <div className="admin-stats-item-value">{stats.positiveTests}</div>
+          <div className="stats-item-info">
+            <div className="stats-item-title">Positive</div>
+            <div className="stats-item-value">{stats.positiveTests}</div>
           </div>
         </div>
 
-        <div className="admin-stats-item">
-          <div className="admin-stats-item-icon admin-icon-bg-warning">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+        <div className="stats-item">
+          <div className="stats-item-icon icon-bg-warning">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
             </svg>
           </div>
-          <div className="admin-stats-item-info">
-            <div className="admin-stats-item-title">Đang chờ</div>
-            <div className="admin-stats-item-value">{stats.pendingTests}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-        <div className="admin-card lg:col-span-2">
-          <div className="p-3 border-b border-gray-100">
-            <h3 className="text-sm font-semibold">Xét nghiệm theo tháng</h3>
-          </div>
-          <div className="p-3 admin-chart-container">
-            <Bar options={barOptions} data={monthlyTestsData} />
-          </div>
-        </div>
-
-        <div className="admin-card">
-          <div className="p-3 border-b border-gray-100">
-            <h3 className="text-sm font-semibold">Phân bố kết quả</h3>
-          </div>
-          <div className="p-3 admin-chart-container">
-            <Doughnut options={doughnutOptions} data={resultData} />
+          <div className="stats-item-info">
+            <div className="stats-item-title">Pending</div>
+            <div className="stats-item-value">{stats.pendingTests}</div>
           </div>
         </div>
       </div>
 
       {/* Filter Bar */}
-      <div className="admin-card p-3 mb-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="admin-search-container">
-            <input
-              type="text"
-              placeholder="Tìm kiếm theo tên, SĐT, người phụ trách..."
-              className="admin-search-input"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <svg xmlns="http://www.w3.org/2000/svg" className="admin-search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-          
-          <div className="flex gap-3">
-            <select 
-              className="admin-select"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="positive">Dương tính</option>
-              <option value="negative">Âm tính</option>
-              <option value="pending">Đang chờ</option>
-              <option value="reviewed">Đã xem xét</option>
-              <option value="unreviewed">Chưa xem xét</option>
-            </select>
+      <div className="test-results-card">
+        <div className="test-results-card-title">Search & Filters</div>
+        <div className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="search-container">
+              <input
+                type="text"
+                placeholder="Search by name, phone, reviewer..."
+                className="search-input"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <svg xmlns="http://www.w3.org/2000/svg" className="search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
             
-            <select 
-              className="admin-select"
-              value={filterTest}
-              onChange={(e) => setFilterTest(e.target.value)}
-            >
-              <option value="all">Tất cả loại xét nghiệm</option>
-              <option value="HIV">HIV</option>
-              <option value="Syphilis">Giang mai</option>
-              <option value="Gonorrhea">Lậu</option>
-              <option value="Chlamydia">Chlamydia</option>
-              <option value="HPV">HPV</option>
-              <option value="Hepatitis B">Viêm gan B</option>
-            </select>
-          </div>
-          
-          <div className="text-right hidden md:block">
-            <span className="admin-text-sm admin-text-muted">Tổng số: <span className="font-semibold text-gray-800">{filteredResults.length} kết quả</span></span>
+            <div className="flex gap-3">
+              <select 
+                className="filter-select"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
+                <option value="all">All Statuses</option>
+                <option value="positive">Positive</option>
+                <option value="negative">Negative</option>
+                <option value="pending">Pending</option>
+                <option value="reviewed">Reviewed</option>
+                <option value="unreviewed">Unreviewed</option>
+              </select>
+              
+              <select 
+                className="filter-select"
+                value={filterTest}
+                onChange={(e) => setFilterTest(e.target.value)}
+              >
+                <option value="all">All Test Types</option>
+                <option value="HIV">HIV</option>
+                <option value="Syphilis">Syphilis</option>
+                <option value="Gonorrhea">Gonorrhea</option>
+                <option value="Chlamydia">Chlamydia</option>
+                <option value="HPV">HPV</option>
+                <option value="Hepatitis B">Hepatitis B</option>
+              </select>
+            </div>
+            
+            <div className="text-right hidden md:block">
+              <span className="text-sm text-gray-500">Total: <span className="font-semibold text-gray-800">{filteredResults.length} results</span></span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Results Table */}
-      <div className="admin-card mb-4 overflow-hidden">
+      <div className="test-results-card">
+        <div className="test-results-card-title">Test Results Table</div>
         <div className="overflow-x-auto">
-          <table className="admin-table w-full">
+          <table className="test-results-table w-full">
             <thead>
               <tr>
                 <th className="w-12">ID</th>
-                <th>Bệnh nhân</th>
-                <th>Loại xét nghiệm</th>
-                <th>Ngày</th>
-                <th>Kết quả</th>
-                <th>Kiểm duyệt</th>
-                <th>Ghi chú</th>
-                <th className="w-20">Thao tác</th>
+                <th>Patient</th>
+                <th>Test Type</th>
+                <th>Date</th>
+                <th>Result</th>
+                <th>Review</th>
+                <th>Notes</th>
+                <th className="w-20">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -348,65 +332,68 @@ const TestResults = () => {
                     <td>
                       <div>
                         <div className="font-medium">{result.patientName}</div>
-                        <div className="admin-text-xs admin-text-muted">{result.patientPhone}</div>
+                        <div className="text-xs text-gray-500">{result.patientPhone}</div>
                       </div>
                     </td>
                     <td>{result.testType}</td>
                     <td>{result.date}</td>
                     <td>
                       <span className={getResultBadgeClass(result.result)}>
-                        {result.result === 'negative' ? 'Âm tính' : 
-                         result.result === 'positive' ? 'Dương tính' : 'Đang chờ'}
+                        {result.result === 'negative' ? 'Negative' : 
+                         result.result === 'positive' ? 'Positive' : 'Pending'}
                       </span>
                     </td>
                     <td>
                       {result.reviewed ? (
                         <div>
                           <div className="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="admin-check-icon mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-green-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                             </svg>
-                            <span className="admin-text-sm">Đã kiểm duyệt</span>
+                            <span className="text-sm">Reviewed</span>
                           </div>
-                          <div className="admin-text-xs admin-text-muted">{result.reviewedBy}</div>
+                          <div className="text-xs text-gray-500">{result.reviewedBy}</div>
                         </div>
                       ) : (
                         <div className="flex items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="admin-icon-xs text-yellow-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-yellow-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                           </svg>
-                          <span className="admin-text-sm">Chưa kiểm duyệt</span>
+                          <span className="text-sm">Pending Review</span>
                         </div>
                       )}
                     </td>
                     <td>
                       <div className="max-w-xs truncate">
-                        {result.notes || <span className="admin-text-muted admin-text-xs">Không có</span>}
+                        {result.notes || <span className="text-gray-500 text-xs">None</span>}
                       </div>
                     </td>
                     <td>
                       <div className="flex space-x-1">
                         <button 
-                          className="p-1 text-blue-500 hover:bg-blue-50 rounded"
+                          className="action-button action-button-view"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="admin-icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                             <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
                           </svg>
+                          <span>View</span>
                         </button>
                         <button 
-                          className="p-1 text-green-500 hover:bg-green-50 rounded"
+                          className="action-button action-button-edit"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="admin-icon-sm" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-                        <button 
-                          className="p-1 text-indigo-500 hover:bg-indigo-50 rounded"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="admin-icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                           </svg>
+                          <span>Edit</span>
+                        </button>
+                        <button 
+                          className="action-button action-button-delete"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          <span>Delete</span>
                         </button>
                       </div>
                     </td>
@@ -414,8 +401,8 @@ const TestResults = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="text-center py-4 admin-text-muted">
-                    Không tìm thấy kết quả xét nghiệm nào phù hợp với điều kiện lọc
+                  <td colSpan={8} className="text-center py-4 text-gray-500">
+                    No test results found matching your filter criteria
                   </td>
                 </tr>
               )}
@@ -426,50 +413,91 @@ const TestResults = () => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-between items-center">
-          <div className="admin-text-sm admin-text-muted">
-            Hiển thị {indexOfFirstResult + 1}-{Math.min(indexOfLastResult, filteredResults.length)} trên {filteredResults.length} kết quả
+        <div className="flex justify-between items-center mb-8">
+          <div className="text-sm text-gray-500">
+            Showing {indexOfFirstResult + 1}-{Math.min(indexOfLastResult, filteredResults.length)} of {filteredResults.length} results
           </div>
-          <div className="admin-pagination">
+          <div className="pagination">
             <button
-              className={`admin-pagination-btn rounded-l-md ${currentPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+              className="pagination-button"
+              onClick={() => paginate(1)}
+              disabled={currentPage === 1}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M15.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 010 1.414zm-6 0a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 011.414 1.414L5.414 10l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+            <button
+              className="pagination-button"
               onClick={() => currentPage > 1 && paginate(currentPage - 1)}
               disabled={currentPage === 1}
             >
-              Trước
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
             </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter(num => (num <= 2 || num > totalPages - 2 || Math.abs(num - currentPage) <= 1))
-              .map((number, idx, arr) => (
-                <React.Fragment key={number}>
-                  {idx > 0 && arr[idx - 1] !== number - 1 && (
-                    <span className="px-3 py-1 text-gray-400">...</span>
-                  )}
-                  <button
-                    className={`admin-pagination-btn ${currentPage === number ? 'active' : ''}`}
-                    onClick={() => paginate(number)}
-                  >
-                    {number}
-                  </button>
-                </React.Fragment>
-              ))}
+            
+            {/* Page numbers */}
+            {[...Array(totalPages)].map((_, i) => (
+              <button
+                key={i + 1}
+                onClick={() => paginate(i + 1)}
+                className={`pagination-button ${currentPage === i + 1 ? 'active' : ''}`}
+              >
+                {i + 1}
+              </button>
+            ))}
+            
             <button
-              className={`admin-pagination-btn rounded-r-md ${currentPage === totalPages ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+              className="pagination-button"
               onClick={() => currentPage < totalPages && paginate(currentPage + 1)}
               disabled={currentPage === totalPages}
             >
-              Sau
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+            </button>
+            <button
+              className="pagination-button"
+              onClick={() => paginate(totalPages)}
+              disabled={currentPage === totalPages}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M4.293 15.707a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
             </button>
           </div>
         </div>
       )}
 
-      {/* Test Types Chart */}
-      <div className="admin-card mt-4">
-        <div className="p-3 border-b border-gray-100">
-          <h3 className="text-sm font-semibold">Phân bố loại xét nghiệm</h3>
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="test-results-card">
+          <div className="chart-card-header">
+            <h3 className="chart-card-title">Monthly Tests</h3>
+          </div>
+          <div className="chart-container">
+            <Bar options={barOptions} data={monthlyTestsData} />
+          </div>
         </div>
-        <div className="p-3 admin-chart-container">
+
+        <div className="test-results-card">
+          <div className="chart-card-header">
+            <h3 className="chart-card-title">Results Distribution</h3>
+          </div>
+          <div className="chart-container">
+            <Doughnut options={doughnutOptions} data={resultData} />
+          </div>
+        </div>
+      </div>
+
+      {/* Test Types Chart */}
+      <div className="test-results-card mb-8">
+        <div className="chart-card-header">
+          <h3 className="chart-card-title">Test Types Distribution</h3>
+        </div>
+        <div className="chart-container">
           <Doughnut options={doughnutOptions} data={testTypeData} />
         </div>
       </div>

@@ -91,8 +91,8 @@ const Login = () => {
         </form>
       </div>
 
-      <div className="auth-note mt-4 text-center">
-        <p className="text-sm text-gray-600">
+      <div className="auth-note">
+        <p className="text-sm text-white">
           Use <strong>admin@example.com</strong> / <strong>admin123</strong> to access admin privileges
         </p>
       </div>

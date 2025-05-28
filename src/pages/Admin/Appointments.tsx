@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './Appointments.css';
 
 const Appointments = () => {
   const [view, setView] = useState('list'); // 'list' or 'calendar'
@@ -13,18 +14,18 @@ const Appointments = () => {
 
   // Mock data
   const appointments = [
-    { id: 1, patientName: 'Nguyễn Văn A', patientPhone: '0901234567', service: 'Tư vấn STI', date: '15/06/2023', time: '09:00', consultant: 'Bs. Trần Văn B', status: 'completed', notes: 'Đã tư vấn và làm xét nghiệm' },
-    { id: 2, patientName: 'Trần Thị C', patientPhone: '0912345678', service: 'Xét nghiệm HIV', date: '16/06/2023', time: '10:30', consultant: 'Bs. Lê Thị D', status: 'pending', notes: '' },
-    { id: 3, patientName: 'Lê Văn E', patientPhone: '0923456789', service: 'Tư vấn sức khỏe tình dục', date: '17/06/2023', time: '14:00', consultant: 'Bs. Phạm Văn F', status: 'confirmed', notes: 'Khách hàng đã xác nhận' },
-    { id: 4, patientName: 'Phạm Thị G', patientPhone: '0934567890', service: 'Xét nghiệm STI tổng quát', date: '18/06/2023', time: '15:30', consultant: 'Bs. Trần Văn B', status: 'cancelled', notes: 'Khách hàng hủy vì bận việc đột xuất' },
-    { id: 5, patientName: 'Hoàng Văn H', patientPhone: '0945678901', service: 'Tư vấn sức khỏe tình dục', date: '19/06/2023', time: '08:00', consultant: 'Bs. Lê Thị D', status: 'pending', notes: '' },
-    { id: 6, patientName: 'Ngô Thị I', patientPhone: '0956789012', service: 'Xét nghiệm HIV', date: '20/06/2023', time: '11:00', consultant: 'Bs. Phạm Văn F', status: 'confirmed', notes: '' },
-    { id: 7, patientName: 'Đỗ Văn K', patientPhone: '0967890123', service: 'Tư vấn STI', date: '21/06/2023', time: '13:30', consultant: 'Bs. Trần Văn B', status: 'pending', notes: '' },
-    { id: 8, patientName: 'Lý Thị L', patientPhone: '0978901234', service: 'Xét nghiệm STI tổng quát', date: '22/06/2023', time: '16:00', consultant: 'Bs. Lê Thị D', status: 'completed', notes: 'Hoàn thành xét nghiệm, đã gửi kết quả' },
-    { id: 9, patientName: 'Vũ Văn M', patientPhone: '0989012345', service: 'Tư vấn sức khỏe tình dục', date: '23/06/2023', time: '09:30', consultant: 'Bs. Phạm Văn F', status: 'confirmed', notes: '' },
-    { id: 10, patientName: 'Mai Thị N', patientPhone: '0990123456', service: 'Xét nghiệm HIV', date: '24/06/2023', time: '10:00', consultant: 'Bs. Trần Văn B', status: 'pending', notes: '' },
-    { id: 11, patientName: 'Trịnh Văn P', patientPhone: '0901234560', service: 'Tư vấn STI', date: '25/06/2023', time: '14:30', consultant: 'Bs. Lê Thị D', status: 'confirmed', notes: '' },
-    { id: 12, patientName: 'Đinh Thị Q', patientPhone: '0912345670', service: 'Xét nghiệm STI tổng quát', date: '26/06/2023', time: '15:00', consultant: 'Bs. Phạm Văn F', status: 'cancelled', notes: 'Khách hàng đổi lịch' },
+    { id: 1, patientName: 'John Smith', patientPhone: '0901234567', service: 'STI Consultation', date: '15/06/2023', time: '09:00', consultant: 'Dr. Robert Brown', status: 'completed', notes: 'Consultation completed with testing' },
+    { id: 2, patientName: 'Sarah Johnson', patientPhone: '0912345678', service: 'HIV Testing', date: '16/06/2023', time: '10:30', consultant: 'Dr. Emily Davis', status: 'pending', notes: '' },
+    { id: 3, patientName: 'Michael Lee', patientPhone: '0923456789', service: 'Sexual Health Consultation', date: '17/06/2023', time: '14:00', consultant: 'Dr. James Wilson', status: 'confirmed', notes: 'Patient confirmed appointment' },
+    { id: 4, patientName: 'Jessica Taylor', patientPhone: '0934567890', service: 'General STI Testing', date: '18/06/2023', time: '15:30', consultant: 'Dr. Robert Brown', status: 'cancelled', notes: 'Patient cancelled due to unexpected commitment' },
+    { id: 5, patientName: 'David Martinez', patientPhone: '0945678901', service: 'Sexual Health Consultation', date: '19/06/2023', time: '08:00', consultant: 'Dr. Emily Davis', status: 'pending', notes: '' },
+    { id: 6, patientName: 'Jennifer Garcia', patientPhone: '0956789012', service: 'HIV Testing', date: '20/06/2023', time: '11:00', consultant: 'Dr. James Wilson', status: 'confirmed', notes: '' },
+    { id: 7, patientName: 'Thomas Rodriguez', patientPhone: '0967890123', service: 'STI Consultation', date: '21/06/2023', time: '13:30', consultant: 'Dr. Robert Brown', status: 'pending', notes: '' },
+    { id: 8, patientName: 'Lisa Anderson', patientPhone: '0978901234', service: 'General STI Testing', date: '22/06/2023', time: '16:00', consultant: 'Dr. Emily Davis', status: 'completed', notes: 'Testing completed, results sent' },
+    { id: 9, patientName: 'William Thompson', patientPhone: '0989012345', service: 'Sexual Health Consultation', date: '23/06/2023', time: '09:30', consultant: 'Dr. James Wilson', status: 'confirmed', notes: '' },
+    { id: 10, patientName: 'Mary White', patientPhone: '0990123456', service: 'HIV Testing', date: '24/06/2023', time: '10:00', consultant: 'Dr. Robert Brown', status: 'pending', notes: '' },
+    { id: 11, patientName: 'Daniel Harris', patientPhone: '0901234560', service: 'STI Consultation', date: '25/06/2023', time: '14:30', consultant: 'Dr. Emily Davis', status: 'confirmed', notes: '' },
+    { id: 12, patientName: 'Patricia Clark', patientPhone: '0912345670', service: 'General STI Testing', date: '26/06/2023', time: '15:00', consultant: 'Dr. James Wilson', status: 'cancelled', notes: 'Patient rescheduled' },
   ];
 
   // Filter appointments
@@ -61,15 +62,15 @@ const Appointments = () => {
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'admin-badge admin-badge-success';
+        return 'status-badge status-badge-success';
       case 'confirmed':
-        return 'admin-badge admin-badge-info';
+        return 'status-badge status-badge-info';
       case 'pending':
-        return 'admin-badge admin-badge-warning';
+        return 'status-badge status-badge-warning';
       case 'cancelled':
-        return 'admin-badge admin-badge-danger';
+        return 'status-badge status-badge-danger';
       default:
-        return 'admin-badge admin-badge-info';
+        return 'status-badge status-badge-info';
     }
   };
 
@@ -102,78 +103,78 @@ const Appointments = () => {
   };
 
   return (
-    <div className="admin-dashboard">
+    <div className="appointments-container">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h1 className="text-xl font-bold mb-1">Quản lý lịch hẹn</h1>
-          <p className="admin-text-muted admin-text-sm">
-            Theo dõi và quản lý các lịch hẹn trong hệ thống
+          <h1 className="text-xl font-bold mb-1">Appointment Management</h1>
+          <p className="text-sm text-gray-500">
+            Track and manage all appointments in the system
           </p>
         </div>
         <div className="flex space-x-2">
           <button 
-            className={`admin-quick-action-btn ${view === 'list' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : ''}`}
+            className={`view-toggle-button ${view === 'list' ? 'active' : ''}`}
             onClick={() => setView('list')}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
             </svg>
-            <span>Danh sách</span>
+            <span>List</span>
           </button>
           <button 
-            className={`admin-quick-action-btn ${view === 'calendar' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : ''}`}
+            className={`view-toggle-button ${view === 'calendar' ? 'active' : ''}`}
             onClick={() => setView('calendar')}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
             </svg>
-            <span>Lịch</span>
+            <span>Calendar</span>
           </button>
           <button 
-            className="admin-quick-action-btn bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700"
+            className="add-appointment-button"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
             </svg>
-            <span>Thêm lịch hẹn</span>
+            <span>Add Appointment</span>
           </button>
         </div>
       </div>
 
       {/* Filter Bar */}
-      <div className="admin-card p-3 mb-4">
+      <div className="appointments-card p-3 mb-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="admin-search-container">
+          <div className="search-container">
             <input
               type="text"
-              placeholder="Tìm kiếm bệnh nhân, bác sĩ, dịch vụ..."
-              className="admin-search-input"
+              placeholder="Search patients, doctors, services..."
+              className="search-input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <svg xmlns="http://www.w3.org/2000/svg" className="admin-search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
           
           <div className="flex gap-3">
             <select 
-              className="admin-select"
+              className="filter-select"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
             >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="pending">Đang chờ</option>
-              <option value="confirmed">Đã xác nhận</option>
-              <option value="completed">Hoàn thành</option>
-              <option value="cancelled">Đã hủy</option>
+              <option value="all">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
             </select>
             
             <button
               onClick={resetFilters}
-              className="px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-600 hover:bg-gray-50 focus:outline-none"
+              className="reset-button"
             >
-              Đặt lại
+              Reset
             </button>
           </div>
           
@@ -181,7 +182,7 @@ const Appointments = () => {
             <div className="relative w-full">
               <input
                 type="date"
-                className="admin-select"
+                className="filter-input"
                 value={dateRange.startDate}
                 onChange={handleStartDateChange}
               />
@@ -189,7 +190,7 @@ const Appointments = () => {
             <div className="relative w-full">
               <input
                 type="date"
-                className="admin-select"
+                className="filter-input"
                 value={dateRange.endDate}
                 onChange={handleEndDateChange}
               />
@@ -198,23 +199,21 @@ const Appointments = () => {
         </div>
       </div>
 
-      {view === 'list' ? (
-        <>
           {/* List View */}
-          <div className="admin-card mb-4 overflow-hidden">
+      {view === 'list' && (
+        <div className="appointments-card mb-4 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="admin-table w-full">
+            <table className="appointments-table w-full">
                 <thead>
                   <tr>
                     <th className="w-12">ID</th>
-                    <th>Bệnh nhân</th>
-                    <th>Dịch vụ</th>
-                    <th>Ngày</th>
-                    <th>Giờ</th>
-                    <th>Bác sĩ / Chuyên gia</th>
-                    <th>Trạng thái</th>
-                    <th>Ghi chú</th>
-                    <th className="w-20">Thao tác</th>
+                  <th>Patient</th>
+                  <th>Service</th>
+                  <th>Date & Time</th>
+                  <th>Consultant</th>
+                  <th>Status</th>
+                  <th>Notes</th>
+                  <th className="w-20">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -224,43 +223,41 @@ const Appointments = () => {
                         <td>{appointment.id}</td>
                         <td>
                           <div>
-                            <div className="font-medium">{appointment.patientName}</div>
-                            <div className="admin-text-xs admin-text-muted">{appointment.patientPhone}</div>
+                          <div className="font-medium text-gray-800">{appointment.patientName}</div>
+                          <div className="text-xs text-gray-500">{appointment.patientPhone}</div>
                           </div>
                         </td>
                         <td>{appointment.service}</td>
-                        <td>{appointment.date}</td>
-                        <td>{appointment.time}</td>
+                      <td>
+                        <div>
+                          <div className="font-medium text-gray-800">{appointment.date}</div>
+                          <div className="text-xs text-gray-500">{appointment.time}</div>
+                        </div>
+                      </td>
                         <td>{appointment.consultant}</td>
                         <td>
                           <span className={getStatusBadgeClass(appointment.status)}>
-                            {appointment.status === 'completed' ? 'Hoàn thành' : 
-                             appointment.status === 'confirmed' ? 'Đã xác nhận' : 
-                             appointment.status === 'pending' ? 'Đang chờ' : 'Đã hủy'}
+                          {appointment.status}
                           </span>
                         </td>
                         <td>
-                          <div className="max-w-xs truncate">
-                            {appointment.notes || <span className="admin-text-muted admin-text-xs">Không có</span>}
-                          </div>
+                        <span className="text-xs text-gray-500">
+                          {appointment.notes || 'No notes'}
+                        </span>
                         </td>
                         <td>
                           <div className="flex space-x-1">
                             <button 
-                              className="p-1 text-blue-500 hover:bg-blue-50 rounded"
+                            className="action-button action-button-edit"
                               onClick={() => handleEditAppointment(appointment.id)}
                             >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                              </svg>
+                            Edit
                             </button>
                             <button 
-                              className="p-1 text-red-500 hover:bg-red-50 rounded"
+                            className="action-button action-button-delete"
                               onClick={() => handleDeleteAppointment(appointment.id)}
                             >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                              </svg>
+                            Delete
                             </button>
                           </div>
                         </td>
@@ -268,124 +265,245 @@ const Appointments = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={9} className="text-center py-4 admin-text-muted">
-                        Không tìm thấy lịch hẹn nào phù hợp với điều kiện lọc
-                      </td>
+                    <td colSpan={8} className="text-center py-4 text-gray-500">No appointments found</td>
                     </tr>
                   )}
                 </tbody>
               </table>
-            </div>
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-between items-center">
-              <div className="admin-text-sm admin-text-muted">
-                Hiển thị {indexOfFirstAppointment + 1}-{Math.min(indexOfLastAppointment, filteredAppointments.length)} trên {filteredAppointments.length} lịch hẹn
-              </div>
-              <div className="admin-pagination">
+          {filteredAppointments.length > 0 && (
+            <div className="pagination" style={{ position: 'relative' }}>
+              <button 
+                className="pagination-button"
+                onClick={() => paginate(1)}
+                disabled={currentPage === 1}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M15.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 010 1.414zm-6 0a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 011.414 1.414L5.414 10l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+              <button 
+                className="pagination-button"
+                onClick={() => paginate(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </button>
+              
+              {/* Page numbers */}
+              {[...Array(totalPages)].map((_, i) => (
                 <button
-                  className={`admin-pagination-btn rounded-l-md ${currentPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-50'}`}
-                  onClick={() => currentPage > 1 && paginate(currentPage - 1)}
-                  disabled={currentPage === 1}
+                  key={i + 1}
+                  onClick={() => paginate(i + 1)}
+                  className={`pagination-button ${currentPage === i + 1 ? 'active' : ''}`}
                 >
-                  Trước
+                  {i + 1}
                 </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                  .filter(num => (num <= 2 || num > totalPages - 2 || Math.abs(num - currentPage) <= 1))
-                  .map((number, idx, arr) => (
-                    <React.Fragment key={number}>
-                      {idx > 0 && arr[idx - 1] !== number - 1 && (
-                        <span className="px-3 py-1 text-gray-400">...</span>
-                      )}
+              ))}
+              
                       <button
-                        className={`admin-pagination-btn ${currentPage === number ? 'active' : ''}`}
-                        onClick={() => paginate(number)}
+                className="pagination-button"
+                onClick={() => paginate(currentPage + 1)}
+                disabled={currentPage === totalPages}
                       >
-                        {number}
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
                       </button>
-                    </React.Fragment>
-                  ))}
                 <button
-                  className={`admin-pagination-btn rounded-r-md ${currentPage === totalPages ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-50'}`}
-                  onClick={() => currentPage < totalPages && paginate(currentPage + 1)}
+                className="pagination-button"
+                onClick={() => paginate(totalPages)}
                   disabled={currentPage === totalPages}
                 >
-                  Sau
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
                 </button>
-              </div>
             </div>
           )}
-        </>
-      ) : (
-        /* Calendar View */
-        <div className="admin-card mb-4">
-          <div className="p-3 border-b border-gray-100">
-            <h3 className="text-sm font-semibold">Lịch xem theo tháng</h3>
+        </div>
+      )}
+
+      {/* Calendar View - Simplified for this example */}
+      {view === 'calendar' && (
+        <div className="calendar-container mb-4">
+          <div className="calendar-header">
+            <h3 className="calendar-title">June 2023</h3>
+            <div className="calendar-nav">
+              <button className="calendar-nav-button">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </button>
+              <button className="calendar-nav-button">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
           </div>
-          <div className="p-4">
-            <div className="grid grid-cols-7 gap-1 mb-2">
-              {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map((day, index) => (
-                <div key={index} className="text-center font-medium text-sm py-2 text-gray-600">
-                  {day}
+          <div className="calendar-grid">
+            <div className="calendar-day-header">Sun</div>
+            <div className="calendar-day-header">Mon</div>
+            <div className="calendar-day-header">Tue</div>
+            <div className="calendar-day-header">Wed</div>
+            <div className="calendar-day-header">Thu</div>
+            <div className="calendar-day-header">Fri</div>
+            <div className="calendar-day-header">Sat</div>
+            
+            {/* Example calendar days */}
+            <div className="calendar-day other-month">
+              <div className="calendar-day-number">28</div>
+            </div>
+            <div className="calendar-day other-month">
+              <div className="calendar-day-number">29</div>
+            </div>
+            <div className="calendar-day other-month">
+              <div className="calendar-day-number">30</div>
+            </div>
+            <div className="calendar-day other-month">
+              <div className="calendar-day-number">31</div>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">1</div>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">2</div>
                 </div>
-              ))}
+            <div className="calendar-day">
+              <div className="calendar-day-number">3</div>
             </div>
             
-            <div className="grid grid-cols-7 gap-1">
-              {/* For simplicity, we'll just mock a calendar view */}
-              {Array(35).fill(0).map((_, index) => {
-                const day = index + 1 - 5; // Starting from previous month's days
-                const isCurrentMonth = day > 0 && day <= 30;
-                const hasAppointments = isCurrentMonth && [10, 15, 20, 25].includes(day);
-                
-                return (
-                  <div 
-                    key={index}
-                    className={`
-                      border rounded-md p-1 h-24 overflow-y-auto
-                      ${isCurrentMonth ? 'bg-white' : 'bg-gray-50 text-gray-400'}
-                    `}
-                  >
-                    <div className="text-right text-xs font-medium mb-1">{isCurrentMonth ? day : day <= 0 ? 31 + day : day - 30}</div>
-                    {hasAppointments && (
-                      <div>
-                        <div className="text-xs mb-1 px-1 py-0.5 bg-blue-50 text-blue-600 rounded truncate">
-                          9:00 - Tư vấn STI
+            {/* Week 2 */}
+            <div className="calendar-day">
+              <div className="calendar-day-number">4</div>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">5</div>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">6</div>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">7</div>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">8</div>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">9</div>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">10</div>
+            </div>
+            
+            {/* Week 3 */}
+            <div className="calendar-day">
+              <div className="calendar-day-number">11</div>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">12</div>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">13</div>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">14</div>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">15</div>
+              <div className="calendar-event calendar-event-completed">
+                John Smith - 09:00
                         </div>
-                        <div className="text-xs mb-1 px-1 py-0.5 bg-green-50 text-green-600 rounded truncate">
-                          11:30 - Xét nghiệm HIV
                         </div>
-                        {day === 15 && (
-                          <div className="text-xs mb-1 px-1 py-0.5 bg-purple-50 text-purple-600 rounded truncate">
-                            14:00 - Tư vấn sức khỏe
+            <div className="calendar-day">
+              <div className="calendar-day-number">16</div>
+              <div className="calendar-event calendar-event-pending">
+                Sarah Johnson - 10:30
                           </div>
-                        )}
                       </div>
-                    )}
+            <div className="calendar-day">
+              <div className="calendar-day-number">17</div>
+              <div className="calendar-event calendar-event-confirmed">
+                Michael Lee - 14:00
                   </div>
-                );
-              })}
             </div>
             
-            <div className="mt-4 flex space-x-3">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-blue-50 border border-blue-600 rounded mr-1"></div>
-                <span className="admin-text-xs">Đang chờ</span>
+            {/* Week 4 */}
+            <div className="calendar-day">
+              <div className="calendar-day-number">18</div>
+              <div className="calendar-event calendar-event-cancelled">
+                Jessica Taylor - 15:30
               </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-green-50 border border-green-600 rounded mr-1"></div>
-                <span className="admin-text-xs">Đã xác nhận</span>
+            </div>
+            <div className="calendar-day today">
+              <div className="calendar-day-number">19</div>
+              <div className="calendar-event calendar-event-pending">
+                David Martinez - 08:00
               </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-purple-50 border border-purple-600 rounded mr-1"></div>
-                <span className="admin-text-xs">Hoàn thành</span>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">20</div>
+              <div className="calendar-event calendar-event-confirmed">
+                Jennifer Garcia - 11:00
               </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-red-50 border border-red-600 rounded mr-1"></div>
-                <span className="admin-text-xs">Đã hủy</span>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">21</div>
+              <div className="calendar-event calendar-event-pending">
+                Thomas Rodriguez - 13:30
               </div>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">22</div>
+              <div className="calendar-event calendar-event-completed">
+                Lisa Anderson - 16:00
+              </div>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">23</div>
+              <div className="calendar-event calendar-event-confirmed">
+                William Thompson - 09:30
+              </div>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">24</div>
+              <div className="calendar-event calendar-event-pending">
+                Mary White - 10:00
+              </div>
+            </div>
+            
+            {/* Week 5 */}
+            <div className="calendar-day">
+              <div className="calendar-day-number">25</div>
+              <div className="calendar-event calendar-event-confirmed">
+                Daniel Harris - 14:30
+              </div>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">26</div>
+              <div className="calendar-event calendar-event-cancelled">
+                Patricia Clark - 15:00
+              </div>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">27</div>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">28</div>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">29</div>
+            </div>
+            <div className="calendar-day">
+              <div className="calendar-day-number">30</div>
+            </div>
+            <div className="calendar-day other-month">
+              <div className="calendar-day-number">1</div>
             </div>
           </div>
         </div>
