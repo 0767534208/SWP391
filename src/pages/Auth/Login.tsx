@@ -1,38 +1,69 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import './Auth.css';
 
 const Login = () => {
-  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    // Here we're simulating authentication logic
+    // In a real app, you would make an API call to your backend
+    if (email === 'admin@example.com' && password === 'admin123') {
+      // Admin login success
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userRole', 'admin');
+      localStorage.setItem('user', JSON.stringify({ email, role: 'admin' }));
+      navigate('/admin'); // Redirect to admin dashboard
+    } else if (email && password) {
+      // Regular user login - simple validation for demo
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userRole', 'user');
+      localStorage.setItem('user', JSON.stringify({ email, role: 'user' }));
+      navigate('/'); // Redirect to home page
+    } else {
+      setError('Invalid login credentials');
+    }
+  };
 
   return (
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-heading">
-          <h2>{t('auth.signIn')}</h2>
-          <p>{t('auth.pleaseSignIn')}</p>
+          <h2>Login</h2>
+          <p>Please login to continue</p>
         </div>
         
-        <form className="auth-form">
+        <form className="auth-form" onSubmit={handleSubmit}>
+          {error && <div className="error-message">{error}</div>}
+          
           <div className="form-group">
-            <label htmlFor="login-email">{t('auth.email')}</label>
+            <label htmlFor="login-email">Email</label>
             <input 
               id="login-email"
               type="email" 
               className="form-input"
-              placeholder={t('auth.enterEmail')} 
+              placeholder="Enter your email" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="login-password">{t('auth.password')}</label>
+            <label htmlFor="login-password">Password</label>
             <input 
               id="login-password"
               type="password" 
               className="form-input"
-              placeholder={t('auth.enterPassword')} 
+              placeholder="Enter your password" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
             />
           </div>
@@ -40,24 +71,30 @@ const Login = () => {
           <div className="form-options">
             <label className="remember-me">
               <input type="checkbox" />
-              <span>{t('auth.rememberMe')}</span>
+              <span>Remember me</span>
             </label>
-            <a href="#" className="forgot-password">{t('auth.forgotPassword')}</a>
+            <a href="#" className="forgot-password">Forgot password?</a>
           </div>
 
           <button type="submit" className="auth-submit">
-            {t('auth.signIn')}
+            Login
           </button>
 
           <div className="auth-switch">
             <p>
-              {t('auth.noAccount')}{' '}
+              Don't have an account?{' '}
               <Link to="/auth/register" className="switch-link">
-                {t('auth.createAccount')}
+                Create account
               </Link>
             </p>
           </div>
         </form>
+      </div>
+
+      <div className="auth-note mt-4 text-center">
+        <p className="text-sm text-gray-600">
+          Use <strong>admin@example.com</strong> / <strong>admin123</strong> to access admin privileges
+        </p>
       </div>
     </div>
   );

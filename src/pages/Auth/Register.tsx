@@ -1,74 +1,71 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import './Auth.css';
 
 const Register = () => {
-  const { t } = useTranslation();
-
   return (
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-heading">
-          <h2>{t('auth.createAccount')}</h2>
-          <p>{t('auth.joinUs')}</p>
+          <h2>Create Account</h2>
+          <p>Join us today</p>
         </div>
         
         <form className="auth-form">
           <div className="form-group">
-            <label htmlFor="register-fullname">{t('auth.fullName')}</label>
+            <label htmlFor="register-fullname">Full Name</label>
             <input 
               id="register-fullname"
               type="text" 
               className="form-input"
-              placeholder={t('auth.enterFullName')} 
+              placeholder="Enter your full name" 
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="register-email">{t('auth.email')}</label>
+            <label htmlFor="register-email">Email</label>
             <input 
               id="register-email"
               type="email" 
               className="form-input"
-              placeholder={t('auth.enterEmail')} 
+              placeholder="Enter your email" 
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="register-password">{t('auth.password')}</label>
+            <label htmlFor="register-password">Password</label>
             <input 
               id="register-password"
               type="password" 
               className="form-input"
-              placeholder={t('auth.createPassword')} 
+              placeholder="Create password" 
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="register-confirm">{t('auth.confirmPassword')}</label>
+            <label htmlFor="register-confirm">Confirm Password</label>
             <input 
               id="register-confirm"
               type="password" 
               className="form-input"
-              placeholder={t('auth.confirmPasswordPlaceholder')} 
+              placeholder="Confirm your password" 
               required
             />
           </div>
 
           <button type="submit" className="auth-submit">
-            {t('auth.createAccount')}
+            Create Account
           </button>
         </form>
 
         <div className="auth-switch">
           <p>
-            {t('auth.haveAccount')}{' '}
+            Already have an account?{' '}
             <Link to="/auth/login" className="switch-link">
-              {t('auth.signIn')}
+              Login
             </Link>
           </p>
         </div>

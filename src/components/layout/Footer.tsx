@@ -1,19 +1,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaClock, FaFacebook, FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa';
 import './Footer.css';
 
 const Footer = () => {
-  const { t } = useTranslation();
-
   return (
     <footer className="footer">
       <div className="footer-container">
         <div className="footer-brand">
           <h2>HealthCare Center</h2>
           <p>
-            {t('home.hero.subtitle')}
+            Your trusted partner in sexual and reproductive health
           </p>
           <div className="social-links">
             <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
@@ -32,46 +29,46 @@ const Footer = () => {
         </div>
 
         <div className="footer-section">
-          <h3>{t('footer.quickLinks')}</h3>
+          <h3>Quick Links</h3>
           <ul className="footer-links">
-            <li><Link to="/about">{t('footer.aboutUs')}</Link></li>
-            <li><Link to="/services">{t('footer.ourServices')}</Link></li>
-            <li><Link to="/doctors">{t('footer.ourDoctors')}</Link></li>
-            <li><Link to="/blog">{t('footer.blogNews')}</Link></li>
-            <li><Link to="/contact">{t('footer.contactUs')}</Link></li>
+            <li><Link to="/about">About Us</Link></li>
+            <li><Link to="/services">Services</Link></li>
+            <li><Link to="/doctors">Our Doctors</Link></li>
+            <li><Link to="/blog">Blog & News</Link></li>
+            <li><Link to="/contact">Contact</Link></li>
           </ul>
         </div>
 
         <div className="footer-section">
-          <h3>{t('footer.services.title')}</h3>
+          <h3>Our Services</h3>
           <ul className="footer-links">
-            <li><Link to="/services/consultation">{t('footer.services.consultation')}</Link></li>
-            <li><Link to="/services/testing">{t('footer.services.testing')}</Link></li>
-            <li><Link to="/services/reproductive">{t('footer.services.reproductive')}</Link></li>
-            <li><Link to="/services/education">{t('footer.services.education')}</Link></li>
-            <li><Link to="/services/counseling">{t('footer.services.counseling')}</Link></li>
+            <li><Link to="/services/consultation">Health Consultation</Link></li>
+            <li><Link to="/services/testing">STIs Testing</Link></li>
+            <li><Link to="/services/reproductive">Reproductive Health</Link></li>
+            <li><Link to="/services/education">Sex Education</Link></li>
+            <li><Link to="/services/counseling">Health Counseling</Link></li>
           </ul>
         </div>
       </div>
 
       <div className="footer-contact">
         <div className="contact-container">
-          <h3>{t('footer.contact.title')}</h3>
+          <h3>Contact Information</h3>
           <div className="contact-info">
-            <p><FaMapMarkerAlt /> {t('footer.contact.address')}</p>
-            <p><FaPhone /> {t('footer.contact.phone')}</p>
-            <p><FaEnvelope /> {t('footer.contact.email')}</p>
-            <p><FaClock /> {t('footer.contact.hours')}</p>
+            <p><FaMapMarkerAlt /> 123 Healthcare Street, Ho Chi Minh City</p>
+            <p><FaPhone /> +84 123 456 789</p>
+            <p><FaEnvelope /> contact@healthcare.com</p>
+            <p><FaClock /> Monday - Friday: 8:00 - 20:00</p>
           </div>
         </div>
       </div>
 
       <div className="footer-bottom">
-        <p>{t('footer.rights')}</p>
+        <p>© 2024 HealthCare Center. All rights reserved.</p>
         <div className="footer-bottom-links">
-          <Link to="/privacy">{t('footer.privacy')}</Link>
-          <Link to="/terms">{t('footer.terms')}</Link>
-          <Link to="/sitemap">{t('footer.sitemap')}</Link>
+          <Link to="/privacy">Privacy Policy</Link>
+          <Link to="/terms">Terms of Service</Link>
+          <Link to="/sitemap">Sitemap</Link>
         </div>
       </div>
     </footer>

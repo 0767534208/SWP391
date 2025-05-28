@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import './Booking.css';
 
 const Booking = () => {
-  const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [selectedService, setSelectedService] = useState<number | null>(null);
@@ -22,21 +20,21 @@ const Booking = () => {
   const services = [
     {
       id: 1,
-      name: t('booking.services.stis.name'),
-      duration: t('booking.services.stis.duration'),
-      price: t('booking.services.stis.price')
+      name: 'STI Testing',
+      duration: '45 min',
+      price: '$50'
     },
     {
       id: 2,
-      name: t('booking.services.consultation.name'),
-      duration: t('booking.services.consultation.duration'),
-      price: t('booking.services.consultation.price')
+      name: 'Consultation',
+      duration: '60 min',
+      price: '$75'
     },
     {
       id: 3,
-      name: t('booking.services.reproductiveHealth.name'),
-      duration: t('booking.services.reproductiveHealth.duration'),
-      price: t('booking.services.reproductiveHealth.price')
+      name: 'Reproductive Health',
+      duration: '60 min',
+      price: '$80'
     }
   ];
 
@@ -48,7 +46,7 @@ const Booking = () => {
   };
 
   useEffect(() => {
-    // Đặt locale cho date picker
+    // Set locale for date picker
     const dateInputs = document.querySelectorAll('input[type="date"]');
     dateInputs.forEach(input => {
       input.setAttribute('lang', 'en-US');
@@ -64,17 +62,17 @@ const Booking = () => {
       <div className="booking-container">
         {/* Header */}
         <header className="booking-header">
-          <h1>{t('booking.title')}</h1>
-          <p>{t('booking.subtitle')}</p>
+          <h1>Book an Appointment</h1>
+          <p>Schedule your visit to our healthcare center</p>
         </header>
 
         {/* Main Grid */}
         <div className="booking-grid">
           {/* Left Column: Service & Date/Time */}
           <section className="booking-sidebar">
-            {/* Chọn dịch vụ */}
+            {/* Select service */}
             <div className="form-section">
-              <h3>{t('booking.selectService')}</h3>
+              <h3>Select Service</h3>
               <div className="services-grid">
                 {services.map(service => (
                   <div
@@ -103,9 +101,9 @@ const Booking = () => {
               </div>
             </div>
 
-            {/* Chọn ngày giờ */}
+            {/* Select date and time */}
             <div className="form-section">
-              <h3>{t('booking.selectDateTime')}</h3>
+              <h3>Select Date & Time</h3>
               <input
                 type="date"
                 value={selectedDate}
@@ -130,58 +128,58 @@ const Booking = () => {
             </div>
           </section>
 
-          {/* Right Column: Thông tin cá nhân & Submit */}
+          {/* Right Column: Personal Information & Submit */}
           <section className="booking-form">
             <div className="form-section">
-              <h3>{t('booking.personalInfo')}</h3>
+              <h3>Personal Information</h3>
               <div className="form-grid">
                 <div className="input-group">
-                  <label htmlFor="name">{t('booking.form.fullName')}</label>
+                  <label htmlFor="name">Full Name</label>
                   <input
                     id="name"
                     type="text"
                     name="name"
                     value={personalDetails.name}
                     onChange={handlePersonalDetails}
-                    placeholder={t('booking.form.fullNamePlaceholder')}
+                    placeholder="Enter your full name"
                     required
                     className="form-input"
                   />
                 </div>
                 <div className="input-group">
-                  <label htmlFor="phone">{t('booking.form.phone')}</label>
+                  <label htmlFor="phone">Phone</label>
                   <input
                     id="phone"
                     type="tel"
                     name="phone"
                     value={personalDetails.phone}
                     onChange={handlePersonalDetails}
-                    placeholder={t('booking.form.phonePlaceholder')}
+                    placeholder="Enter your phone number"
                     required
                     className="form-input"
                   />
                 </div>
                 <div className="input-group full-width">
-                  <label htmlFor="email">{t('booking.form.email')}</label>
+                  <label htmlFor="email">Email</label>
                   <input
                     id="email"
                     type="email"
                     name="email"
                     value={personalDetails.email}
                     onChange={handlePersonalDetails}
-                    placeholder={t('booking.form.emailPlaceholder')}
+                    placeholder="Enter your email address"
                     required
                     className="form-input"
                   />
                 </div>
                 <div className="input-group full-width">
-                  <label htmlFor="notes">{t('booking.form.notes')}</label>
+                  <label htmlFor="notes">Notes</label>
                   <textarea
                     id="notes"
                     name="notes"
                     value={personalDetails.notes}
                     onChange={handlePersonalDetails}
-                    placeholder={t('booking.form.notesPlaceholder')}
+                    placeholder="Additional information or special requests"
                     className="form-input notes"
                   />
                 </div>
@@ -198,7 +196,7 @@ const Booking = () => {
                 !personalDetails.phone
               }
             >
-              {t('booking.form.confirmButton')}
+              Confirm Booking
             </button>
           </section>
         </div>

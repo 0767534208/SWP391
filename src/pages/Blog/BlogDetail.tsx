@@ -1,57 +1,55 @@
 // src/pages/Blog/BlogDetail.jsx
 import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import './BlogDetail.css';  // Bạn có thể tạo file này để style riêng cho detail
+import './BlogDetail.css';  // You can create this file for styling the detail page
 
 const BlogDetail = () => {
-  const { t } = useTranslation();
-  const { id } = useParams();          // Lấy id từ URL
+  const { id } = useParams();          // Get id from URL
   const navigate = useNavigate();
 
-  // Dữ liệu demo (có thể thay bằng fetch API thực tế)
+  // Demo data (can be replaced with actual API fetch)
   const blogPosts = [
     {
       id: '1',
-      title: t('blog.sexualEducation.title'),
-      content: t('Sức khỏe sinh sản (SKSS) là trạng thái khỏe mạnh về thể chất, tinh thần và xã hội liên quan đến mọi khía cạnh của hệ thống sinh sản. Nó bao gồm sức khỏe tình dục, khả năng sinh sản, việc mang thai, sinh con, kế hoạch hóa gia đình và các yếu tố liên quan khác'),
+      title: 'Sex Education for Teenagers',
+      content: 'Reproductive health is a state of complete physical, mental, and social well-being in all aspects of the reproductive system. It encompasses sexual health, fertility, pregnancy, childbirth, family planning, and other related factors.',
       imageUrl: '/cham-soc-suc-khoe-sinh-san-1-4658.jpg',
-      publishedDate: t('1/5/2003'),
-      author: t('Huy'),
+      publishedDate: '05/01/2023',
+      author: 'Dr. John Smith',
     },
     {
       id: '2',
-      title: t('blog.reproductiveHealth.title'),
-      content: t('Sức khỏe sinh sản (SKSS) là trạng thái khỏe mạnh về thể chất, tinh thần và xã hội liên quan đến mọi khía cạnh của hệ thống sinh sản. Nó bao gồm sức khỏe tình dục, khả năng sinh sản, việc mang thai, sinh con, kế hoạch hóa gia đình và các yếu tố liên quan khác'),
+      title: 'Understanding Reproductive Health',
+      content: 'Reproductive health is a state of complete physical, mental, and social well-being in all aspects of the reproductive system. It encompasses sexual health, fertility, pregnancy, childbirth, family planning, and other related factors.',
       imageUrl: '/cham-soc-suc-khoe-sinh-san-1-4658.jpg',
-      publishedDate: t('1/5/2003'),
-      author: t('Luân'),
+      publishedDate: '05/01/2023',
+      author: 'Dr. Sarah Johnson',
     },
     {
       id: '3',
-      title: t('blog.stisPrevention.title'),
-      content: t('Sức khỏe sinh sản (SKSS) là trạng thái khỏe mạnh về thể chất, tinh thần và xã hội liên quan đến mọi khía cạnh của hệ thống sinh sản. Nó bao gồm sức khỏe tình dục, khả năng sinh sản, việc mang thai, sinh con, kế hoạch hóa gia đình và các yếu tố liên quan khác'),
+      title: 'STIs Prevention Guide',
+      content: 'Reproductive health is a state of complete physical, mental, and social well-being in all aspects of the reproductive system. It encompasses sexual health, fertility, pregnancy, childbirth, family planning, and other related factors.',
       imageUrl: '/cham-soc-suc-khoe-sinh-san-1-4658.jpg',
-      publishedDate: t('1/5/2003'),
-      author: t('Quốc'),
+      publishedDate: '05/01/2023',
+      author: 'Dr. Michael Brown',
     }
   ];
 
-  // Tìm bài viết theo id
+  // Find the post by id
   const post = blogPosts.find(item => item.id === id);
 
   if (!post) {
-    // Nếu không tìm thấy, hiển thị thông báo và nút quay lại
+    // If not found, display message and back button
     return (
       <div className="blog-detail-page">
         <div className="blog-detail-container">
-          <h2>{t('blog.notFoundTitle')}</h2>
-          <p>{t('blog.notFoundMessage')}</p>
+          <h2>Post Not Found</h2>
+          <p>The article you're looking for doesn't exist or has been removed.</p>
           <button 
             className="back-btn" 
             onClick={() => navigate(-1)}
           >
-            {t('blog.backToList')}
+            Back to List
           </button>
         </div>
       </div>
@@ -61,35 +59,34 @@ const BlogDetail = () => {
   return (
     <div className="blog-detail-page">
       <div className="blog-detail-container">
-        {/* Nút quay về danh sách */}
+        {/* Back to list button */}
         <div className="detail-nav">
           <Link to="/blog" className="back-link">
-            ← {t('Quay lại')}
+            ← Back
           </Link>
         </div>
 
-        {/* Tiêu đề và metadata */}
+        {/* Title and metadata */}
         <header className="detail-header">
           <h1 className="detail-title">{post.title}</h1>
           <div className="detail-meta">
             <span className="detail-author">
-              {/* {t('blog.by')} {post.author} */}
               {post.author}
             </span>
             <span className="detail-date">{post.publishedDate}</span>
           </div>
         </header>
 
-        {/* Ảnh minh họa nếu có */}
+        {/* Featured image if available */}
         {post.imageUrl && (
           <div className="detail-image">
             <img src={post.imageUrl} alt={post.title} />
           </div>
         )}
 
-        {/* Nội dung chi tiết */}
+        {/* Detailed content */}
         <article className="detail-content">
-          {/* Nếu nội dung dài, bạn có thể chia nhiều <p> */}
+          {/* If the content is long, you might want to split into multiple <p> tags */}
           <p>{post.content}</p>
         </article>
       </div>
