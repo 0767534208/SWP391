@@ -1,17 +1,62 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import './Auth.css';
 
 const Login = () => {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    // Here we're simulating authentication logic
+    // In a real app, you would make an API call to your backend
+    if (email === 'admin@example.com' && password === 'admin123') {
+      // Admin login success
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userRole', 'admin');
+      localStorage.setItem('user', JSON.stringify({ email, role: 'admin' }));
+      navigate('/admin'); // Redirect to admin dashboard
+    } else if (email === 'user@example.com' && password === 'user123') {
+      // User login success
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userRole', 'user');
+      localStorage.setItem('user', JSON.stringify({ 
+        email, 
+        role: 'user',
+        name: 'User Demo',
+        phone: '0123 456 789',
+        dob: '01/01/2000',
+        address: 'Hà Nội'
+      }));
+      navigate('/'); // Redirect to home page
+      window.location.reload();
+    } 
+    else if (email && password) {
+      // Regular user login - simple validation for demo
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userRole', 'user');
+      localStorage.setItem('user', JSON.stringify({ email, role: 'user' }));
+      navigate('/'); // Redirect to home page
+    } else {
+      setError('Invalid login credentials');
+    }
+  };
+
   return (
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-heading">
-          <h2>Sign In</h2>
-          <p>Please sign in to continue</p>
+          <h2>Login</h2>
+          <p>Please login to continue</p>
         </div>
         
-        <form className="auth-form">
+        <form className="auth-form" onSubmit={handleSubmit}>
+          {error && <div className="error-message">{error}</div>}
+          
           <div className="form-group">
             <label htmlFor="login-email">Email</label>
             <input 
@@ -19,6 +64,8 @@ const Login = () => {
               type="email" 
               className="form-input"
               placeholder="Enter your email" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
@@ -30,6 +77,8 @@ const Login = () => {
               type="password" 
               className="form-input"
               placeholder="Enter your password" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
             />
           </div>
@@ -39,22 +88,28 @@ const Login = () => {
               <input type="checkbox" />
               <span>Remember me</span>
             </label>
-            <a href="#" className="forgot-password">Forgot Password?</a>
+            <a href="#" className="forgot-password">Forgot password?</a>
           </div>
 
           <button type="submit" className="auth-submit">
-            Sign In
+            Login
           </button>
 
           <div className="auth-switch">
             <p>
               Don't have an account?{' '}
               <Link to="/auth/register" className="switch-link">
-                Create Account
+                Create account
               </Link>
             </p>
           </div>
         </form>
+      </div>
+
+      <div className="auth-note">
+        <p className="text-sm text-white">
+          Use <strong>role@example.com</strong> / <strong>rolerole123</strong> to access each role privileges
+        </p>
       </div>
     </div>
   );

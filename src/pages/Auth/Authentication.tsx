@@ -34,4 +34,4 @@ const Authentication: React.FC<AuthenticationProps> = ({ isOpen, onClose }) => {
   );
 };
 
-export default Authentication; 
+export default Authentication;

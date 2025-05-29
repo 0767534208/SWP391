@@ -25,7 +25,7 @@ const Blog = () => {
     <div className="blog-page">
       <div className="blog-container">
         <header className="blog-header">
-          <h1 className="blog-title">Health & Wellness Blog</h1>
+          <h1 className="blog-title">Health Blog</h1>
         </header>
 
         <div className="blog-grid">

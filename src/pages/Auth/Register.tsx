@@ -8,7 +8,7 @@ const Register = () => {
       <div className="auth-container">
         <div className="auth-heading">
           <h2>Create Account</h2>
-          <p>Join us to get started</p>
+          <p>Join us today</p>
         </div>
         
         <form className="auth-form">
@@ -40,7 +40,7 @@ const Register = () => {
               id="register-password"
               type="password" 
               className="form-input"
-              placeholder="Create a password" 
+              placeholder="Create password" 
               required
             />
           </div>
@@ -59,16 +59,16 @@ const Register = () => {
           <button type="submit" className="auth-submit">
             Create Account
           </button>
-
-          <div className="auth-switch">
-            <p>
-              Already have an account?{' '}
-              <Link to="/auth/login" className="switch-link">
-                Sign In
-              </Link>
-            </p>
-          </div>
         </form>
+
+        <div className="auth-switch">
+          <p>
+            Already have an account?{' '}
+            <Link to="/auth/login" className="switch-link">
+              Login
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
