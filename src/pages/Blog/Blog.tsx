@@ -6,13 +6,13 @@ const Blog = () => {
   const blogPosts = [
     {
       id: 1,
-      title: 'Sex Education for Teenagers',
-      description: 'Understanding effective approaches to sex education and promoting healthy relationships among young people.',
+      title: 'Sexual Education for Adolescents',
+      description: 'Understanding effective approaches to sexual education and promoting healthy relationships among young people.',
     },
     {
       id: 2,
       title: 'Understanding Reproductive Health',
-      description: 'Essential guide to maintaining reproductive health and making informed healthcare decisions.',
+      description: 'Essential guide to maintaining reproductive wellness and making informed healthcare decisions.',
     },
     {
       id: 3,
@@ -25,7 +25,7 @@ const Blog = () => {
     <div className="blog-page">
       <div className="blog-container">
         <header className="blog-header">
-          <h1 className="blog-title">Blog & Health News</h1>
+          <h1 className="blog-title">Health Blog</h1>
         </header>
 
         <div className="blog-grid">
@@ -36,7 +36,7 @@ const Blog = () => {
                 <p className="card-description">{post.description}</p>
               </div>
               <Link to={`/blog/${post.id}`} className="read-more-btn">
-                Read more
+                Read More
                 <span className="btn-arrow">→</span>
               </Link>
             </article>

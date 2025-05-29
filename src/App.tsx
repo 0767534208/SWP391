@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './index.css';
 import './App.css';
@@ -15,12 +16,12 @@ import Profile from './pages/Profile/Profile';
 
 // Admin pages
 import Dashboard from './pages/Admin/Dashboard';
-import Users from './pages/Admin/Users';
-import Appointments from './pages/Admin/Appointments';
-import TestResults from './pages/Admin/TestResults';
-import Consultants from './pages/Admin/Consultants';
-import AdminBlog from './pages/Admin/Blog';
-import Reports from './pages/Admin/Reports';
+import Users from './pages/Admin/User';
+import Appointments from './pages/Admin/Appointment';
+import TestResults from './pages/Admin/TestResult';
+import Consultants from './pages/Admin/Consultant';
+import AdminBlog from './pages/Admin/BlogManagement';
+import Reports from './pages/Admin/Report';
 
 // Admin route wrapper component
 import type { ReactNode } from 'react';
