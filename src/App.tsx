@@ -3,8 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import './index.css';
 import './App.css';
 
-import UserLayout from './components/layout/UserLayout'; // Đường dẫn tới file UserLayout
-import AdminLayout from './components/layout/AdminLayout'; // Admin Layout
+import UserLayout from './components/layout/UserLayout';
+import AdminLayout from './components/layout/AdminLayout';
 import Home from './pages/Home/Home';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
@@ -14,7 +14,7 @@ import BlogDetail from './pages/Blog/BlogDetail';
 import CycleTracker from './pages/CycleTracker/CycleTracker';
 import Profile from './pages/Profile/Profile';
 
-// Admin pages
+
 import Dashboard from './pages/Admin/Dashboard';
 import Users from './pages/Admin/User';
 import Appointments from './pages/Admin/Appointment';
@@ -25,6 +25,7 @@ import Reports from './pages/Admin/Report';
 
 // Admin route wrapper component
 import type { ReactNode } from 'react';
+import ConfirmBooking from './pages/Booking/ConfirmBooking';
 
 type AdminRouteProps = {
   children: ReactNode;
@@ -50,6 +51,7 @@ function App() {
           <Route path="/blog/:id" element={<BlogDetail />} />
           <Route path="CycleTracker" element={<CycleTracker />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="confirm-booking" element={<ConfirmBooking />} />
         </Route>
 
         {/* Route dành cho admin */}
