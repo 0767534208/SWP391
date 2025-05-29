@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Booking.css';
 
+interface PersonalDetails {
+  name: string;
+  phone: string;
+  email: string;
+  notes: string;
+}
+
 const Booking = () => {
+  const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [selectedService, setSelectedService] = useState<number | null>(null);
-  const [personalDetails, setPersonalDetails] = useState({
+  const [personalDetails, setPersonalDetails] = useState<PersonalDetails>({
     name: '',
     phone: '',
     email: '',
@@ -20,21 +29,21 @@ const Booking = () => {
   const services = [
     {
       id: 1,
-      name: 'STI Testing',
-      duration: '45 min',
-      price: '$50'
+      name: 'STIs Testing',
+      duration: '60 min',
+      price: '$100'
     },
     {
       id: 2,
-      name: 'Consultation',
-      duration: '60 min',
-      price: '$75'
+      name: 'Health Consultation',
+      duration: '30 min',
+      price: '$50'
     },
     {
       id: 3,
-      name: 'Reproductive Health',
-      duration: '60 min',
-      price: '$80'
+      name: 'Reproductive Health Check',
+      duration: '45 min',
+      price: '$75'
     }
   ];
 
@@ -45,6 +54,29 @@ const Booking = () => {
     setPersonalDetails(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleServiceSelect = (serviceId: number) => {
+    setSelectedService(serviceId);
+  };
+
+  const handleSubmit = () => {
+    if (!selectedService || !selectedDate || !selectedTime || !personalDetails.name || !personalDetails.phone) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    const selectedServiceData = services.find(s => s.id === selectedService);
+    if (!selectedServiceData) return;
+
+    navigate('/confirm-booking', {
+      state: {
+        service: selectedServiceData,
+        date: selectedDate,
+        time: selectedTime,
+        personal: personalDetails
+      }
+    });
+  };
+
   useEffect(() => {
     // Set locale for date picker
     const dateInputs = document.querySelectorAll('input[type="date"]');
@@ -53,33 +85,23 @@ const Booking = () => {
     });
   }, []);
 
-  const handleServiceSelect = (serviceId: number) => {
-    setSelectedService(serviceId);
-  };
-
   return (
     <div className="booking-page">
       <div className="booking-container">
-        {/* Header */}
         <header className="booking-header">
-          <h1>Book an Appointment</h1>
-          <p>Schedule your visit to our healthcare center</p>
+          <h1>Schedule an Appointment</h1>
+          <p>Book your consultation with our healthcare professionals</p>
         </header>
 
-        {/* Main Grid */}
         <div className="booking-grid">
-          {/* Left Column: Service & Date/Time */}
-          <section className="booking-sidebar">
-            {/* Select service */}
+          <div className="booking-sidebar">
             <div className="form-section">
               <h3>Select Service</h3>
               <div className="services-grid">
                 {services.map(service => (
                   <div
                     key={service.id}
-                    className={`service-card ${
-                      selectedService === service.id ? 'selected' : ''
-                    }`}
+                    className={`service-card ${selectedService === service.id ? 'selected' : ''}`}
                     onClick={() => handleServiceSelect(service.id)}
                     role="button"
                     tabIndex={0}
@@ -87,9 +109,6 @@ const Booking = () => {
                     <div className="service-info">
                       <div className="service-header">
                         <h4>{service.name}</h4>
-                        {selectedService === service.id && (
-                          <span className="checkmark">✓</span>
-                        )}
                       </div>
                       <div className="service-details">
                         <span className="duration">{service.duration}</span>
@@ -101,24 +120,21 @@ const Booking = () => {
               </div>
             </div>
 
-            {/* Select date and time */}
             <div className="form-section">
               <h3>Select Date & Time</h3>
               <input
                 type="date"
                 value={selectedDate}
-                onChange={e => setSelectedDate(e.target.value)}
-                className="date-picker"
+                onChange={(e) => setSelectedDate(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
-                lang="en-US"
+                className="date-picker"
+                required
               />
               <div className="time-slots">
                 {timeSlots.map(time => (
                   <button
                     key={time}
-                    className={`time-slot ${
-                      selectedTime === time ? 'selected' : ''
-                    }`}
+                    className={`time-slot ${selectedTime === time ? 'selected' : ''}`}
                     onClick={() => setSelectedTime(time)}
                   >
                     {time}
@@ -126,9 +142,8 @@ const Booking = () => {
                 ))}
               </div>
             </div>
-          </section>
+          </div>
 
-          {/* Right Column: Personal Information & Submit */}
           <section className="booking-form">
             <div className="form-section">
               <h3>Personal Information</h3>
@@ -147,7 +162,7 @@ const Booking = () => {
                   />
                 </div>
                 <div className="input-group">
-                  <label htmlFor="phone">Phone</label>
+                  <label htmlFor="phone">Phone Number</label>
                   <input
                     id="phone"
                     type="tel"
@@ -167,19 +182,18 @@ const Booking = () => {
                     name="email"
                     value={personalDetails.email}
                     onChange={handlePersonalDetails}
-                    placeholder="Enter your email address"
-                    required
+                    placeholder="Enter your email"
                     className="form-input"
                   />
                 </div>
                 <div className="input-group full-width">
-                  <label htmlFor="notes">Notes</label>
+                  <label htmlFor="notes">Additional Notes</label>
                   <textarea
                     id="notes"
                     name="notes"
                     value={personalDetails.notes}
                     onChange={handlePersonalDetails}
-                    placeholder="Additional information or special requests"
+                    placeholder="Any specific concerns or requests?"
                     className="form-input notes"
                   />
                 </div>
@@ -188,15 +202,10 @@ const Booking = () => {
 
             <button
               className="booking-submit"
-              disabled={
-                !selectedDate ||
-                !selectedTime ||
-                selectedService === null ||
-                !personalDetails.name ||
-                !personalDetails.phone
-              }
+              onClick={handleSubmit}
+              disabled={!selectedService || !selectedDate || !selectedTime || !personalDetails.name || !personalDetails.phone}
             >
-              Confirm Booking
+              Confirm Appointment
             </button>
           </section>
         </div>

@@ -1,56 +1,62 @@
 // src/pages/Blog/BlogDetail.jsx
 import React from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import './BlogDetail.css';  // You can create this file for styling the detail page
+import { useParams, Link } from 'react-router-dom';
+import './BlogDetail.css';
 
 const BlogDetail = () => {
-  const { id } = useParams();          // Get id from URL
-  const navigate = useNavigate();
+  const { id } = useParams();
 
-  // Demo data (can be replaced with actual API fetch)
+
   const blogPosts = [
     {
       id: '1',
-      title: 'Sex Education for Teenagers',
-      content: 'Reproductive health is a state of complete physical, mental, and social well-being in all aspects of the reproductive system. It encompasses sexual health, fertility, pregnancy, childbirth, family planning, and other related factors.',
-      imageUrl: '/cham-soc-suc-khoe-sinh-san-1-4658.jpg',
-      publishedDate: '05/01/2023',
-      author: 'Dr. John Smith',
+      title: 'Sexual Education for Adolescents',
+      content: [
+        'Understanding effective approaches to sexual education and promoting healthy relationships among young people. This comprehensive guide explores the importance of age-appropriate sexual education and its impact on adolescent development.',
+        'Sexual education plays a crucial role in helping young people make informed decisions about their health and relationships. Through evidence-based approaches and open dialogue, we can create a supportive environment for learning and growth.',
+        'Our program focuses on providing accurate information, fostering healthy attitudes, and developing essential life skills. We believe in creating a safe space for questions and discussions, ensuring that adolescents have the knowledge they need to make responsible choices.'
+      ],
+      imageUrl: '/blog1.jpg',
+      publishedDate: 'March 15, 2024',
+      author: 'Dr. Sarah Johnson'
     },
     {
       id: '2',
       title: 'Understanding Reproductive Health',
-      content: 'Reproductive health is a state of complete physical, mental, and social well-being in all aspects of the reproductive system. It encompasses sexual health, fertility, pregnancy, childbirth, family planning, and other related factors.',
-      imageUrl: '/cham-soc-suc-khoe-sinh-san-1-4658.jpg',
-      publishedDate: '05/01/2023',
-      author: 'Dr. Sarah Johnson',
+      content: [
+        'Essential guide to maintaining reproductive wellness and making informed healthcare decisions. Learn about various aspects of reproductive health and how to take care of your reproductive system.',
+        'Reproductive health encompasses a wide range of topics, from basic anatomy to complex medical conditions. Understanding your body and its needs is the first step toward maintaining optimal reproductive health.',
+        'Regular check-ups, preventive care, and awareness of potential issues are key components of reproductive healthcare. This guide provides comprehensive information to help you make informed decisions about your health.'
+      ],
+      imageUrl: '/blog1.jpg',
+      publishedDate: 'March 14, 2024',
+      author: 'Dr. Michael Chen'
     },
     {
       id: '3',
       title: 'STIs Prevention Guide',
-      content: 'Reproductive health is a state of complete physical, mental, and social well-being in all aspects of the reproductive system. It encompasses sexual health, fertility, pregnancy, childbirth, family planning, and other related factors.',
-      imageUrl: '/cham-soc-suc-khoe-sinh-san-1-4658.jpg',
-      publishedDate: '05/01/2023',
-      author: 'Dr. Michael Brown',
+      content: [
+        'Learn about prevention methods and early detection of sexually transmitted infections. This guide provides comprehensive information about STI prevention, testing, and treatment options.',
+        'Prevention is always better than cure, especially when it comes to STIs. Understanding risk factors, practicing safe behaviors, and getting regular screenings are essential steps in maintaining sexual health.',
+        'We discuss various prevention strategies, testing procedures, and available treatments. Early detection and proper medical care are crucial for managing STIs effectively and preventing their spread.'
+      ],
+      imageUrl: '/blog1.jpg',
+      publishedDate: 'March 13, 2024',
+      author: 'Dr. Emily Wilson'
     }
   ];
 
-  // Find the post by id
-  const post = blogPosts.find(item => item.id === id);
+  const post = blogPosts.find(post => post.id === id);
 
   if (!post) {
-    // If not found, display message and back button
     return (
       <div className="blog-detail-page">
         <div className="blog-detail-container">
-          <h2>Post Not Found</h2>
-          <p>The article you're looking for doesn't exist or has been removed.</p>
-          <button 
-            className="back-btn" 
-            onClick={() => navigate(-1)}
-          >
-            Back to List
-          </button>
+          <h2>Article not found</h2>
+          <p>The article you're looking for doesn't exist.</p>
+          <Link to="/blog" className="back-btn">
+            Back to Blog
+          </Link>
         </div>
       </div>
     );
@@ -59,35 +65,28 @@ const BlogDetail = () => {
   return (
     <div className="blog-detail-page">
       <div className="blog-detail-container">
-        {/* Back to list button */}
         <div className="detail-nav">
           <Link to="/blog" className="back-link">
-            ← Back
+            ← Back to Blog
           </Link>
         </div>
 
-        {/* Title and metadata */}
         <header className="detail-header">
           <h1 className="detail-title">{post.title}</h1>
           <div className="detail-meta">
-            <span className="detail-author">
-              {post.author}
-            </span>
+            <span className="detail-author">{post.author}</span>
             <span className="detail-date">{post.publishedDate}</span>
           </div>
         </header>
 
-        {/* Featured image if available */}
-        {post.imageUrl && (
-          <div className="detail-image">
-            <img src={post.imageUrl} alt={post.title} />
-          </div>
-        )}
+        <div className="detail-image">
+          <img src={post.imageUrl} alt={post.title} />
+        </div>
 
-        {/* Detailed content */}
         <article className="detail-content">
-          {/* If the content is long, you might want to split into multiple <p> tags */}
-          <p>{post.content}</p>
+          {post.content.map((paragraph, index) => (
+            <p key={index}>{paragraph}</p>
+          ))}
         </article>
       </div>
     </div>
