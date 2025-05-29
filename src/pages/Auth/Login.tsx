@@ -20,7 +20,22 @@ const Login = () => {
       localStorage.setItem('userRole', 'admin');
       localStorage.setItem('user', JSON.stringify({ email, role: 'admin' }));
       navigate('/admin'); // Redirect to admin dashboard
-    } else if (email && password) {
+    } else if (email === 'user@example.com' && password === 'user123') {
+      // User login success
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userRole', 'user');
+      localStorage.setItem('user', JSON.stringify({ 
+        email, 
+        role: 'user',
+        name: 'User Demo',
+        phone: '0123 456 789',
+        dob: '01/01/2000',
+        address: 'Hà Nội'
+      }));
+      navigate('/'); // Redirect to home page
+      window.location.reload();
+    } 
+    else if (email && password) {
       // Regular user login - simple validation for demo
       localStorage.setItem('isLoggedIn', 'true');
       localStorage.setItem('userRole', 'user');
@@ -93,7 +108,7 @@ const Login = () => {
 
       <div className="auth-note">
         <p className="text-sm text-white">
-          Use <strong>admin@example.com</strong> / <strong>admin123</strong> to access admin privileges
+          Use <strong>role@example.com</strong> / <strong>rolerole123</strong> to access each role privileges
         </p>
       </div>
     </div>

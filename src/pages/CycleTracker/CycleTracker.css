@@ -1,9 +1,9 @@
 .calendar-wrapper {
   display: flex;
   justify-content: center;
-  margin-bottom: 32px;
+  margin-bottom: 64px; /* tăng khoảng cách với footer */
   /* Giảm scale để không đè footer, tăng chiều cao */
-  transform: scale(1.18);
+  transform: scale(1.05); /* giảm scale để tránh chèn lên footer */
   transform-origin: top center;
 }
 

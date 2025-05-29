@@ -11,6 +11,7 @@ import Booking from './pages/Booking/Booking';
 import Blog from './pages/Blog/Blog';
 import BlogDetail from './pages/Blog/BlogDetail';
 import CycleTracker from './pages/CycleTracker/CycleTracker';
+import Profile from './pages/Profile/Profile';
 
 // Admin pages
 import Dashboard from './pages/Admin/Dashboard';
@@ -22,9 +23,15 @@ import AdminBlog from './pages/Admin/Blog';
 import Reports from './pages/Admin/Reports';
 
 // Admin route wrapper component
-const AdminRoute = ({ children }: { children: JSX.Element }) => {
+import type { ReactNode } from 'react';
+
+type AdminRouteProps = {
+  children: ReactNode;
+};
+
+const AdminRoute = ({ children }: AdminRouteProps) => {
   const isAdmin = localStorage.getItem('userRole') === 'admin';
-  return isAdmin ? children : <Navigate to="/auth/login" replace />;
+  return isAdmin ? <>{children}</> : <Navigate to="/auth/login" replace />;
 };
 
 function App() {
@@ -41,6 +48,7 @@ function App() {
           <Route path="blog" element={<Blog />} />
           <Route path="/blog/:id" element={<BlogDetail />} />
           <Route path="CycleTracker" element={<CycleTracker />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
 
         {/* Route dành cho admin */}
