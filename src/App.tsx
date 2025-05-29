@@ -10,7 +10,7 @@ import Booking from './pages/Booking/Booking';
 import Blog from './pages/Blog/Blog';
 import BlogDetail from './pages/Blog/BlogDetail';
 import ConfirmBooking from './pages/Booking/ConfirmBooking';
-import ConfirmBooking from './pages/Booking/ConfirmBooking';
+
 
 function App() {
   return (
