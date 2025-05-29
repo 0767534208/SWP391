@@ -1,26 +1,23 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import './Blog.css';
 
 const Blog = () => {
-  const { t } = useTranslation();
-
   const blogPosts = [
     {
       id: 1,
-      title: t('blog.sexualEducation.title'),
-      description: t('blog.sexualEducation.description'),
+      title: 'Sexual Education for Adolescents',
+      description: 'Understanding effective approaches to sexual education and promoting healthy relationships among young people.',
     },
     {
       id: 2,
-      title: t('blog.reproductiveHealth.title'),
-      description: t('blog.reproductiveHealth.description'),
+      title: 'Understanding Reproductive Health',
+      description: 'Essential guide to maintaining reproductive wellness and making informed healthcare decisions.',
     },
     {
       id: 3,
-      title: t('blog.stisPrevention.title'),
-      description: t('blog.stisPrevention.description'),
+      title: 'STIs Prevention Guide',
+      description: 'Learn about prevention methods and early detection of sexually transmitted infections.',
     }
   ];
 
@@ -28,7 +25,7 @@ const Blog = () => {
     <div className="blog-page">
       <div className="blog-container">
         <header className="blog-header">
-          <h1 className="blog-title">{t('blog.title')}</h1>
+          <h1 className="blog-title">Health & Wellness Blog</h1>
         </header>
 
         <div className="blog-grid">
@@ -39,7 +36,7 @@ const Blog = () => {
                 <p className="card-description">{post.description}</p>
               </div>
               <Link to={`/blog/${post.id}`} className="read-more-btn">
-                {t('blog.readMore')}
+                Read More
                 <span className="btn-arrow">→</span>
               </Link>
             </article>

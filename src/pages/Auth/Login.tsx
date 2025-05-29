@@ -1,38 +1,35 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import './Auth.css';
 
 const Login = () => {
-  const { t } = useTranslation();
-
   return (
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-heading">
-          <h2>{t('auth.signIn')}</h2>
-          <p>{t('auth.pleaseSignIn')}</p>
+          <h2>Sign In</h2>
+          <p>Please sign in to continue</p>
         </div>
         
         <form className="auth-form">
           <div className="form-group">
-            <label htmlFor="login-email">{t('auth.email')}</label>
+            <label htmlFor="login-email">Email</label>
             <input 
               id="login-email"
               type="email" 
               className="form-input"
-              placeholder={t('auth.enterEmail')} 
+              placeholder="Enter your email" 
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="login-password">{t('auth.password')}</label>
+            <label htmlFor="login-password">Password</label>
             <input 
               id="login-password"
               type="password" 
               className="form-input"
-              placeholder={t('auth.enterPassword')} 
+              placeholder="Enter your password" 
               required
             />
           </div>
@@ -40,20 +37,20 @@ const Login = () => {
           <div className="form-options">
             <label className="remember-me">
               <input type="checkbox" />
-              <span>{t('auth.rememberMe')}</span>
+              <span>Remember me</span>
             </label>
-            <a href="#" className="forgot-password">{t('auth.forgotPassword')}</a>
+            <a href="#" className="forgot-password">Forgot Password?</a>
           </div>
 
           <button type="submit" className="auth-submit">
-            {t('auth.signIn')}
+            Sign In
           </button>
 
           <div className="auth-switch">
             <p>
-              {t('auth.noAccount')}{' '}
+              Don't have an account?{' '}
               <Link to="/auth/register" className="switch-link">
-                {t('auth.createAccount')}
+                Create Account
               </Link>
             </p>
           </div>

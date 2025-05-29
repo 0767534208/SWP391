@@ -1,58 +1,62 @@
 // src/pages/Blog/BlogDetail.jsx
 import React from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import './BlogDetail.css';  // Bạn có thể tạo file này để style riêng cho detail
+import { useParams, Link } from 'react-router-dom';
+import './BlogDetail.css';
 
 const BlogDetail = () => {
-  const { t } = useTranslation();
-  const { id } = useParams();          // Lấy id từ URL
-  const navigate = useNavigate();
+  const { id } = useParams();
 
-  // Dữ liệu demo (có thể thay bằng fetch API thực tế)
+
   const blogPosts = [
     {
       id: '1',
-      title: t('blog.sexualEducation.title'),
-      content: t('Sức khỏe sinh sản (SKSS) là trạng thái khỏe mạnh về thể chất, tinh thần và xã hội liên quan đến mọi khía cạnh của hệ thống sinh sản. Nó bao gồm sức khỏe tình dục, khả năng sinh sản, việc mang thai, sinh con, kế hoạch hóa gia đình và các yếu tố liên quan khác'),
-      imageUrl: '/cham-soc-suc-khoe-sinh-san-1-4658.jpg',
-      publishedDate: t('1/5/2003'),
-      author: t('Huy'),
+      title: 'Sexual Education for Adolescents',
+      content: [
+        'Understanding effective approaches to sexual education and promoting healthy relationships among young people. This comprehensive guide explores the importance of age-appropriate sexual education and its impact on adolescent development.',
+        'Sexual education plays a crucial role in helping young people make informed decisions about their health and relationships. Through evidence-based approaches and open dialogue, we can create a supportive environment for learning and growth.',
+        'Our program focuses on providing accurate information, fostering healthy attitudes, and developing essential life skills. We believe in creating a safe space for questions and discussions, ensuring that adolescents have the knowledge they need to make responsible choices.'
+      ],
+      imageUrl: '/blog1.jpg',
+      publishedDate: 'March 15, 2024',
+      author: 'Dr. Sarah Johnson'
     },
     {
       id: '2',
-      title: t('blog.reproductiveHealth.title'),
-      content: t('Sức khỏe sinh sản (SKSS) là trạng thái khỏe mạnh về thể chất, tinh thần và xã hội liên quan đến mọi khía cạnh của hệ thống sinh sản. Nó bao gồm sức khỏe tình dục, khả năng sinh sản, việc mang thai, sinh con, kế hoạch hóa gia đình và các yếu tố liên quan khác'),
-      imageUrl: '/cham-soc-suc-khoe-sinh-san-1-4658.jpg',
-      publishedDate: t('1/5/2003'),
-      author: t('Luân'),
+      title: 'Understanding Reproductive Health',
+      content: [
+        'Essential guide to maintaining reproductive wellness and making informed healthcare decisions. Learn about various aspects of reproductive health and how to take care of your reproductive system.',
+        'Reproductive health encompasses a wide range of topics, from basic anatomy to complex medical conditions. Understanding your body and its needs is the first step toward maintaining optimal reproductive health.',
+        'Regular check-ups, preventive care, and awareness of potential issues are key components of reproductive healthcare. This guide provides comprehensive information to help you make informed decisions about your health.'
+      ],
+      imageUrl: '/blog1.jpg',
+      publishedDate: 'March 14, 2024',
+      author: 'Dr. Michael Chen'
     },
     {
       id: '3',
-      title: t('blog.stisPrevention.title'),
-      content: t('Sức khỏe sinh sản (SKSS) là trạng thái khỏe mạnh về thể chất, tinh thần và xã hội liên quan đến mọi khía cạnh của hệ thống sinh sản. Nó bao gồm sức khỏe tình dục, khả năng sinh sản, việc mang thai, sinh con, kế hoạch hóa gia đình và các yếu tố liên quan khác'),
-      imageUrl: '/cham-soc-suc-khoe-sinh-san-1-4658.jpg',
-      publishedDate: t('1/5/2003'),
-      author: t('Quốc'),
+      title: 'STIs Prevention Guide',
+      content: [
+        'Learn about prevention methods and early detection of sexually transmitted infections. This guide provides comprehensive information about STI prevention, testing, and treatment options.',
+        'Prevention is always better than cure, especially when it comes to STIs. Understanding risk factors, practicing safe behaviors, and getting regular screenings are essential steps in maintaining sexual health.',
+        'We discuss various prevention strategies, testing procedures, and available treatments. Early detection and proper medical care are crucial for managing STIs effectively and preventing their spread.'
+      ],
+      imageUrl: '/blog1.jpg',
+      publishedDate: 'March 13, 2024',
+      author: 'Dr. Emily Wilson'
     }
   ];
 
-  // Tìm bài viết theo id
-  const post = blogPosts.find(item => item.id === id);
+  const post = blogPosts.find(post => post.id === id);
 
   if (!post) {
-    // Nếu không tìm thấy, hiển thị thông báo và nút quay lại
     return (
       <div className="blog-detail-page">
         <div className="blog-detail-container">
-          <h2>{t('blog.notFoundTitle')}</h2>
-          <p>{t('blog.notFoundMessage')}</p>
-          <button 
-            className="back-btn" 
-            onClick={() => navigate(-1)}
-          >
-            {t('blog.backToList')}
-          </button>
+          <h2>Article not found</h2>
+          <p>The article you're looking for doesn't exist.</p>
+          <Link to="/blog" className="back-btn">
+            Back to Blog
+          </Link>
         </div>
       </div>
     );
@@ -61,36 +65,28 @@ const BlogDetail = () => {
   return (
     <div className="blog-detail-page">
       <div className="blog-detail-container">
-        {/* Nút quay về danh sách */}
         <div className="detail-nav">
           <Link to="/blog" className="back-link">
-            ← {t('Quay lại')}
+            ← Back to Blog
           </Link>
         </div>
 
-        {/* Tiêu đề và metadata */}
         <header className="detail-header">
           <h1 className="detail-title">{post.title}</h1>
           <div className="detail-meta">
-            <span className="detail-author">
-              {/* {t('blog.by')} {post.author} */}
-              {post.author}
-            </span>
+            <span className="detail-author">{post.author}</span>
             <span className="detail-date">{post.publishedDate}</span>
           </div>
         </header>
 
-        {/* Ảnh minh họa nếu có */}
-        {post.imageUrl && (
-          <div className="detail-image">
-            <img src={post.imageUrl} alt={post.title} />
-          </div>
-        )}
+        <div className="detail-image">
+          <img src={post.imageUrl} alt={post.title} />
+        </div>
 
-        {/* Nội dung chi tiết */}
         <article className="detail-content">
-          {/* Nếu nội dung dài, bạn có thể chia nhiều <p> */}
-          <p>{post.content}</p>
+          {post.content.map((paragraph, index) => (
+            <p key={index}>{paragraph}</p>
+          ))}
         </article>
       </div>
     </div>

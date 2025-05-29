@@ -1,6 +1,4 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { I18nextProvider } from 'react-i18next';
-import i18n from './i18n/i18n';
 import './index.css';
 import './App.css';
 
@@ -11,26 +9,26 @@ import Register from './pages/Auth/Register';
 import Booking from './pages/Booking/Booking';
 import Blog from './pages/Blog/Blog';
 import BlogDetail from './pages/Blog/BlogDetail';
+import ConfirmBooking from './pages/Booking/ConfirmBooking';
 
 function App() {
   return (
-    <I18nextProvider i18n={i18n}>
-      <Router>
-        <Routes>
-          {/* Route dành cho người dùng */}
-          <Route path="/" element={<UserLayout />}>
-            <Route index element={<Home />} />
-            <Route path="auth/login" element={<Login />} />
-            <Route path="auth/register" element={<Register />} />
-            <Route path="booking" element={<Booking />} />
-            <Route path="blog" element={<Blog />} />
-            <Route path="/blog/:id" element={<BlogDetail />} />
-          </Route>
+    <Router>
+      <Routes>
+        {/* Route dành cho người dùng */}
+        <Route path="/" element={<UserLayout />}>
+          <Route index element={<Home />} />
+          <Route path="auth/login" element={<Login />} />
+          <Route path="auth/register" element={<Register />} />
+          <Route path="booking" element={<Booking />} />
+          <Route path="blog" element={<Blog />} />
+          <Route path="/blog/:id" element={<BlogDetail />} />
+          <Route path="/confirm-booking" element={<ConfirmBooking />} />
+        </Route>
 
-          {/* Route dành cho admin */}
-        </Routes>
-      </Router>
-    </I18nextProvider>
+        {/* Route dành cho admin */}
+      </Routes>
+    </Router>
   );
 }
 
