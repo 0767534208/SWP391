@@ -47,22 +47,22 @@ const Login = () => {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-container">
-        <div className="auth-heading">
+    <div className="login-page">
+      <div className="login-container">
+        <div className="login-header">
           <h2>Login</h2>
           <p>Please login to continue</p>
         </div>
         
-        <form className="auth-form" onSubmit={handleSubmit}>
-          {error && <div className="error-message">{error}</div>}
+        <form className="login-form" onSubmit={handleSubmit}>
+          {error && <div className="login-error">{error}</div>}
           
-          <div className="form-group">
+          <div className="login-form-group">
             <label htmlFor="login-email">Email</label>
             <input 
               id="login-email"
               type="email" 
-              className="form-input"
+              className="login-input"
               placeholder="Enter your email" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -70,12 +70,12 @@ const Login = () => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="login-form-group">
             <label htmlFor="login-password">Password</label>
             <input 
               id="login-password"
               type="password" 
-              className="form-input"
+              className="login-input"
               placeholder="Enter your password" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -83,22 +83,22 @@ const Login = () => {
             />
           </div>
 
-          <div className="form-options">
-            <label className="remember-me">
+          <div className="login-options">
+            <label className="login-remember">
               <input type="checkbox" />
               <span>Remember me</span>
             </label>
-            <a href="#" className="forgot-password">Forgot password?</a>
+            <a href="#" className="login-forgot">Forgot password?</a>
           </div>
 
-          <button type="submit" className="auth-submit">
+          <button type="submit" className="login-submit">
             Login
           </button>
 
-          <div className="auth-switch">
+          <div className="login-footer">
             <p>
               Don't have an account?{' '}
-              <Link to="/auth/register" className="switch-link">
+              <Link to="/auth/register" className="login-link">
                 Create account
               </Link>
             </p>
@@ -106,8 +106,8 @@ const Login = () => {
         </form>
       </div>
 
-      <div className="auth-note">
-        <p className="text-sm text-white">
+      <div className="login-note">
+        <p>
           Use <strong>role@example.com</strong> / <strong>rolerole123</strong> to access each role privileges
         </p>
       </div>

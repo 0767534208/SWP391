@@ -1,3 +1,4 @@
+/* Common Variables */
 :root {
   --primary-color: #4f46e5;        
   --secondary-color: #6366f1;      
@@ -9,228 +10,292 @@
   --selected-color: #4338ca;       
 }
 
-.auth-page {
-  min-height: calc(100vh - 120px); /* Subtract approximate navbar and footer height */
+/* Register Styles */
+.register-page {
+  min-height: 100vh;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
   padding: 2rem;
-  margin: 0 auto;
-  flex: 1;
 }
 
-.auth-container {
+.register-container {
   background: var(--background-color);
-  padding: 2.5rem 2rem;
-  border-radius: 16px;
+  padding: 2.5rem;
+  border-radius: 12px;
   width: 100%;
-  max-width: 500px; /* Tăng từ 380px lên 500px */
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
-  margin: 0 auto; /* Center horizontally */
+  max-width: 450px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.auth-container:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.15);
-}
-
-/* Heading */
-.auth-heading {
+.register-header {
   text-align: center;
   margin-bottom: 2rem;
 }
 
-.auth-heading h2 {
-  font-size: 1.875rem; /* 30px */
+.register-header h2 {
+  font-size: 1.875rem;
   color: var(--text-color);
   margin-bottom: 0.5rem;
+  font-weight: 600;
 }
 
-.auth-heading p {
-  font-size: 0.95rem;
+.register-header p {
+  font-size: 1rem;
   color: var(--text-light);
 }
 
-/* Form */
-.auth-form {
+.register-form {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
-  margin-top: 0.5rem;
+  gap: 1.25rem;
 }
 
-.form-group {
+.register-form-group {
   display: flex;
   flex-direction: column;
+  gap: 0.5rem;
 }
 
-.form-group label {
-  font-size: 0.9rem;
-  font-weight: 600;
-  margin-bottom: 0.4rem;
+.register-form-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
   color: var(--text-color);
 }
 
-.form-input {
+.register-input {
   width: 100%;
   padding: 0.75rem 1rem;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
   color: var(--text-color);
-  background-color: var(--background-color);
   transition: all 0.2s ease;
 }
 
-.form-input::placeholder {
+.register-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.register-submit {
+  margin-top: 0.5rem;
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.register-submit:hover {
+  background-color: var(--selected-color);
+}
+
+.register-footer {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.875rem;
   color: var(--text-light);
 }
 
-.form-input:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+.register-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
 }
 
+.register-link:hover {
+  color: var(--selected-color);
+  text-decoration: underline;
+}
 
-.form-options {
+/* Login Styles */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  padding: 2rem;
+}
+
+.login-container {
+  background: var(--background-color);
+  padding: 2.5rem;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 450px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.login-header h2 {
+  font-size: 1.875rem;
+  color: var(--text-color);
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.login-header p {
+  font-size: 1rem;
+  color: var(--text-light);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.login-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.login-form-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.login-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: var(--text-color);
+  transition: all 0.2s ease;
+}
+
+.login-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.login-options {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 0.5rem;
 }
 
-.remember-me {
+.login-remember {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   color: var(--text-color);
-  position: relative;
 }
 
-.remember-me input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  margin: 0;
-  cursor: pointer;
-  border: 2px solid var(--border-color);
+.login-remember input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
-  background-color: var(--background-color);
-  position: relative;
 }
 
-.remember-me input[type="checkbox"]:checked {
-  background-color: var(--selected-color);
-  border-color: var(--selected-color);
-}
-
-.remember-me input[type="checkbox"]:checked::after {
-  content: '✓';
-  position: absolute;
-  color: #ffffff;
-  font-size: 12px;
-  left: 2px;
-  top: -2px;
-}
-
-.forgot-password {
-  font-size: 0.9rem;
+.login-forgot {
+  font-size: 0.875rem;
   color: var(--primary-color);
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
-.forgot-password:hover {
-  color: var(--accent-color);
+.login-forgot:hover {
+  color: var(--selected-color);
+  text-decoration: underline;
 }
 
-/* Button */
-.auth-submit {
-  margin-top: 1rem;
+.login-submit {
+  margin-top: 0.5rem;
   width: 100%;
-  padding: 0.9rem;
-  font-size: 1rem;
-  font-weight: 600;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
   background-color: var(--primary-color);
-  color: #ffffff;
+  color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
-.auth-submit:hover {
+.login-submit:hover {
   background-color: var(--selected-color);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.auth-switch {
+.login-footer {
   margin-top: 1.5rem;
   text-align: center;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   color: var(--text-light);
 }
 
-.auth-switch p {
-  margin: 0;
-}
-
-.switch-link {
+.login-link {
   color: var(--primary-color);
   text-decoration: none;
-  font-weight: 600;
+  font-weight: 500;
   transition: color 0.2s ease;
 }
 
-.switch-link:hover {
-  color: var(--accent-color);
+.login-link:hover {
+  color: var(--selected-color);
+  text-decoration: underline;
 }
 
-@media screen and (max-width: 600px) {
-  .auth-container {
-    padding: 2rem 1.5rem;
-    max-width: 90%; /* Giữ responsive trên màn hình nhỏ */
-  }
-
-  .auth-heading h2 {
-    font-size: 1.75rem;
-  }
-
-  .auth-heading p {
-    font-size: 0.9rem;
-  }
-
-  .form-group label {
-    font-size: 0.85rem;
-  }
-
-  .form-input {
-    padding: 0.65rem 0.9rem;
-    font-size: 0.95rem;
-  }
-
-  .auth-submit {
-    padding: 0.85rem;
-    font-size: 0.95rem;
-  }
+.login-error {
+  background-color: #fee2e2;
+  border: 1px solid #ef4444;
+  color: #b91c1c;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
 }
 
-.error-message {
-  background-color: #ffe8e8;
-  color: #d32f2f;
-  padding: 12px;
-  border-radius: 4px;
-  margin-bottom: 16px;
-  border-left: 4px solid #d32f2f;
-  font-size: 14px;
-}
-
-.auth-note {
-  max-width: 400px;
-  margin: 1rem auto 0;
+.login-note {
+  margin-top: 1.5rem;
   text-align: center;
+  color: white;
+  font-size: 0.875rem;
+}
+
+/* Responsive Styles */
+@media screen and (max-width: 480px) {
+  .register-container,
+  .login-container {
+    padding: 1.5rem;
+  }
+
+  .register-header h2,
+  .login-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .register-header p,
+  .login-header p {
+    font-size: 0.875rem;
+  }
+
+  .register-input,
+  .login-input,
+  .register-submit,
+  .login-submit {
+    padding: 0.625rem 0.875rem;
+  }
 }
