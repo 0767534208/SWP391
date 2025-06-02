@@ -1,4 +1,3 @@
-// src/pages/Blog/BlogDetail.jsx
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import './BlogDetail.css';
