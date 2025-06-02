@@ -85,7 +85,7 @@ const Navbar = () => {
                   </div>
                 )}
               </li>
-              <li><Link to="/blog" className="nav-link">Bài viết</Link></li>
+              <li><Link to="/blogUser" className="nav-link">Bài viết</Link></li>
               <li><Link to="/contact" className="nav-link">Liên hệ</Link></li>
             </ul>
             <div className="nav-right" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
