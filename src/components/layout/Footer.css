@@ -4,6 +4,8 @@
   padding: 4rem 0 0;
   font-family: 'Inter', sans-serif;
   width: 100%;
+  position: relative;
+  z-index: 30; /* Higher z-index to ensure it's above calendar */
 }
 
 .footer-container {

@@ -1,0 +1,23 @@
+.calendar-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 64px; /* tăng khoảng cách với footer */
+  /* Giảm scale để không đè footer, tăng chiều cao */
+  transform: scale(1.05); /* giảm scale để tránh chèn lên footer */
+  transform-origin: top center;
+}
+
+.large-calendar {
+  width: 500px; /* mở rộng bề ngang */
+  font-size: 1.13rem;
+}
+
+.large-calendar .react-calendar__tile {
+  height: 56px !important; /* tăng chiều cao cho lịch dài ra */
+  font-size: 1.08rem;
+}
+
+.large-calendar .react-calendar__navigation button {
+  font-size: 1.13rem;
+  padding: 10px 0;
+}
