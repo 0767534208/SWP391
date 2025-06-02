@@ -1,11 +1,33 @@
 import React, { useEffect, useState } from 'react';
-import { FaUserCircle, FaCheckCircle, FaTimesCircle, FaClock, FaEnvelope, FaPhone, FaBirthdayCake, FaMapMarkerAlt, FaUser } from 'react-icons/fa';
+import { FaUserCircle, FaCheckCircle, FaTimesCircle, FaClock, FaEnvelope, FaPhone, FaBirthdayCake, FaMapMarkerAlt, FaUser, FaFileAlt } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 const mockBookings = [
-  { id: 1, date: '01/06/2024', time: '09:00', service: 'Xét nghiệm STI', status: 'Đã xác nhận' },
-  { id: 2, date: '10/06/2024', time: '14:00', service: 'Tư vấn sức khỏe', status: 'Đã hủy' },
-  { id: 3, date: '30/05/2025', time: '10:00', service: 'Khám sức khỏe sinh sản', status: 'Đang chờ' },
+  { 
+    id: 1, 
+    date: '01/06/2024', 
+    time: '09:00', 
+    service: 'Xét nghiệm STI', 
+    status: 'Đã xác nhận',
+    hasResults: true,
+    resultId: '123456'
+  },
+  { 
+    id: 2, 
+    date: '10/06/2024', 
+    time: '14:00', 
+    service: 'Tư vấn sức khỏe', 
+    status: 'Đã hủy',
+    hasResults: false
+  },
+  { 
+    id: 3, 
+    date: '30/05/2025', 
+    time: '10:00', 
+    service: 'Khám sức khỏe sinh sản', 
+    status: 'Đang chờ',
+    hasResults: false
+  },
 ];
 
 const statusColor = (status: string) => {
@@ -172,6 +194,7 @@ const Profile = () => {
                   <th style={{ padding: 16, border: '1px solid #eee', fontWeight: 700, fontSize: 16 }}>Giờ</th>
                   <th style={{ padding: 16, border: '1px solid #eee', fontWeight: 700, fontSize: 16 }}>Dịch vụ</th>
                   <th style={{ padding: 16, border: '1px solid #eee', fontWeight: 700, fontSize: 16 }}>Trạng thái</th>
+                  <th style={{ padding: 16, border: '1px solid #eee', fontWeight: 700, fontSize: 16 }}>Kết quả</th>
                 </tr>
               </thead>
               <tbody>
@@ -182,6 +205,34 @@ const Profile = () => {
                     <td style={{ padding: 16, border: '1px solid #eee', fontSize: 16 }}>{b.service}</td>
                     <td style={{ padding: 16, border: '1px solid #eee', color: statusColor(b.status), fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, fontSize: 16 }}>
                       {statusIcon(b.status)}{b.status}
+                    </td>
+                    <td style={{ padding: 16, border: '1px solid #eee', fontSize: 16, textAlign: 'center' }}>
+                      {b.hasResults && b.service === 'Xét nghiệm STI' ? (
+                        <Link 
+                          to={`/test-results/${b.resultId}`}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            background: '#4f46e5',
+                            color: 'white',
+                            padding: '8px 16px',
+                            borderRadius: 8,
+                            textDecoration: 'none',
+                            fontWeight: 600,
+                            fontSize: 14,
+                            transition: 'background 0.2s'
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.background = '#4338ca'}
+                          onMouseOut={(e) => e.currentTarget.style.background = '#4f46e5'}
+                        >
+                          <FaFileAlt /> Xem kết quả
+                        </Link>
+                      ) : (
+                        <span style={{ color: '#6b7280', fontStyle: 'italic' }}>
+                          {b.status === 'Đã hủy' ? 'Không có' : 'Chưa có'}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}
