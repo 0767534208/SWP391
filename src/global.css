@@ -1,0 +1,33 @@
+/* Global CSS for consistent page behavior */
+
+/* Ensure all pages have proper scrolling */
+html, body {
+  height: 100%;
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+/* Prevent content from being hidden under fixed elements */
+main {
+  position: relative;
+  z-index: 1;
+}
+
+/* Add consistent padding to page content sections */
+.page-content {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+/* Ensure content takes up at least a full viewport height
+   minus the header to prevent the footer from appearing early */
+.page-content-min-height {
+  min-height: calc(100vh - 80px); /* Adjust based on your header height */
+}
+
+/* For mobile devices */
+@media (max-width: 768px) {
+  .page-content-min-height {
+    min-height: calc(100vh - 60px); /* Adjust if mobile header height differs */
+  }
+} 

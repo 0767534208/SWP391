@@ -6,66 +6,91 @@ const Home = () => {
   return (
     <main className="home-main">
       <section className="hero-section">
-        <h1>Comprehensive Reproductive Healthcare</h1>
-        <p>Your trusted partner in sexual and reproductive health</p>
-        <div className="hero-buttons">
-          <Link to="/booking" className="cta-button">Book Appointment</Link>
-          <button className="cta-button secondary">STIs Testing</button>
+        <div className="hero-image-container">
+          <img src="/healthcare.png" alt="Dịch vụ y tế" className="hero-background-image" />
+        </div>
+        <div className="hero-content">
+          <h1>Chăm Sóc Sức Khỏe Sinh Sản Toàn Diện</h1>
+          <p>Đối tác tin cậy của bạn trong sức khỏe sinh sản và tình dục</p>
         </div>
       </section>
 
-      <section className="features-section">
-        <h2>Our Services</h2>
+      <section className="features-section" id="services">
+        <h2>Các dịch vụ y tế</h2>
+        <div className="service-intro">
+          <p>Chúng tôi cung cấp các dịch vụ chăm sóc sức khỏe sinh sản toàn diện với đội ngũ y bác sĩ chuyên nghiệp và trang thiết bị hiện đại.</p>
+        </div>
         <div className="features-grid">
-          <Link to="/cycleTracker" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <div className="feature-card service-card">
-              <h3>Cycle Tracker</h3>
-              <p>Track your menstrual cycle and predict ovulation periods</p>
+          <div className="feature-card service-card">
+            <h3>Xét nghiệm STI</h3>
+            <p>Dịch vụ xét nghiệm toàn diện cho các bệnh lây truyền qua đường tình dục</p>
+            <div className="service-details">
+              <span className="duration">45 phút</span>
+              <span className="price">1.200.000 VND</span>
             </div>
-          </Link>
-          <div className="feature-card">
-            <h3>Online Consultation</h3>
-            <p>Access healthcare professionals 24/7</p>
+            <Link to="/booking" className="service-link">Đặt lịch ngay</Link>
           </div>
-          <div className="feature-card">
-            <h3>STIs Testing</h3>
-            <p>Comprehensive testing services for sexually transmitted infections</p>
+          <div className="feature-card service-card">
+            <h3>Tư vấn sức khỏe</h3>
+            <p>Tư vấn trực tiếp với bác sĩ chuyên khoa về các vấn đề sức khỏe sinh sản</p>
+            <div className="service-details">
+              <span className="duration">60 phút</span>
+              <span className="price">800.000 VND</span>
+            </div>
+            <Link to="/booking" className="service-link">Đặt lịch ngay</Link>
           </div>
-          <div className="feature-card">
-            <h3>Health Counseling</h3>
-            <p>Expert guidance on reproductive health issues</p>
+          <div className="feature-card service-card">
+            <h3>Sức khỏe sinh sản</h3>
+            <p>Khám và tư vấn toàn diện về sức khỏe sinh sản và kế hoạch hóa gia đình</p>
+            <div className="service-details">
+              <span className="duration">60 phút</span>
+              <span className="price">900.000 VND</span>
+            </div>
+            <Link to="/booking" className="service-link">Đặt lịch ngay</Link>
+          </div>
+          <div className="feature-card service-card">
+            <h3>Theo dõi chu kỳ</h3>
+            <p>Công cụ theo dõi chu kỳ kinh nguyệt và dự đoán thời kỳ rụng trứng</p>
+            <div className="service-details">
+              <span className="service-type">Công cụ trực tuyến</span>
+              <span className="price">Miễn phí</span>
+            </div>
+            <Link to="/cycletracker" className="service-link">Sử dụng ngay</Link>
           </div>
         </div>
       </section>
 
       <section className="blog-preview">
-        <h2>Latest Articles</h2>
+        <h2>Bài viết mới nhất</h2>
         <div className="blog-grid">
           <div className="blog-card">
-            <img src="/blog-1.png" alt="Sex Education for Teenagers" />
-            <h3>Sex Education for Teenagers</h3>
-            <p>Understanding effective approaches to sex education...</p>
+            <img src="/blog-1.png" alt="Giáo dục giới tính cho thanh thiếu niên" />
+            <h3>Giáo dục giới tính cho thanh thiếu niên</h3>
+            <p>Tìm hiểu các phương pháp hiệu quả trong giáo dục giới tính và xây dựng mối quan hệ lành mạnh cho giới trẻ.</p>
+            <Link to="/blog/1" className="blog-link">Xem thêm</Link>
           </div>
           <div className="blog-card">
-            <img src="/blog-2.png" alt="Understanding Reproductive Health" />
-            <h3>Understanding Reproductive Health</h3>
-            <p>Essential guide to maintaining reproductive health and making informed healthcare decisions...</p>
+            <img src="/blog-2.png" alt="Hiểu về sức khỏe sinh sản" />
+            <h3>Hiểu về sức khỏe sinh sản</h3>
+            <p>Hướng dẫn cần thiết để duy trì sức khỏe sinh sản và đưa ra quyết định chăm sóc sức khỏe đúng đắn.</p>
+            <Link to="/blog/2" className="blog-link">Xem thêm</Link>
           </div>
           <div className="blog-card">
-            <img src="/blog-3.png" alt="STIs Prevention Guide" />
-            <h3>STIs Prevention Guide</h3>
-            <p>Learn about prevention methods and early detection of sexually transmitted infections...</p>
+            <img src="/blog-3.png" alt="Hướng dẫn phòng ngừa STI" />
+            <h3>Hướng dẫn phòng ngừa STI</h3>
+            <p>Tìm hiểu về các phương pháp phòng ngừa và phát hiện sớm các bệnh lây truyền qua đường tình dục.</p>
+            <Link to="/blog/3" className="blog-link">Xem thêm</Link>
           </div>
         </div>
       </section>
 
       <section className="tools-section">
-        <h2>Useful Tools</h2>
+        <h2>Công cụ hữu ích</h2>
         <div className="tools-grid">
-          <button className="tool-button">Ovulation Calculator</button>
-          <button className="tool-button">Ask a Question</button>
-          <button className="tool-button">Consultation History</button>
-          <button className="tool-button">Test Results</button>
+          <button className="tool-button">Tính ngày rụng trứng</button>
+          <button className="tool-button">Đặt câu hỏi</button>
+          <button className="tool-button">Lịch sử tư vấn</button>
+          <button className="tool-button">Kết quả xét nghiệm</button>
         </div>
       </section>
     </main>

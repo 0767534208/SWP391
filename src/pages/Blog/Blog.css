@@ -15,7 +15,8 @@
    ------------------------------------------- */
 .blog-page {
   background-color: var(--background-color);
-  padding: 8rem 1rem;               /* Đẩy nội dung xuống và hai bên */
+  padding: 2rem 1rem 6rem;       /* Reduced top padding since we added padding in content-wrapper */
+  min-height: calc(100vh - 80px); /* Ensure minimum height to push footer down */
 }
 
 /* -------------------------------------------

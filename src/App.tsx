@@ -1,10 +1,10 @@
-
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './index.css';
 import './App.css';
 
 import UserLayout from './components/layout/UserLayout';
 import AdminLayout from './components/layout/AdminLayout';
+import ScrollToTop from './components/ScrollToTop';
 import Home from './pages/Home/Home';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
@@ -13,6 +13,7 @@ import Blog from './pages/Blog/Blog';
 import BlogDetail from './pages/Blog/BlogDetail';
 import CycleTracker from './pages/CycleTracker/CycleTracker';
 import Profile from './pages/Profile/Profile';
+
 
 
 import Dashboard from './pages/Admin/Dashboard';
@@ -26,6 +27,7 @@ import Reports from './pages/Admin/Report';
 // Admin route wrapper component
 import type { ReactNode } from 'react';
 import ConfirmBooking from './pages/Booking/ConfirmBooking';
+import Contact from './pages/Contact/Contact';
 
 type AdminRouteProps = {
   children: ReactNode;
@@ -39,6 +41,7 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Routes>
         {/* Route dành cho người dùng */}
         <Route path="/" element={<UserLayout />}>
@@ -52,6 +55,7 @@ function App() {
           <Route path="CycleTracker" element={<CycleTracker />} />
           <Route path="profile" element={<Profile />} />
           <Route path="confirm-booking" element={<ConfirmBooking />} />
+          <Route path="contact" element={<Contact />} />
         </Route>
 
         {/* Route dành cho admin */}
