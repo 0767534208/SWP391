@@ -5,7 +5,8 @@
   font-family: 'Inter', sans-serif;
   width: 100%;
   position: relative;
-  z-index: 30; /* Higher z-index to ensure it's above calendar */
+  z-index: 5; /* Lower z-index than content */
+  margin-top: auto; /* Push to the bottom */
 }
 
 .footer-container {

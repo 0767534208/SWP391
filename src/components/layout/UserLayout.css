@@ -1,0 +1,44 @@
+/* Ensure the layout takes up at least the full viewport height */
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.min-h-screen {
+  min-height: 100vh;
+}
+
+/* Make the content area grow to fill available space */
+.flex-grow {
+  flex-grow: 1;
+}
+
+/* Style the content wrapper to ensure proper positioning */
+.content-wrapper {
+  position: relative;
+  z-index: 10; /* Higher z-index to ensure content is above footer */
+  min-height: 100vh; /* Minimum height to push footer down */
+  padding-top: 80px; /* Tăng khoảng cách phía trên để tránh bị đè bởi navbar */
+}
+
+/* Ensure smooth scrolling behavior */
+html {
+  scroll-behavior: smooth;
+  height: 100%;
+}
+
+/* Reset default margin/padding and set box-sizing */
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Prevent footer from appearing before content on short pages */
+body {
+  overflow-y: auto;
+  overflow-x: hidden;
+} 

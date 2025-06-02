@@ -1,0 +1,147 @@
+.contact-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+  
+  .contact-title {
+    font-size: 2.5rem;
+    color: #333;
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
+  
+  .contact-subtitle {
+    font-size: 1.1rem;
+    color: #666;
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+  
+  .contact-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+  }
+  
+  .contact-form-container {
+    flex: 1;
+    min-width: 300px;
+  }
+  
+  .contact-form {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #333;
+  }
+  
+  .form-group input,
+  .form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+  }
+  
+  .form-group input:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #646cff;
+  }
+  
+  .submit-button {
+    background-color: #646cff;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .submit-button:hover {
+    background-color: #535bf2;
+  }
+  
+  .contact-info {
+    flex: 1;
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  .info-card {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .info-card h3 {
+    margin-top: 0;
+    color: #333;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+  }
+  
+  .info-card p {
+    margin-bottom: 1rem;
+    color: #555;
+  }
+  
+  .map-container {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .map-container h3 {
+    margin-top: 0;
+    color: #333;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+  }
+  
+  .success-message {
+    background-color: #e6f7e6;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    padding: 2rem;
+    border-radius: 8px;
+    text-align: center;
+  }
+  
+  .success-message h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+  }
+  
+  /* Responsive styles */
+  @media (max-width: 768px) {
+    .contact-content {
+      flex-direction: column;
+    }
+    
+    .contact-title {
+      font-size: 2rem;
+    }
+  } 
+  
