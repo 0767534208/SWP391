@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FaArrowLeft, FaDownload, FaPrint, FaShare } from 'react-icons/fa';
-import './TestResults.css';
+import './TestResultUser.css';
 
 // Define interfaces for our data structure
 interface TestResult {
