@@ -889,16 +889,6 @@
     display: none !important;
   }
   
-  /* These rules were hiding valid SVGs and images - removing them */
-  .appointments-container .fa,
-  .appointments-container svg:last-child,
-  .appointments-card > div:last-child > svg:last-child,
-  .overflow-x-auto::after,
-  td:last-child::after,
-  tr:last-child td:last-child::after {
-    /* display: none !important; - Removed this */
-  }
-  
   .admin-main-fixed {
     position: relative;
   }

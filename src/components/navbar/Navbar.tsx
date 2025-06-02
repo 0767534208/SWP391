@@ -12,7 +12,6 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Lấy user từ localStorage
     const userData = localStorage.getItem('user');
     if (userData) {
       setUser(JSON.parse(userData));
@@ -21,7 +20,6 @@ const Navbar = () => {
     }
   }, []);
 
-  // Đóng dropdown khi click ra ngoài
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !(dropdownRef.current as any).contains(event.target)) {

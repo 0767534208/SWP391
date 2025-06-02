@@ -1,70 +1,105 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import './Auth.css';
 
 const Register = () => {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Add validation logic here
+    console.log('Form submitted:', formData);
+    navigate('/auth/login');
+  };
+
   return (
-    <div className="auth-page">
-      <div className="auth-container">
-        <div className="auth-heading">
+    <div className="register-page">
+      <div className="register-container">
+        <div className="register-header">
           <h2>Create Account</h2>
           <p>Join us today</p>
         </div>
         
-        <form className="auth-form">
-          <div className="form-group">
-            <label htmlFor="register-fullname">Full Name</label>
-            <input 
-              id="register-fullname"
-              type="text" 
-              className="form-input"
-              placeholder="Enter your full name" 
+        <form className="register-form" onSubmit={handleSubmit}>
+          <div className="register-form-group">
+            <label htmlFor="fullName">Full Name</label>
+            <input
+              type="text"
+              id="fullName"
+              name="fullName"
+              className="register-input"
+              placeholder="Enter your full name"
+              value={formData.fullName}
+              onChange={handleChange}
               required
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="register-email">Email</label>
-            <input 
-              id="register-email"
-              type="email" 
-              className="form-input"
-              placeholder="Enter your email" 
+          <div className="register-form-group">
+            <label htmlFor="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              className="register-input"
+              placeholder="Enter your email"
+              value={formData.email}
+              onChange={handleChange}
               required
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="register-password">Password</label>
-            <input 
-              id="register-password"
-              type="password" 
-              className="form-input"
-              placeholder="Create password" 
+          <div className="register-form-group">
+            <label htmlFor="password">Password</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              className="register-input"
+              placeholder="Create password"
+              value={formData.password}
+              onChange={handleChange}
               required
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="register-confirm">Confirm Password</label>
-            <input 
-              id="register-confirm"
-              type="password" 
-              className="form-input"
-              placeholder="Confirm your password" 
+          <div className="register-form-group">
+            <label htmlFor="confirmPassword">Confirm Password</label>
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              className="register-input"
+              placeholder="Confirm your password"
+              value={formData.confirmPassword}
+              onChange={handleChange}
               required
             />
           </div>
 
-          <button type="submit" className="auth-submit">
+          <button type="submit" className="register-submit">
             Create Account
           </button>
         </form>
 
-        <div className="auth-switch">
+        <div className="register-footer">
           <p>
             Already have an account?{' '}
-            <Link to="/auth/login" className="switch-link">
+            <Link to="/auth/login" className="register-link">
               Login
             </Link>
           </p>
