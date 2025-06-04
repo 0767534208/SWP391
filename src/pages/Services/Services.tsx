@@ -25,19 +25,6 @@ const Services = () => {
   const services: ServiceType[] = [
     {
       id: 1,
-      name: 'Xét nghiệm & Tư vấn HIV',
-      shortDescription: 'Xét nghiệm HIV bảo mật với tư vấn chuyên nghiệp',
-      category: 'Xét nghiệm STI',
-      price: '300.000 VNĐ',
-      duration: '30-45 phút',
-      longDescription: 'Dịch vụ xét nghiệm HIV của chúng tôi cung cấp kết quả nhanh, chính xác với sự riêng tư hoàn toàn. Mỗi buổi kiểm tra bao gồm tư vấn trước xét nghiệm để giải quyết các lo ngại và tư vấn sau xét nghiệm để thảo luận về kết quả và các bước tiếp theo.',
-      includes: ['Tư vấn trước xét nghiệm', 'Thu thập mẫu máu', 'Xét nghiệm kháng thể HIV', 'Tư vấn sau xét nghiệm', 'Dịch vụ giới thiệu nếu cần'],
-      preparations: ['Không cần chuẩn bị đặc biệt', 'Mang CCCD hoặc CMND để đăng ký'],
-      restrictions: ['Phải từ 16 tuổi trở lên', 'Trẻ vị thành niên phải có sự đồng ý của người giám hộ'],
-      image: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60'
-    },
-    {
-      id: 2,
       name: 'Kiểm tra STI toàn diện',
       shortDescription: 'Kiểm tra toàn diện các bệnh lây truyền qua đường tình dục phổ biến',
       category: 'Xét nghiệm STI',
@@ -50,20 +37,7 @@ const Services = () => {
       image: 'https://madisonwomenshealth.com/wp-content/uploads/2023/10/getting-tested-for-stis-1030x687.jpg'
     },
     {
-      id: 3,
-      name: 'Tư vấn sức khỏe tình dục',
-      shortDescription: 'Tư vấn riêng tư về các vấn đề sức khỏe tình dục',
-      category: 'Tư vấn',
-      price: '400.000 VNĐ',
-      duration: '45-60 phút',
-      longDescription: 'Dịch vụ tư vấn sức khỏe tình dục của chúng tôi cung cấp không gian an toàn để thảo luận về các vấn đề riêng tư với các chuyên gia y tế có kinh nghiệm. Nhận lời khuyên chuyên nghiệp về biện pháp tránh thai, phòng ngừa STI, rối loạn chức năng tình dục hoặc các vấn đề sức khỏe sinh sản khác.',
-      includes: ['Tư vấn trực tiếp với chuyên gia', 'Lời khuyên và thông tin cá nhân hóa', 'Kế hoạch điều trị nếu áp dụng', 'Đơn thuốc nếu cần thiết', 'Các khuyến nghị theo dõi'],
-      preparations: ['Liệt kê các mối quan tâm và câu hỏi của bạn trước', 'Mang theo thông tin về thuốc hiện tại'],
-      restrictions: ['Không có'],
-      image: 'https://images.unsplash.com/photo-1666214280391-8ff5bd3c0bf0?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60'
-    },
-    {
-      id: 4,
+      id: 2,
       name: 'Gói khám sức khỏe sinh sản',
       shortDescription: 'Kiểm tra toàn diện sức khỏe hệ thống sinh sản',
       category: 'Sức khỏe sinh sản',
@@ -76,46 +50,7 @@ const Services = () => {
       image: 'https://images.unsplash.com/photo-1631815588090-d4bfec5b1ccb?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60'
     },
     {
-      id: 5,
-      name: 'Tư vấn biện pháp tránh thai',
-      shortDescription: 'Tư vấn chuyên nghiệp về các lựa chọn tránh thai',
-      category: 'Tư vấn',
-      price: '350.000 VNĐ',
-      duration: '30-45 phút',
-      longDescription: 'Dịch vụ tư vấn tránh thai của chúng tôi cung cấp lời khuyên cá nhân hóa về các phương pháp tránh thai phù hợp với lối sống và tình trạng sức khỏe của bạn. Buổi tư vấn bao gồm thảo luận về hiệu quả, tác dụng phụ và cách sử dụng đúng các phương pháp tránh thai khác nhau.',
-      includes: ['Xem xét tiền sử y tế', 'Thảo luận về các phương pháp tránh thai hiện có', 'Khuyến nghị cá nhân hóa', 'Kê đơn nếu có thể', 'Lập kế hoạch theo dõi'],
-      preparations: ['Mang theo hồ sơ về các biện pháp tránh thai đã sử dụng trước đây', 'Ghi chú bất kỳ tác dụng phụ nào đã gặp phải'],
-      restrictions: ['Không có'],
-      image: 'https://ogaidaho.com/wp-content/uploads/2019/10/obgyn-contraceptive-consultation.jpg'
-    },
-    {
-      id: 6,
-      name: 'Tiêm vắc-xin HPV',
-      shortDescription: 'Bảo vệ chống lại nhiễm HPV và các bệnh ung thư liên quan',
-      category: 'Chăm sóc dự phòng',
-      price: '1.500.000 VNĐ mỗi liều',
-      duration: '15-20 phút',
-      longDescription: 'Dịch vụ tiêm vắc-xin HPV của chúng tôi cung cấp biện pháp bảo vệ chống lại virus papilloma ở người, có thể gây ung thư cổ tử cung và mụn cóc sinh dục. Vắc-xin được tiêm thành một loạt liều để bảo vệ tối ưu.',
-      includes: ['Tư vấn trước khi tiêm vắc-xin', 'Tiêm liều vắc-xin HPV', 'Theo dõi sau tiêm', 'Chứng nhận tiêm chủng', 'Nhắc nhở cho các liều tiếp theo'],
-      preparations: ['Thông báo về dị ứng hoặc phản ứng trước đây với vắc-xin', 'Mặc quần áo rộng rãi để dễ dàng tiếp cận cánh tay trên'],
-      restrictions: ['Không khuyến nghị trong thời kỳ mang thai', 'Nên hoãn lại trong thời gian bị bệnh cấp tính có sốt'],
-      image: 'https://suckhoedoisong.qltns.mediacdn.vn/324455921873985536/2024/3/10/vaccine-hpv-17100534453571730023931.jpg'
-    },
-    {
-      id: 7,
-      name: 'Gói chăm sóc thai sản',
-      shortDescription: 'Chăm sóc toàn diện trong thai kỳ',
-      category: 'Sức khỏe sinh sản',
-      price: '2.500.000 VNĐ',
-      duration: '2 giờ (lần khám đầu)',
-      longDescription: 'Gói chăm sóc thai sản của chúng tôi đảm bảo sức khỏe của cả mẹ và bé trong suốt thai kỳ. Dịch vụ bao gồm khám định kỳ, siêu âm, tư vấn dinh dưỡng và chuẩn bị cho việc sinh nở.',
-      includes: ['Khám ban đầu toàn diện', 'Các cuộc hẹn theo dõi thường xuyên', 'Siêu âm', 'Xét nghiệm máu và nước tiểu', 'Tư vấn dinh dưỡng'],
-      preparations: ['Mang theo hồ sơ thai sản trước đây nếu có', 'Đến với bàng quang đầy để siêu âm'],
-      restrictions: ['Không có'],
-      image: 'https://thedailyhostess.com//wp-content/uploads/2017/04/Pregnancy-Care-Package-e1493209249282.jpg'
-    },
-    {
-      id: 8,
+      id: 3,
       name: 'Quản lý thời kỳ mãn kinh',
       shortDescription: 'Hỗ trợ và điều trị các triệu chứng mãn kinh',
       category: 'Tư vấn',
