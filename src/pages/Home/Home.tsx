@@ -22,6 +22,7 @@ const Home = () => {
         </div>
         <div className="features-grid">
           <div className="feature-card service-card">
+            <img src="/blog-3.png" alt="Xét nghiệm STI" className="service-card-image" />
             <h3>Xét nghiệm STI</h3>
             <p>Dịch vụ xét nghiệm toàn diện cho các bệnh lây truyền qua đường tình dục</p>
             <div className="service-details">
@@ -31,6 +32,7 @@ const Home = () => {
             <Link to="/booking" className="service-link">Đặt lịch ngay</Link>
           </div>
           <div className="feature-card service-card">
+            <img src="/tu van suc khoe.png" alt="Tư vấn sức khỏe" className="service-card-image" />
             <h3>Tư vấn sức khỏe</h3>
             <p>Tư vấn trực tiếp với bác sĩ chuyên khoa về các vấn đề sức khỏe sinh sản</p>
             <div className="service-details">
@@ -40,6 +42,7 @@ const Home = () => {
             <Link to="/booking" className="service-link">Đặt lịch ngay</Link>
           </div>
           <div className="feature-card service-card">
+            <img src="/blog-2.png" alt="Sức khỏe sinh sản" className="service-card-image" />
             <h3>Sức khỏe sinh sản</h3>
             <p>Khám và tư vấn toàn diện về sức khỏe sinh sản và kế hoạch hóa gia đình</p>
             <div className="service-details">
@@ -49,10 +52,10 @@ const Home = () => {
             <Link to="/booking" className="service-link">Đặt lịch ngay</Link>
           </div>
           <div className="feature-card service-card">
+            <img src="/bang_tinh_chu_ky_kinh_nguyet_va_thoi_diem_rung_trung.jpg" alt="Theo dõi chu kỳ" className="service-card-image" />
             <h3>Theo dõi chu kỳ</h3>
             <p>Công cụ theo dõi chu kỳ kinh nguyệt và dự đoán thời kỳ rụng trứng</p>
             <div className="service-details">
-              <span className="service-type">Công cụ trực tuyến</span>
               <span className="price">Miễn phí</span>
             </div>
             <Link to="/cycletracker" className="service-link">Sử dụng ngay</Link>
@@ -84,7 +87,7 @@ const Home = () => {
         </div>
       </section>
 
-      <section className="tools-section">
+      {/* <section className="tools-section">
         <h2>Công cụ hữu ích</h2>
         <div className="tools-grid">
           <Link to="/cycletracker" className="tool-button">Theo dõi chu kỳ</Link>
@@ -92,7 +95,7 @@ const Home = () => {
           <Link to="/services" className="tool-button">Dịch vụ</Link>
           <Link to="/profile" className="tool-button">Kết quả xét nghiệm</Link>
         </div>
-      </section>
+      </section> */}
     </main>
   );
 };

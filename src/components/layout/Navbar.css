@@ -26,6 +26,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  cursor: pointer;
 }
 
 .logo-text {
@@ -72,6 +73,7 @@
   transition: color 0.3s ease;
   padding: 0.5rem 0;
   position: relative;
+  cursor: pointer;
 }
 
 .nav-link::after {
@@ -109,6 +111,7 @@
   background: #fff;
   color: #646cff;
   border: 1px solid #646cff;
+  cursor: pointer;
 }
 
 .auth-button:hover {
