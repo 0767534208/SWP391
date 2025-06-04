@@ -63,7 +63,12 @@ const Login = () => {
   };
 
   return (
-    <div className="login-page">
+    <div className="login-page" style={{
+      backgroundImage: 'url("/istockphoto.jpg")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat'
+    }}>
       <div className="login-container">
         <div className="login-header">
           <h2>Đăng nhập</h2>

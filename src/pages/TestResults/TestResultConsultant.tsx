@@ -11,14 +11,20 @@ interface TestResult {
   date: string;
   status: 'normal' | 'abnormal' | 'critical';
   viewed: boolean;
+  notes?: string;
 }
 
 const TestResultConsultant: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterDateRange, setFilterDateRange] = useState<{ start: string; end: string }>({
-    start: '',
-    end: ''
+  const [filterDateRange, setFilterDateRange] = useState<{ 
+    startDate: string; 
+    endDate: string;
+    endTestDate: string;
+  }>({
+    startDate: '',
+    endDate: '',
+    endTestDate: ''
   });
   const [selectedResult, setSelectedResult] = useState<TestResult | null>(null);
   const [showDetailModal, setShowDetailModal] = useState<boolean>(false);
@@ -32,7 +38,8 @@ const TestResultConsultant: React.FC = () => {
       testType: 'STI Screening',
       date: '2023-06-25',
       status: 'normal',
-      viewed: true
+      viewed: true,
+      notes: '5/6/2025'
     },
     {
       id: 'TR-1002',
@@ -41,7 +48,8 @@ const TestResultConsultant: React.FC = () => {
       testType: 'HIV & Hepatitis Panel',
       date: '2023-06-26',
       status: 'abnormal',
-      viewed: true
+      viewed: true,
+      notes: '5/6/2025'
     },
     {
       id: 'TR-1003',
@@ -50,7 +58,8 @@ const TestResultConsultant: React.FC = () => {
       testType: 'Complete STI Panel',
       date: '2023-06-27',
       status: 'normal',
-      viewed: false
+      viewed: false,
+      notes: '5/6/2025'
     },
     {
       id: 'TR-1004',
@@ -59,7 +68,8 @@ const TestResultConsultant: React.FC = () => {
       testType: 'HPV Testing',
       date: '2023-06-28',
       status: 'critical',
-      viewed: false
+      viewed: false,
+      notes: '5/6/2025'
     },
     {
       id: 'TR-1005',
@@ -68,37 +78,49 @@ const TestResultConsultant: React.FC = () => {
       testType: 'STI & Reproductive Health Panel',
       date: '2023-06-29',
       status: 'abnormal',
-      viewed: false
+      viewed: false,
+      notes: '5/6/2025'
     }
   ]);
 
   // Filter test results based on search query and filters
   const filteredResults = testResults.filter((result) => {
-    // Search filter
-    const matchesSearch =
-      result.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      result.patientId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      result.testType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      result.id.toLowerCase().includes(searchQuery.toLowerCase());
+    // Search filter - search across multiple fields
+    const searchFields = [
+      result.patientName.toLowerCase(),
+      result.patientId.toLowerCase(),
+      result.testType.toLowerCase(),
+      result.id.toLowerCase()
+    ];
+    const matchesSearch = searchQuery === '' || 
+      searchFields.some(field => field.includes(searchQuery.toLowerCase()));
 
     // Status filter
-    const matchesStatus =
-      filterStatus === 'all' ||
-      (filterStatus === 'normal' && result.status === 'normal') ||
-      (filterStatus === 'abnormal' && result.status === 'abnormal') ||
-      (filterStatus === 'critical' && result.status === 'critical') ||
-      (filterStatus === 'unviewed' && !result.viewed);
+    const matchesStatus = filterStatus === 'all' || result.status === filterStatus;
 
-    // Date filter
-    let matchesDate = true;
-    if (filterDateRange.start && filterDateRange.end) {
-      const resultDate = new Date(result.date);
-      const startDate = new Date(filterDateRange.start);
-      const endDate = new Date(filterDateRange.end);
-      matchesDate = resultDate >= startDate && resultDate <= endDate;
+    // Date range filter
+    let matchesDateRange = true;
+    if (filterDateRange.startDate || filterDateRange.endDate || filterDateRange.endTestDate) {
+      const testStartDate = new Date(result.date);
+      const testEndDate = new Date(result.notes || '');
+      
+      if (filterDateRange.startDate) {
+        const startDate = new Date(filterDateRange.startDate);
+        matchesDateRange = matchesDateRange && testStartDate >= startDate;
+      }
+      
+      if (filterDateRange.endDate) {
+        const endDate = new Date(filterDateRange.endDate);
+        matchesDateRange = matchesDateRange && testStartDate <= endDate;
+      }
+
+      if (filterDateRange.endTestDate) {
+        const endTestDate = new Date(filterDateRange.endTestDate);
+        matchesDateRange = matchesDateRange && testEndDate <= endTestDate;
+      }
     }
 
-    return matchesSearch && matchesStatus && matchesDate;
+    return matchesSearch && matchesStatus && matchesDateRange;
   });
 
   // Mark result as viewed
@@ -125,11 +147,15 @@ const TestResultConsultant: React.FC = () => {
     setSelectedResult(null);
   };
 
-  // Clear filters
+  // Clear all filters
   const clearFilters = () => {
     setSearchQuery('');
     setFilterStatus('all');
-    setFilterDateRange({ start: '', end: '' });
+    setFilterDateRange({
+      startDate: '',
+      endDate: '',
+      endTestDate: ''
+    });
   };
 
   return (
@@ -151,42 +177,56 @@ const TestResultConsultant: React.FC = () => {
         </div>
 
         <div className="filter-controls">
-          <div className="filter-item">
-            <label>Trạng thái:</label>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-            >
-              <option value="all">Tất cả kết quả</option>
-              <option value="normal">Bình thường</option>
-              <option value="abnormal">Bất thường</option>
-              <option value="critical">Nguy hiểm</option>
-              <option value="unviewed">Chưa xem</option>
-            </select>
-          </div>
+          <div className="filter-row">
+            <div className="filter-group">
+              <div className="filter-item">
+                <label>Trạng thái:</label>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                >
+                  <option value="all">Tất cả</option>
+                  <option value="normal">Bình thường</option>
+                  <option value="abnormal">Bất thường</option>
+                  <option value="critical">Nguy hiểm</option>
+                </select>
+              </div>
 
-          <div className="filter-item">
-            <label>Khoảng thời gian:</label>
-            <input
-              type="date"
-              value={filterDateRange.start}
-              onChange={(e) =>
-                setFilterDateRange({ ...filterDateRange, start: e.target.value })
-              }
-            />
-            <span>đến</span>
-            <input
-              type="date"
-              value={filterDateRange.end}
-              onChange={(e) =>
-                setFilterDateRange({ ...filterDateRange, end: e.target.value })
-              }
-            />
-          </div>
+              <div className="filter-item">
+                <label>Ngày bắt đầu từ:</label>
+                <input
+                  type="date"
+                  value={filterDateRange.startDate}
+                  onChange={(e) => setFilterDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                />
+              </div>
 
-          <button className="clear-filters-btn" onClick={clearFilters}>
-            Xóa bộ lọc
-          </button>
+              <div className="filter-item">
+                <label>đến:</label>
+                <input
+                  type="date"
+                  value={filterDateRange.endDate}
+                  onChange={(e) => setFilterDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                />
+              </div>
+
+              <div className="filter-item">
+                <label>Ngày kết thúc trước:</label>
+                <input
+                  type="date"
+                  value={filterDateRange.endTestDate}
+                  onChange={(e) => setFilterDateRange(prev => ({ ...prev, endTestDate: e.target.value }))}
+                />
+              </div>
+
+              <div className="filter-item">
+                <label>&nbsp;</label>
+                <button className="clear-filters-btn" onClick={clearFilters}>
+                  <FaFilter /> Xóa bộ lọc
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -232,8 +272,9 @@ const TestResultConsultant: React.FC = () => {
               <th>Mã xét nghiệm</th>
               <th>Bệnh nhân</th>
               <th>Loại xét nghiệm</th>
-              <th>Ngày</th>
+              <th>Ngày bắt đầu</th>
               <th>Trạng thái</th>
+              <th>Ngày kết thúc</th>
               <th>Thao tác</th>
             </tr>
           </thead>
@@ -255,6 +296,7 @@ const TestResultConsultant: React.FC = () => {
                       {result.status.charAt(0).toUpperCase() + result.status.slice(1)}
                     </span>
                   </td>
+                  <td>{result.notes || '-'}</td>
                   <td>
                     <div className="action-buttons">
                       <button
@@ -276,7 +318,7 @@ const TestResultConsultant: React.FC = () => {
               ))
             ) : (
               <tr>
-                <td colSpan={6} className="no-results">
+                <td colSpan={7} className="no-results">
                   No test results found matching the filters.
                 </td>
               </tr>

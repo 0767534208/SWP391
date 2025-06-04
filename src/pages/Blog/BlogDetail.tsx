@@ -65,7 +65,7 @@ const BlogDetail = () => {
     <div className="blog-detail-page">
       <div className="blog-detail-container">
         <div className="detail-nav">
-          <Link to="/blog" className="back-link">
+          <Link to="/blogUser" className="back-link">
             ← Quay lại trang Bài viết
           </Link>
         </div>

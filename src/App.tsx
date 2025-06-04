@@ -8,6 +8,7 @@ import ScrollToTop from './components/ScrollToTop';
 import Home from './pages/Home/Home';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
+import VerifyOTP from './pages/Auth/VerifyOTP';
 import Booking from './pages/Booking/Booking';
 import UserBlog from './pages/Blog/UserBlog';
 import BlogDetail from './pages/Blog/BlogDetail';
@@ -60,6 +61,7 @@ function App() {
           <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
           <Route path="auth/login" element={<Login />} />
           <Route path="auth/register" element={<Register />} />
+          <Route path="auth/verify-otp" element={<VerifyOTP />} />
           <Route path="booking" element={<Booking />} />
           <Route path="services" element={<Services />} />
           <Route path="blogUser" element={<UserBlog />} />

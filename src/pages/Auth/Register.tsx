@@ -7,8 +7,8 @@ const Register = () => {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
-    password: '',
-    confirmPassword: ''
+    confirmEmail: '',
+    password: ''
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -21,13 +21,23 @@ const Register = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Add validation logic here
-    console.log('Form submitted:', formData);
-    navigate('/auth/login');
+    // Validate if email matches confirmEmail
+    if (formData.email !== formData.confirmEmail) {
+      alert('Email và xác nhận email không khớp!');
+      return;
+    }
+    // Store registration data and proceed to OTP verification
+    localStorage.setItem('pendingRegistration', JSON.stringify(formData));
+    navigate('/auth/verify-otp');
   };
 
   return (
-    <div className="register-page">
+    <div className="register-page" style={{
+      backgroundImage: 'url("/png.jpg")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat'
+    }}>
       <div className="register-container">
         <div className="register-header">
           <h2>Tạo tài khoản</h2>
@@ -64,6 +74,20 @@ const Register = () => {
           </div>
 
           <div className="register-form-group">
+            <label htmlFor="confirmEmail">Xác nhận email</label>
+            <input
+              type="email"
+              id="confirmEmail"
+              name="confirmEmail"
+              className="register-input"
+              placeholder="Xác nhận địa chỉ email của bạn"
+              value={formData.confirmEmail}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="register-form-group">
             <label htmlFor="password">Mật khẩu</label>
             <input
               type="password"
@@ -77,22 +101,8 @@ const Register = () => {
             />
           </div>
 
-          <div className="register-form-group">
-            <label htmlFor="confirmPassword">Xác nhận mật khẩu</label>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              className="register-input"
-              placeholder="Xác nhận mật khẩu của bạn"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
           <button type="submit" className="register-submit">
-            Tạo tài khoản
+            Tiếp tục
           </button>
         </form>
 
