@@ -4,6 +4,7 @@ import './App.css';
 
 import UserLayout from './components/layout/UserLayout';
 import AdminLayout from './components/layout/AdminLayout';
+import ManagerLayout from './components/layout/ManagerLayout';
 import ScrollToTop from './components/ScrollToTop';
 import Home from './pages/Home/Home';
 import Login from './pages/Auth/Login';
@@ -19,11 +20,16 @@ import TestResults from './pages/TestResults/TestResultUser';
 import TestResultConsultant from './pages/TestResults/TestResultConsultant';
 import Services from './pages/Services/Services';
 import QnA from './pages/QnA/QnA';
+import Payment from './pages/Payment/Payment';
+import PaymentSuccess from './pages/Payment/PaymentSuccess';
 
 import Dashboard from './pages/Admin/Dashboard';
 import Users from './pages/Admin/User';
 import Appointments from './pages/Admin/Appointment';
 import Consultants from './pages/Admin/Consultant';
+
+import ManagerDashboard from './pages/Manager/ManagerDashboard';
+import ServiceManagement from './pages/Manager/ServiceManagement';
 
 // Admin route wrapper component
 import type { ReactNode } from 'react';
@@ -50,6 +56,16 @@ const ConsultantRoute = ({ children }: ConsultantRouteProps) => {
   return isConsultant ? <>{children}</> : <Navigate to="/auth/login" replace />;
 };
 
+// Manager route wrapper component
+type ManagerRouteProps = {
+  children: ReactNode;
+};
+
+const ManagerRoute = ({ children }: ManagerRouteProps) => {
+  const isManager = localStorage.getItem('userRole') === 'manager';
+  return isManager ? <>{children}</> : <Navigate to="/auth/login" replace />;
+};
+
 function App() {
   return (
     <Router>
@@ -69,6 +85,8 @@ function App() {
           <Route path="CycleTracker" element={<CycleTracker />} />
           <Route path="profile" element={<Profile />} />
           <Route path="confirm-booking" element={<ConfirmBooking />} />
+          <Route path="payment" element={<Payment />} />
+          <Route path="payment-success" element={<PaymentSuccess />} />
           <Route path="contact" element={<Contact />} />
           <Route path="test-results/:id" element={<TestResults />} />
           <Route path="qna" element={<QnA />} />
@@ -83,6 +101,16 @@ function App() {
           <Route index element={<ConsultantProfile />} />
           <Route path="profile" element={<ConsultantProfile />} />
           <Route path="test-results" element={<TestResultConsultant />} />
+        </Route>
+
+        {/* Route dành cho manager */}
+        <Route path="/manager" element={
+          <ManagerRoute>
+            <ManagerLayout />
+          </ManagerRoute>
+        }>
+          <Route index element={<ManagerDashboard />} />
+          <Route path="services" element={<ServiceManagement />} />
         </Route>
 
         {/* Route dành cho admin */}

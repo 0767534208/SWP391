@@ -24,6 +24,16 @@ const Login = () => {
         name: 'Quản trị viên'
       }));
       navigate('/admin'); // Redirect to admin dashboard
+    } else if (email === 'manager@example.com' && password === 'manager123') {
+      // Manager login success
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userRole', 'manager');
+      localStorage.setItem('user', JSON.stringify({ 
+        email, 
+        role: 'manager',
+        name: 'Quản lý dịch vụ'
+      }));
+      navigate('/manager'); // Redirect to manager dashboard
     } else if (email === 'consultant@example.com' && password === 'consultant123') {
       // Consultant login success
       localStorage.setItem('isLoggedIn', 'true');
@@ -133,6 +143,7 @@ const Login = () => {
         </p>
         <ul className="login-accounts">
           <li><strong>Quản trị viên:</strong> admin@example.com / admin123</li>
+          <li><strong>Quản lý:</strong> manager@example.com / manager123</li>
           <li><strong>Tư vấn viên:</strong> consultant@example.com / consultant123</li>
           <li><strong>Người dùng:</strong> user@example.com / user123</li>
         </ul>
