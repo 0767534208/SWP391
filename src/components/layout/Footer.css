@@ -1,9 +1,13 @@
+
 .footer {
   background-color: #1f2937;
   color: #f3f4f6;
   padding: 4rem 0 0;
   font-family: 'Inter', sans-serif;
   width: 100%;
+  position: relative;
+  z-index: 5; /* Lower z-index than content */
+  margin-top: auto; /* Push to the bottom */
 }
 
 .footer-container {

@@ -29,21 +29,21 @@ const Booking = () => {
   const services = [
     {
       id: 1,
-      name: 'STIs Testing',
-      duration: '60 min',
-      price: '$100'
+      name: 'Xét nghiệm STI',
+      duration: '60 phút',
+      price: '1.200.000đ'
     },
     {
       id: 2,
-      name: 'Health Consultation',
-      duration: '30 min',
-      price: '$50'
+      name: 'Tư vấn sức khỏe',
+      duration: '30 phút',
+      price: '800.000đ'
     },
     {
       id: 3,
-      name: 'Reproductive Health Check',
-      duration: '45 min',
-      price: '$75'
+      name: 'Khám sức khỏe sinh sản',
+      duration: '45 phút',
+      price: '900.000đ'
     }
   ];
 
@@ -60,7 +60,7 @@ const Booking = () => {
 
   const handleSubmit = () => {
     if (!selectedService || !selectedDate || !selectedTime || !personalDetails.name || !personalDetails.phone) {
-      alert('Please fill in all required fields');
+      alert('Vui lòng điền đầy đủ thông tin bắt buộc');
       return;
     }
 
@@ -81,7 +81,7 @@ const Booking = () => {
     // Set locale for date picker
     const dateInputs = document.querySelectorAll('input[type="date"]');
     dateInputs.forEach(input => {
-      input.setAttribute('lang', 'en-US');
+      input.setAttribute('lang', 'vi-VN');
     });
   }, []);
 
@@ -89,14 +89,14 @@ const Booking = () => {
     <div className="booking-page">
       <div className="booking-container">
         <header className="booking-header">
-          <h1>Schedule an Appointment</h1>
-          <p>Book your consultation with our healthcare professionals</p>
+          <h1>Đặt Lịch Khám</h1>
+          <p>Đặt lịch tư vấn với đội ngũ y bác sĩ chuyên nghiệp của chúng tôi</p>
         </header>
 
         <div className="booking-grid">
           <div className="booking-sidebar">
             <div className="form-section">
-              <h3>Select Service</h3>
+              <h3>Chọn Dịch Vụ</h3>
               <div className="services-grid">
                 {services.map(service => (
                   <div
@@ -121,7 +121,7 @@ const Booking = () => {
             </div>
 
             <div className="form-section">
-              <h3>Select Date & Time</h3>
+              <h3>Chọn Ngày & Giờ</h3>
               <input
                 type="date"
                 value={selectedDate}
@@ -146,30 +146,30 @@ const Booking = () => {
 
           <section className="booking-form">
             <div className="form-section">
-              <h3>Personal Information</h3>
+              <h3>Thông Tin Cá Nhân</h3>
               <div className="form-grid">
                 <div className="input-group">
-                  <label htmlFor="name">Full Name</label>
+                  <label htmlFor="name">Họ và Tên</label>
                   <input
                     id="name"
                     type="text"
                     name="name"
                     value={personalDetails.name}
                     onChange={handlePersonalDetails}
-                    placeholder="Enter your full name"
+                    placeholder="Nhập họ và tên của bạn"
                     required
                     className="form-input"
                   />
                 </div>
                 <div className="input-group">
-                  <label htmlFor="phone">Phone Number</label>
+                  <label htmlFor="phone">Số Điện Thoại</label>
                   <input
                     id="phone"
                     type="tel"
                     name="phone"
                     value={personalDetails.phone}
                     onChange={handlePersonalDetails}
-                    placeholder="Enter your phone number"
+                    placeholder="Nhập số điện thoại của bạn"
                     required
                     className="form-input"
                   />
@@ -182,18 +182,18 @@ const Booking = () => {
                     name="email"
                     value={personalDetails.email}
                     onChange={handlePersonalDetails}
-                    placeholder="Enter your email"
+                    placeholder="Nhập email của bạn"
                     className="form-input"
                   />
                 </div>
                 <div className="input-group full-width">
-                  <label htmlFor="notes">Additional Notes</label>
+                  <label htmlFor="notes">Ghi Chú Thêm</label>
                   <textarea
                     id="notes"
                     name="notes"
                     value={personalDetails.notes}
                     onChange={handlePersonalDetails}
-                    placeholder="Any specific concerns or requests?"
+                    placeholder="Bạn có yêu cầu đặc biệt hoặc vấn đề cần lưu ý không?"
                     className="form-input notes"
                   />
                 </div>
@@ -205,7 +205,7 @@ const Booking = () => {
               onClick={handleSubmit}
               disabled={!selectedService || !selectedDate || !selectedTime || !personalDetails.name || !personalDetails.phone}
             >
-              Confirm Appointment
+              Xác Nhận Đặt Lịch
             </button>
           </section>
         </div>

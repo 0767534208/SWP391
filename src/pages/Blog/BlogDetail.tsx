@@ -1,4 +1,3 @@
-// src/pages/Blog/BlogDetail.jsx
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import './BlogDetail.css';
@@ -10,39 +9,39 @@ const BlogDetail = () => {
   const blogPosts = [
     {
       id: '1',
-      title: 'Sexual Education for Adolescents',
+      title: 'Giáo dục giới tính cho thanh thiếu niên',
       content: [
-        'Understanding effective approaches to sexual education and promoting healthy relationships among young people. This comprehensive guide explores the importance of age-appropriate sexual education and its impact on adolescent development.',
-        'Sexual education plays a crucial role in helping young people make informed decisions about their health and relationships. Through evidence-based approaches and open dialogue, we can create a supportive environment for learning and growth.',
-        'Our program focuses on providing accurate information, fostering healthy attitudes, and developing essential life skills. We believe in creating a safe space for questions and discussions, ensuring that adolescents have the knowledge they need to make responsible choices.'
+        'Tìm hiểu các phương pháp hiệu quả trong giáo dục giới tính và xây dựng mối quan hệ lành mạnh cho giới trẻ. Hướng dẫn toàn diện này khám phá tầm quan trọng của giáo dục giới tính phù hợp với lứa tuổi và tác động của nó đến sự phát triển của thanh thiếu niên.',
+        'Giáo dục giới tính đóng vai trò quan trọng trong việc giúp người trẻ đưa ra quyết định sáng suốt về sức khỏe và các mối quan hệ của họ. Thông qua các phương pháp dựa trên bằng chứng và đối thoại cởi mở, chúng ta có thể tạo ra một môi trường hỗ trợ cho việc học tập và phát triển.',
+        'Chương trình của chúng tôi tập trung vào việc cung cấp thông tin chính xác, nuôi dưỡng thái độ lành mạnh và phát triển các kỹ năng sống thiết yếu. Chúng tôi tin vào việc tạo ra một không gian an toàn cho các câu hỏi và thảo luận, đảm bảo rằng thanh thiếu niên có kiến thức cần thiết để đưa ra lựa chọn có trách nhiệm.'
       ],
       imageUrl: '/blog1.jpg',
-      publishedDate: 'March 15, 2024',
-      author: 'Dr. Sarah Johnson'
+      publishedDate: '15 tháng 3, 2024',
+      author: 'TS. Nguyễn Thị Hương'
     },
     {
       id: '2',
-      title: 'Understanding Reproductive Health',
+      title: 'Hiểu về sức khỏe sinh sản',
       content: [
-        'Essential guide to maintaining reproductive wellness and making informed healthcare decisions. Learn about various aspects of reproductive health and how to take care of your reproductive system.',
-        'Reproductive health encompasses a wide range of topics, from basic anatomy to complex medical conditions. Understanding your body and its needs is the first step toward maintaining optimal reproductive health.',
-        'Regular check-ups, preventive care, and awareness of potential issues are key components of reproductive healthcare. This guide provides comprehensive information to help you make informed decisions about your health.'
+        'Hướng dẫn cần thiết để duy trì sức khỏe sinh sản và đưa ra quyết định chăm sóc sức khỏe đúng đắn. Tìm hiểu về các khía cạnh khác nhau của sức khỏe sinh sản và cách chăm sóc hệ sinh sản của bạn.',
+        'Sức khỏe sinh sản bao gồm nhiều chủ đề, từ giải phẫu cơ bản đến các tình trạng y tế phức tạp. Hiểu về cơ thể và nhu cầu của nó là bước đầu tiên hướng tới việc duy trì sức khỏe sinh sản tối ưu.',
+        'Kiểm tra định kỳ, chăm sóc phòng ngừa và nhận thức về các vấn đề tiềm ẩn là những thành phần chính của chăm sóc sức khỏe sinh sản. Hướng dẫn này cung cấp thông tin toàn diện để giúp bạn đưa ra quyết định sáng suốt về sức khỏe của mình.'
       ],
       imageUrl: '/blog1.jpg',
-      publishedDate: 'March 14, 2024',
-      author: 'Dr. Michael Chen'
+      publishedDate: '14 tháng 3, 2024',
+      author: 'TS. Trần Minh Tuấn'
     },
     {
       id: '3',
-      title: 'STIs Prevention Guide',
+      title: 'Hướng dẫn phòng ngừa STI',
       content: [
-        'Learn about prevention methods and early detection of sexually transmitted infections. This guide provides comprehensive information about STI prevention, testing, and treatment options.',
-        'Prevention is always better than cure, especially when it comes to STIs. Understanding risk factors, practicing safe behaviors, and getting regular screenings are essential steps in maintaining sexual health.',
-        'We discuss various prevention strategies, testing procedures, and available treatments. Early detection and proper medical care are crucial for managing STIs effectively and preventing their spread.'
+        'Tìm hiểu về các phương pháp phòng ngừa và phát hiện sớm các bệnh lây truyền qua đường tình dục. Hướng dẫn này cung cấp thông tin toàn diện về phòng ngừa STI, xét nghiệm và các lựa chọn điều trị.',
+        'Phòng ngừa luôn tốt hơn chữa bệnh, đặc biệt là khi nói đến STI. Hiểu các yếu tố rủi ro, thực hành hành vi an toàn và kiểm tra thường xuyên là những bước cần thiết để duy trì sức khỏe tình dục.',
+        'Chúng tôi thảo luận về các chiến lược phòng ngừa khác nhau, quy trình xét nghiệm và các phương pháp điều trị hiện có. Phát hiện sớm và chăm sóc y tế đúng cách là rất quan trọng để quản lý STI hiệu quả và ngăn chặn sự lây lan của chúng.'
       ],
       imageUrl: '/blog1.jpg',
-      publishedDate: 'March 13, 2024',
-      author: 'Dr. Emily Wilson'
+      publishedDate: '13 tháng 3, 2024',
+      author: 'TS. Lê Thị Phương'
     }
   ];
 
@@ -52,10 +51,10 @@ const BlogDetail = () => {
     return (
       <div className="blog-detail-page">
         <div className="blog-detail-container">
-          <h2>Article not found</h2>
-          <p>The article you're looking for doesn't exist.</p>
+          <h2>Không tìm thấy bài viết</h2>
+          <p>Bài viết bạn đang tìm kiếm không tồn tại.</p>
           <Link to="/blog" className="back-btn">
-            Back to Blog
+            Quay lại trang Bài viết
           </Link>
         </div>
       </div>
@@ -67,7 +66,7 @@ const BlogDetail = () => {
       <div className="blog-detail-container">
         <div className="detail-nav">
           <Link to="/blog" className="back-link">
-            ← Back to Blog
+            ← Quay lại trang Bài viết
           </Link>
         </div>
 

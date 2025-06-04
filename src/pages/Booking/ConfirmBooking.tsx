@@ -31,12 +31,12 @@ const SuccessModal: React.FC<{ onClose: () => void }> = ({ onClose }) => (
           <path d="M20 6L9 17l-5-5" />
         </svg>
       </div>
-      <h2 className="success-title">Booking Confirmed!</h2>
+      <h2 className="success-title">Đặt Lịch Thành Công!</h2>
       <p className="success-message">
-        Thank you for your booking.
+        Cảm ơn bạn đã đặt lịch khám.
       </p>
       <button className="success-button" onClick={onClose}>
-        Done
+        Hoàn Tất
       </button>
     </div>
   </div>
@@ -70,47 +70,47 @@ const ConfirmBooking: React.FC = () => {
     <div className="confirm-page">
       <div className="confirm-container">
         <header className="confirm-header">
-          <h1>Confirm Your Appointment</h1>
-          <p>Please review your booking details before confirming</p>
+          <h1>Xác Nhận Lịch Khám</h1>
+          <p>Vui lòng kiểm tra thông tin đặt lịch trước khi xác nhận</p>
         </header>
 
         <div className="confirm-grid">
           {/* Service & Schedule Details */}
           <div className="confirm-card">
-            <h3 className="confirm-card-title">Service Details</h3>
+            <h3 className="confirm-card-title">Thông Tin Dịch Vụ</h3>
             <div className="confirm-item">
-              <span className="label">Service:</span>
+              <span className="label">Dịch vụ:</span>
               <span className="value">{service.name}</span>
             </div>
             <div className="confirm-item">
-              <span className="label">Duration:</span>
+              <span className="label">Thời gian:</span>
               <span className="value">{service.duration}</span>
             </div>
             <div className="confirm-item">
-              <span className="label">Price:</span>
+              <span className="label">Giá:</span>
               <span className="value">{service.price}</span>
             </div>
             <hr />
-            <h3 className="confirm-card-title">Schedule</h3>
+            <h3 className="confirm-card-title">Lịch Hẹn</h3>
             <div className="confirm-item">
-              <span className="label">Date:</span>
+              <span className="label">Ngày:</span>
               <span className="value">{date}</span>
             </div>
             <div className="confirm-item">
-              <span className="label">Time:</span>
+              <span className="label">Giờ:</span>
               <span className="value">{time}</span>
             </div>
           </div>
 
           {/* Personal Information */}
           <div className="confirm-card">
-            <h3 className="confirm-card-title">Personal Information</h3>
+            <h3 className="confirm-card-title">Thông Tin Cá Nhân</h3>
             <div className="confirm-item">
-              <span className="label">Full Name:</span>
+              <span className="label">Họ và tên:</span>
               <span className="value">{personal.name}</span>
             </div>
             <div className="confirm-item">
-              <span className="label">Phone:</span>
+              <span className="label">Điện thoại:</span>
               <span className="value">{personal.phone}</span>
             </div>
             {personal.email && (
@@ -121,7 +121,7 @@ const ConfirmBooking: React.FC = () => {
             )}
             {personal.notes && (
               <div className="confirm-item">
-                <span className="label">Notes:</span>
+                <span className="label">Ghi chú:</span>
                 <span className="value">{personal.notes}</span>
               </div>
             )}
@@ -130,10 +130,10 @@ const ConfirmBooking: React.FC = () => {
 
         <div className="confirm-actions">
           <button className="btn-edit" onClick={() => navigate('/booking')}>
-            Edit Booking
+            Chỉnh Sửa
           </button>
           <button className="btn-confirm" onClick={handleFinalConfirm}>
-            Confirm Booking
+            Xác Nhận Đặt Lịch
           </button>
         </div>
       </div>
