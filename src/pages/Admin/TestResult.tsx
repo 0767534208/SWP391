@@ -195,9 +195,9 @@ const TestResults = () => {
   return (
     <div className="test-results-container">
       <div className="mb-6">
-        <h1 className="text-xl font-bold mb-1">STI Test Results Management</h1>
+        <h1 className="text-xl font-bold mb-1">Quản Lý Kết Quả Xét Nghiệm STI</h1>
         <p className="text-sm text-gray-500">
-          View and manage STI test results in the system
+          Xem và quản lý các kết quả xét nghiệm STI trong hệ thống
         </p>
       </div>
 
@@ -211,7 +211,7 @@ const TestResults = () => {
             </svg>
           </div>
           <div className="stats-item-info">
-            <div className="stats-item-title">Total Tests</div>
+            <div className="stats-item-title">Tổng Số Xét Nghiệm</div>
             <div className="stats-item-value">{stats.totalTests}</div>
           </div>
         </div>
@@ -223,7 +223,7 @@ const TestResults = () => {
             </svg>
           </div>
           <div className="stats-item-info">
-            <div className="stats-item-title">Completed</div>
+            <div className="stats-item-title">Đã Hoàn Thành</div>
             <div className="stats-item-value">{stats.completedTests}</div>
           </div>
         </div>
@@ -235,7 +235,7 @@ const TestResults = () => {
             </svg>
           </div>
           <div className="stats-item-info">
-            <div className="stats-item-title">Positive</div>
+            <div className="stats-item-title">Kết Quả Dương Tính</div>
             <div className="stats-item-value">{stats.positiveTests}</div>
           </div>
         </div>
@@ -247,7 +247,7 @@ const TestResults = () => {
             </svg>
           </div>
           <div className="stats-item-info">
-            <div className="stats-item-title">Pending</div>
+            <div className="stats-item-title">Đang Chờ</div>
             <div className="stats-item-value">{stats.pendingTests}</div>
           </div>
         </div>
@@ -255,13 +255,13 @@ const TestResults = () => {
 
       {/* Filter Bar */}
       <div className="test-results-card">
-        <div className="test-results-card-title">Search & Filters</div>
+        <div className="test-results-card-title">Tìm Kiếm & Bộ Lọc</div>
         <div className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="search-container">
               <input
                 type="text"
-                placeholder="Search by name, phone, reviewer..."
+                placeholder="Tìm kiếm theo tên, số điện thoại, người xem xét..."
                 className="search-input"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -277,12 +277,12 @@ const TestResults = () => {
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
-                <option value="all">All Statuses</option>
-                <option value="positive">Positive</option>
-                <option value="negative">Negative</option>
-                <option value="pending">Pending</option>
-                <option value="reviewed">Reviewed</option>
-                <option value="unreviewed">Unreviewed</option>
+                <option value="all">Tất Cả Trạng Thái</option>
+                <option value="positive">Dương Tính</option>
+                <option value="negative">Âm Tính</option>
+                <option value="pending">Đang Chờ</option>
+                <option value="reviewed">Đã Xem Xét</option>
+                <option value="unreviewed">Chưa Xem Xét</option>
               </select>
               
               <select 
@@ -290,18 +290,18 @@ const TestResults = () => {
                 value={filterTest}
                 onChange={(e) => setFilterTest(e.target.value)}
               >
-                <option value="all">All Test Types</option>
+                <option value="all">Tất Cả Loại Xét Nghiệm</option>
                 <option value="HIV">HIV</option>
-                <option value="Syphilis">Syphilis</option>
-                <option value="Gonorrhea">Gonorrhea</option>
+                <option value="Syphilis">Giang Mai</option>
+                <option value="Gonorrhea">Lậu</option>
                 <option value="Chlamydia">Chlamydia</option>
                 <option value="HPV">HPV</option>
-                <option value="Hepatitis B">Hepatitis B</option>
+                <option value="Hepatitis B">Viêm Gan B</option>
               </select>
             </div>
             
             <div className="text-right hidden md:block">
-              <span className="text-sm text-gray-500">Total: <span className="font-semibold text-gray-800">{filteredResults.length} results</span></span>
+              <span className="text-sm text-gray-500">Tổng cộng: <span className="font-semibold text-gray-800">{filteredResults.length} kết quả</span></span>
             </div>
           </div>
         </div>
@@ -309,19 +309,19 @@ const TestResults = () => {
 
       {/* Results Table */}
       <div className="test-results-card">
-        <div className="test-results-card-title">Test Results Table</div>
+        <div className="test-results-card-title">Bảng Kết Quả Xét Nghiệm</div>
         <div className="overflow-x-auto">
           <table className="test-results-table w-full">
             <thead>
               <tr>
                 <th className="w-12">ID</th>
-                <th>Patient</th>
-                <th>Test Type</th>
-                <th>Date</th>
-                <th>Result</th>
-                <th>Review</th>
-                <th>Notes</th>
-                <th className="w-20">Actions</th>
+                <th>Bệnh Nhân</th>
+                <th>Loại Xét Nghiệm</th>
+                <th>Ngày</th>
+                <th>Kết Quả</th>
+                <th>Xem Xét</th>
+                <th>Ghi Chú</th>
+                <th className="w-20">Thao Tác</th>
               </tr>
             </thead>
             <tbody>
@@ -339,8 +339,8 @@ const TestResults = () => {
                     <td>{result.date}</td>
                     <td>
                       <span className={getResultBadgeClass(result.result)}>
-                        {result.result === 'negative' ? 'Negative' : 
-                         result.result === 'positive' ? 'Positive' : 'Pending'}
+                        {result.result === 'negative' ? 'Âm Tính' : 
+                         result.result === 'positive' ? 'Dương Tính' : 'Đang Chờ'}
                       </span>
                     </td>
                     <td>
@@ -350,7 +350,7 @@ const TestResults = () => {
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-green-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                             </svg>
-                            <span className="text-sm">Reviewed</span>
+                            <span className="text-sm">Đã Xem Xét</span>
                           </div>
                           <div className="text-xs text-gray-500">{result.reviewedBy}</div>
                         </div>
@@ -359,13 +359,13 @@ const TestResults = () => {
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-yellow-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                           </svg>
-                          <span className="text-sm">Pending Review</span>
+                          <span className="text-sm">Chờ Xem Xét</span>
                         </div>
                       )}
                     </td>
                     <td>
                       <div className="max-w-xs truncate">
-                        {result.notes || <span className="text-gray-500 text-xs">None</span>}
+                        {result.notes || <span className="text-gray-500 text-xs">Không có</span>}
                       </div>
                     </td>
                     <td>
@@ -377,7 +377,7 @@ const TestResults = () => {
                             <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                             <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
                           </svg>
-                          <span>View</span>
+                          <span>Xem</span>
                         </button>
                         <button 
                           className="action-button action-button-edit"
@@ -385,7 +385,7 @@ const TestResults = () => {
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                           </svg>
-                          <span>Edit</span>
+                          <span>Sửa</span>
                         </button>
                         <button 
                           className="action-button action-button-delete"
@@ -393,7 +393,7 @@ const TestResults = () => {
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                           </svg>
-                          <span>Delete</span>
+                          <span>Xóa</span>
                         </button>
                       </div>
                     </td>

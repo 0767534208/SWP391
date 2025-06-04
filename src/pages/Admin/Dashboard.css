@@ -43,47 +43,110 @@
   /* Stats Cards */
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
   }
   
-  @media (min-width: 640px) {
-    .stats-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+  .stat-card {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
   }
   
-  @media (min-width: 1024px) {
-    .stats-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
+  .stat-card:hover {
+    transform: translateY(-2px);
   }
   
-  .stats-card {
-    width: 100%;
+  .stat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    margin-right: 1rem;
   }
   
-  .stats-card-inner {
-    border-left-width: 4px;
-    transition: box-shadow 0.2s;
+  .stat-icon.users {
+    background-color: #e0e7ff;
+    color: #4f46e5;
   }
   
-  .stats-card-inner:hover {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  .stat-icon.appointments {
+    background-color: #d1fae5;
+    color: #10b981;
+  }
+  
+  .stat-icon.bookings {
+    background-color: #fef3c7;
+    color: #f59e0b;
+  }
+  
+  .stat-icon.revenue {
+    background-color: #dbeafe;
+    color: #3b82f6;
+  }
+  
+  .stat-details {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1f2937;
+    line-height: 1.2;
+  }
+  
+  .stat-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
   }
   
   /* Chart containers */
+  .charts-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  @media (min-width: 768px) {
+    .charts-container {
+      grid-template-columns: 2fr 1fr;
+    }
+  }
+  
+  .chart-card {
+    background-color: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .chart-card h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
   .chart-container {
     height: 300px;
     position: relative;
-    padding: 1.5rem;
   }
   
-  .chart-container-sm {
+  .doughnut-container {
     height: 250px;
-    position: relative;
-    padding: 1.5rem;
   }
   
   /* Spacing for chart grids */

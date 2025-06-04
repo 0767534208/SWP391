@@ -34,8 +34,8 @@ const CycleTracker: React.FC = () => {
 
     // Common symptoms list
     const commonSymptoms = [
-        'Cramps', 'Headache', 'Bloating', 'Fatigue', 
-        'Mood Swings', 'Breast Tenderness', 'Back Pain', 'Acne'
+        'Đau bụng', 'Đau đầu', 'Đầy hơi', 'Mệt mỏi', 
+        'Thay đổi tâm trạng', 'Đau ngực', 'Đau lưng', 'Mụn'
     ]
 
     // Generate sample data for demonstration
@@ -73,10 +73,10 @@ const CycleTracker: React.FC = () => {
             
             // Triệu chứng phù hợp với từng ngày
             const daySymptoms = [];
-            if (i < 3) daySymptoms.push('Cramps');
-            if (i === 1 || i === 2) daySymptoms.push('Headache');
-            if (i > 0 && i < 4) daySymptoms.push('Bloating');
-            if (i < 3) daySymptoms.push('Fatigue');
+            if (i < 3) daySymptoms.push('Đau bụng');
+            if (i === 1 || i === 2) daySymptoms.push('Đau đầu');
+            if (i > 0 && i < 4) daySymptoms.push('Đầy hơi');
+            if (i < 3) daySymptoms.push('Mệt mỏi');
             
             sampleData.push({
                 date: currentDate.toISOString(),
@@ -102,10 +102,10 @@ const CycleTracker: React.FC = () => {
             
             // Triệu chứng
             const daySymptoms = [];
-            if (i < 2) daySymptoms.push('Cramps');
-            if (i === 1) daySymptoms.push('Headache');
-            if (i > 0 && i < 4) daySymptoms.push('Bloating');
-            if (i < 2) daySymptoms.push('Mood Swings');
+            if (i < 2) daySymptoms.push('Đau bụng');
+            if (i === 1) daySymptoms.push('Đau đầu');
+            if (i > 0 && i < 4) daySymptoms.push('Đầy hơi');
+            if (i < 2) daySymptoms.push('Thay đổi tâm trạng');
             
             sampleData.push({
                 date: currentDate.toISOString(),
@@ -131,10 +131,10 @@ const CycleTracker: React.FC = () => {
             
             // Triệu chứng
             const daySymptoms = [];
-            if (i < 2) daySymptoms.push('Cramps');
-            if (i === 1) daySymptoms.push('Fatigue');
-            if (i === 1) daySymptoms.push('Bloating');
-            if (i === 0) daySymptoms.push('Mood Swings');
+            if (i < 2) daySymptoms.push('Đau bụng');
+            if (i === 1) daySymptoms.push('Mệt mỏi');
+            if (i === 1) daySymptoms.push('Đầy hơi');
+            if (i === 0) daySymptoms.push('Thay đổi tâm trạng');
             
             sampleData.push({
                 date: currentDate.toISOString(),
@@ -304,7 +304,7 @@ const CycleTracker: React.FC = () => {
         localStorage.setItem('lastPeriodStart', lastPeriod.toISOString());
         
         // Show confirmation
-        alert('Data has been reset to sample data for demonstration purposes.');
+        alert('Dữ liệu đã được đặt lại về dữ liệu mẫu để minh họa.');
     };
 
     const toggleSymptom = (symptom: string) => {
@@ -669,6 +669,25 @@ const CycleTracker: React.FC = () => {
                                 <FaSave /> Lưu Cài Đặt
                             </button>
                             
+                            <button 
+                                className="reset-data-btn"
+                                onClick={handleResetToSampleData}
+                                style={{
+                                    background: '#f87171',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    padding: '10px 20px',
+                                    marginTop: '20px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    cursor: 'pointer',
+                                    fontWeight: 'bold'
+                                }}
+                            >
+                                <FaTrash /> Đặt lại dữ liệu mẫu
+                            </button>
                         </div>
                     </div>
                 )}
@@ -756,30 +775,16 @@ const CycleTracker: React.FC = () => {
                             <div className="symptoms-selector">
                                 <h4>Triệu Chứng:</h4>
                                 <div className="symptoms-grid">
-                                    {commonSymptoms.map((symptom, index) => {
-                                        // Dịch triệu chứng sang tiếng Việt
-                                        const vietnameseSymptom = {
-                                            'Cramps': 'Đau bụng',
-                                            'Headache': 'Đau đầu',
-                                            'Bloating': 'Đầy hơi',
-                                            'Fatigue': 'Mệt mỏi',
-                                            'Mood Swings': 'Thay đổi tâm trạng',
-                                            'Breast Tenderness': 'Đau ngực',
-                                            'Back Pain': 'Đau lưng',
-                                            'Acne': 'Mụn'
-                                        }[symptom] || symptom;
-                                        
-                                        return (
-                                            <div 
-                                                key={index}
-                                                className={`symptom-item ${currentData.symptoms.includes(symptom) ? 'active' : ''}`}
-                                                onClick={() => toggleSymptom(symptom)}
-                                            >
-                                                {currentData.symptoms.includes(symptom) ? <FaCheckCircle /> : <FaRegCircle />}
-                                                <span>{vietnameseSymptom}</span>
-                                            </div>
-                                        );
-                                    })}
+                                    {commonSymptoms.map((symptom, index) => (
+                                        <div 
+                                            key={index}
+                                            className={`symptom-item ${currentData.symptoms.includes(symptom) ? 'active' : ''}`}
+                                            onClick={() => toggleSymptom(symptom)}
+                                        >
+                                            {currentData.symptoms.includes(symptom) ? <FaCheckCircle /> : <FaRegCircle />}
+                                            <span>{symptom}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                             

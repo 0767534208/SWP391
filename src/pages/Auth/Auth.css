@@ -270,9 +270,34 @@
 
 .login-note {
   margin-top: 1.5rem;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 1rem;
+  border-radius: 8px;
+  max-width: 450px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.login-note p {
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-color);
   text-align: center;
-  color: white;
+}
+
+.login-accounts {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.login-accounts li {
+  padding: 0.5rem;
+  border-bottom: 1px solid rgba(209, 213, 219, 0.5);
   font-size: 0.875rem;
+}
+
+.login-accounts li:last-child {
+  border-bottom: none;
 }
 
 /* Responsive Styles */

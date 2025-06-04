@@ -88,9 +88,9 @@ const User = () => {
     <div className="users-container">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h1 className="text-xl font-bold mb-1">User Management</h1>
+          <h1 className="text-xl font-bold mb-1">Quản Lý Người Dùng</h1>
           <p className="text-sm text-gray-500">
-            Manage all users in the HSSC system
+            Quản lý tất cả người dùng trong hệ thống
           </p>
         </div>
         <button 
@@ -100,7 +100,7 @@ const User = () => {
           <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
           </svg>
-          <span>Add User</span>
+          <span>Thêm Người Dùng</span>
         </button>
       </div>
 
@@ -110,7 +110,7 @@ const User = () => {
           <div className="search-container">
             <input
               type="text"
-              placeholder="Search by name, email, phone..."
+              placeholder="Tìm kiếm theo tên, email, số điện thoại..."
               className="search-input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -126,10 +126,10 @@ const User = () => {
               value={filterRole}
               onChange={(e) => setFilterRole(e.target.value)}
             >
-              <option value="all">All Roles</option>
-              <option value="admin">Administrator</option>
-              <option value="consultant">Consultant</option>
-              <option value="user">User</option>
+              <option value="all">Tất Cả Vai Trò</option>
+              <option value="admin">Quản Trị Viên</option>
+              <option value="consultant">Tư Vấn Viên</option>
+              <option value="user">Người Dùng</option>
             </select>
             
             <select 
@@ -137,15 +137,15 @@ const User = () => {
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
             >
-              <option value="all">All Statuses</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="blocked">Blocked</option>
+              <option value="all">Tất Cả Trạng Thái</option>
+              <option value="active">Hoạt Động</option>
+              <option value="inactive">Không Hoạt Động</option>
+              <option value="blocked">Đã Khóa</option>
             </select>
           </div>
           
           <div className="text-right hidden md:block">
-            <span className="text-sm text-gray-500">Total: <span className="font-semibold text-gray-800">{filteredUsers.length} users</span></span>
+            <span className="text-sm text-gray-500">Tổng: <span className="font-semibold text-gray-800">{filteredUsers.length} người dùng</span></span>
           </div>
         </div>
       </div>
@@ -157,13 +157,13 @@ const User = () => {
             <thead>
               <tr>
                 <th className="w-12">ID</th>
-                <th>Name</th>
+                <th>Tên</th>
                 <th>Email</th>
-                <th>Phone</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Last Login</th>
-                <th className="w-20">Actions</th>
+                <th>Số Điện Thoại</th>
+                <th>Vai Trò</th>
+                <th>Trạng Thái</th>
+                <th>Đăng Nhập Cuối</th>
+                <th className="w-20">Thao Tác</th>
               </tr>
             </thead>
             <tbody>
@@ -176,14 +176,14 @@ const User = () => {
                     <td>{user.phone}</td>
                     <td>
                       <span className={getRoleBadgeClass(user.role)}>
-                        {user.role === 'admin' ? 'Administrator' : 
-                         user.role === 'consultant' ? 'Consultant' : 'User'}
+                        {user.role === 'admin' ? 'Quản Trị Viên' : 
+                         user.role === 'consultant' ? 'Tư Vấn Viên' : 'Người Dùng'}
                       </span>
                     </td>
                     <td>
                       <span className={getBadgeClass(user.status)}>
-                        {user.status === 'active' ? 'Active' : 
-                         user.status === 'inactive' ? 'Inactive' : 'Blocked'}
+                        {user.status === 'active' ? 'Hoạt Động' : 
+                         user.status === 'inactive' ? 'Không Hoạt Động' : 'Đã Khóa'}
                       </span>
                     </td>
                     <td>{user.lastLogin}</td>
@@ -196,7 +196,7 @@ const User = () => {
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                           </svg>
-                          <span>Edit</span>
+                          <span>Sửa</span>
                         </button>
                         <button 
                           className="action-button action-button-delete"
@@ -205,7 +205,7 @@ const User = () => {
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                           </svg>
-                          <span>Delete</span>
+                          <span>Xóa</span>
                         </button>
                       </div>
                     </td>
@@ -213,7 +213,7 @@ const User = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="text-center py-4 text-gray-500">No users found</td>
+                  <td colSpan={8} className="text-center py-4 text-gray-500">Không tìm thấy người dùng nào</td>
                 </tr>
               )}
             </tbody>
@@ -281,7 +281,7 @@ const User = () => {
         <div className="fixed inset-0 z-50 overflow-auto bg-gray-800 bg-opacity-75 flex items-center justify-center">
           <div className="bg-white rounded-lg w-full max-w-md mx-3 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900">Add New User</h3>
+                              <h3 className="text-lg font-semibold text-gray-900">Thêm Người Dùng Mới</h3>
               <button 
                 className="text-gray-400 hover:text-gray-600"
                 onClick={() => setIsAddModalOpen(false)}
@@ -295,12 +295,12 @@ const User = () => {
               <form>
                 <div className="grid grid-cols-1 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                    <input 
-                      type="text" 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="Enter user's full name"
-                    />
+                                          <label className="block text-sm font-medium text-gray-700 mb-1">Họ và Tên</label>
+                      <input 
+                        type="text" 
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        placeholder="Nhập họ tên đầy đủ"
+                      />
                   </div>
 
                   <div>
@@ -308,43 +308,43 @@ const User = () => {
                     <input 
                       type="email" 
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="Enter email address"
+                      placeholder="Nhập địa chỉ email"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Số Điện Thoại</label>
                     <input 
                       type="tel" 
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="Enter phone number"
+                      placeholder="Nhập số điện thoại"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Vai Trò</label>
                     <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                      <option value="user">User</option>
-                      <option value="consultant">Consultant</option>
-                      <option value="admin">Administrator</option>
+                      <option value="user">Người Dùng</option>
+                      <option value="consultant">Tư Vấn Viên</option>
+                      <option value="admin">Quản Trị Viên</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Mật Khẩu</label>
                     <input 
                       type="password" 
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="Enter password"
+                      placeholder="Nhập mật khẩu"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Xác Nhận Mật Khẩu</label>
                     <input 
                       type="password" 
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="Confirm password"
+                      placeholder="Xác nhận mật khẩu"
                     />
                   </div>
                 </div>
@@ -355,7 +355,7 @@ const User = () => {
                 className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
                 onClick={() => setIsAddModalOpen(false)}
               >
-                Cancel
+                Hủy
               </button>
               <button 
                 className="px-4 py-2 bg-indigo-600 border border-indigo-600 rounded-md text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none"
@@ -364,7 +364,7 @@ const User = () => {
                   setIsAddModalOpen(false);
                 }}
               >
-                Add User
+                Thêm Người Dùng
               </button>
             </div>
           </div>

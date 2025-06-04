@@ -87,10 +87,10 @@ const Home = () => {
       <section className="tools-section">
         <h2>Công cụ hữu ích</h2>
         <div className="tools-grid">
-          <button className="tool-button">Tính ngày rụng trứng</button>
-          <button className="tool-button">Đặt câu hỏi</button>
-          <button className="tool-button">Lịch sử tư vấn</button>
-          <button className="tool-button">Kết quả xét nghiệm</button>
+          <Link to="/cycletracker" className="tool-button">Theo dõi chu kỳ</Link>
+          <Link to="/qna" className="tool-button">Hỏi đáp</Link>
+          <Link to="/services" className="tool-button">Dịch vụ</Link>
+          <Link to="/profile" className="tool-button">Kết quả xét nghiệm</Link>
         </div>
       </section>
     </main>

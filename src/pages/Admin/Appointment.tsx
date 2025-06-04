@@ -106,9 +106,9 @@ const Appointments = () => {
     <div className="appointments-container">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h1 className="text-xl font-bold mb-1">Appointment Management</h1>
+          <h1 className="text-xl font-bold mb-1">Quản Lý Lịch Hẹn</h1>
           <p className="text-sm text-gray-500">
-            Track and manage all appointments in the system
+            Theo dõi và quản lý tất cả các lịch hẹn trong hệ thống
           </p>
         </div>
         <div className="flex space-x-2">
@@ -119,7 +119,7 @@ const Appointments = () => {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
             </svg>
-            <span>List</span>
+            <span>Danh Sách</span>
           </button>
           <button 
             className={`view-toggle-button ${view === 'calendar' ? 'active' : ''}`}
@@ -128,7 +128,7 @@ const Appointments = () => {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
             </svg>
-            <span>Calendar</span>
+            <span>Lịch</span>
           </button>
           <button 
             className="add-appointment-button"
@@ -136,7 +136,7 @@ const Appointments = () => {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
             </svg>
-            <span>Add Appointment</span>
+            <span>Thêm Lịch Hẹn</span>
           </button>
         </div>
       </div>
@@ -147,7 +147,7 @@ const Appointments = () => {
           <div className="search-container">
             <input
               type="text"
-              placeholder="Search patients, doctors, services..."
+              placeholder="Tìm kiếm bệnh nhân, bác sĩ, dịch vụ..."
               className="search-input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -163,18 +163,18 @@ const Appointments = () => {
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
             >
-              <option value="all">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="all">Tất Cả Trạng Thái</option>
+              <option value="pending">Đang Chờ</option>
+              <option value="confirmed">Đã Xác Nhận</option>
+              <option value="completed">Hoàn Thành</option>
+              <option value="cancelled">Đã Hủy</option>
             </select>
             
             <button
               onClick={resetFilters}
               className="reset-button"
             >
-              Reset
+              Đặt Lại
             </button>
           </div>
           
@@ -207,13 +207,13 @@ const Appointments = () => {
                 <thead>
                   <tr>
                     <th className="w-12">ID</th>
-                  <th>Patient</th>
-                  <th>Service</th>
-                  <th>Date & Time</th>
-                  <th>Consultant</th>
-                  <th>Status</th>
-                  <th>Notes</th>
-                  <th className="w-20">Actions</th>
+                  <th>Bệnh Nhân</th>
+                  <th>Dịch Vụ</th>
+                  <th>Ngày & Giờ</th>
+                  <th>Bác Sĩ</th>
+                  <th>Trạng Thái</th>
+                  <th>Ghi Chú</th>
+                  <th className="w-20">Thao Tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -237,12 +237,14 @@ const Appointments = () => {
                         <td>{appointment.consultant}</td>
                         <td>
                           <span className={getStatusBadgeClass(appointment.status)}>
-                          {appointment.status}
+                          {appointment.status === 'completed' ? 'Hoàn Thành' : 
+                           appointment.status === 'confirmed' ? 'Đã Xác Nhận' : 
+                           appointment.status === 'pending' ? 'Đang Chờ' : 'Đã Hủy'}
                           </span>
                         </td>
                         <td>
                         <span className="text-xs text-gray-500">
-                          {appointment.notes || 'No notes'}
+                          {appointment.notes || 'Không có ghi chú'}
                         </span>
                         </td>
                         <td>
@@ -251,13 +253,13 @@ const Appointments = () => {
                             className="action-button action-button-edit"
                               onClick={() => handleEditAppointment(appointment.id)}
                             >
-                            Edit
+                            Sửa
                             </button>
                             <button 
                             className="action-button action-button-delete"
                               onClick={() => handleDeleteAppointment(appointment.id)}
                             >
-                            Delete
+                            Xóa
                             </button>
                           </div>
                         </td>
@@ -265,7 +267,7 @@ const Appointments = () => {
                     ))
                   ) : (
                     <tr>
-                    <td colSpan={8} className="text-center py-4 text-gray-500">No appointments found</td>
+                    <td colSpan={8} className="text-center py-4 text-gray-500">Không tìm thấy lịch hẹn nào</td>
                     </tr>
                   )}
                 </tbody>
@@ -332,7 +334,7 @@ const Appointments = () => {
       {view === 'calendar' && (
         <div className="calendar-container mb-4">
           <div className="calendar-header">
-            <h3 className="calendar-title">June 2023</h3>
+            <h3 className="calendar-title">Tháng 6 năm 2023</h3>
             <div className="calendar-nav">
               <button className="calendar-nav-button">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
@@ -347,13 +349,13 @@ const Appointments = () => {
             </div>
           </div>
           <div className="calendar-grid">
-            <div className="calendar-day-header">Sun</div>
-            <div className="calendar-day-header">Mon</div>
-            <div className="calendar-day-header">Tue</div>
-            <div className="calendar-day-header">Wed</div>
-            <div className="calendar-day-header">Thu</div>
-            <div className="calendar-day-header">Fri</div>
-            <div className="calendar-day-header">Sat</div>
+            <div className="calendar-day-header">CN</div>
+            <div className="calendar-day-header">T2</div>
+            <div className="calendar-day-header">T3</div>
+            <div className="calendar-day-header">T4</div>
+            <div className="calendar-day-header">T5</div>
+            <div className="calendar-day-header">T6</div>
+            <div className="calendar-day-header">T7</div>
             
             {/* Example calendar days */}
             <div className="calendar-day other-month">

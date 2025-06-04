@@ -54,7 +54,7 @@ const BlogPostModal: React.FC<BlogPostModalProps> = ({ post, isOpen, onClose, on
       <div className="modal-container">
         <div className="modal-header">
           <h3 className="modal-title">
-            {post ? 'Edit Post' : 'Add New Post'}
+            {post ? 'Chỉnh Sửa Bài Viết' : 'Thêm Bài Viết Mới'}
           </h3>
           <button 
             className="modal-close-button"
@@ -69,20 +69,20 @@ const BlogPostModal: React.FC<BlogPostModalProps> = ({ post, isOpen, onClose, on
           <div className="modal-body">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tiêu Đề</label>
                 <input 
                   type="text" 
                   name="title"
                   value={formData.title}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  placeholder="Enter post title"
+                  placeholder="Nhập tiêu đề bài viết"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Danh Mục</label>
                 <select 
                   name="category"
                   value={formData.category}
@@ -99,20 +99,20 @@ const BlogPostModal: React.FC<BlogPostModalProps> = ({ post, isOpen, onClose, on
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Author</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tác Giả</label>
                 <input 
                   type="text" 
                   name="author"
                   value={formData.author}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  placeholder="Enter author name"
+                  placeholder="Nhập tên tác giả"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Trạng Thái</label>
                 <select 
                   name="status"
                   value={formData.status}
@@ -120,9 +120,9 @@ const BlogPostModal: React.FC<BlogPostModalProps> = ({ post, isOpen, onClose, on
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   required
                 >
-                  <option value="published">Published</option>
-                  <option value="draft">Draft</option>
-                  <option value="scheduled">Scheduled</option>
+                  <option value="published">Đã Xuất Bản</option>
+                  <option value="draft">Bản Nháp</option>
+                  <option value="scheduled">Đã Lên Lịch</option>
                 </select>
               </div>
               
