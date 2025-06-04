@@ -59,33 +59,10 @@ const Navbar = () => {
           <div className={`navbar-links ${isMenuOpen ? 'active' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
             <ul className="nav-items" style={{ display: 'flex', alignItems: 'center', gap: '3rem', margin: 0 }}>
               <li><Link to="/" className="nav-link">Trang chủ</Link></li>
-              <li ref={servicesDropdownRef} style={{ position: 'relative' }}>
-                <div 
-                  className="nav-link services-link" 
-                  onClick={() => setServicesDropdownOpen(!servicesDropdownOpen)}
-                >
-                  Dịch vụ <FaChevronDown style={{ fontSize: 12, marginLeft: 4 }} />
-                </div>
-                {servicesDropdownOpen && (
-                  <div className="services-dropdown">
-                    <Link 
-                      to="/booking" 
-                      className="dropdown-item" 
-                      onClick={() => setServicesDropdownOpen(false)}
-                    >
-                      Đặt lịch khám
-                    </Link>
-                    <Link 
-                      to="/cycletracker" 
-                      className="dropdown-item" 
-                      onClick={() => setServicesDropdownOpen(false)}
-                    >
-                      Theo dõi chu kỳ
-                    </Link>
-                  </div>
-                )}
-              </li>
+              <li><Link to="/services" className="nav-link">Dịch vụ</Link></li>
+              <li><Link to="/cycletracker" className="nav-link">Theo dõi chu kỳ</Link></li>
               <li><Link to="/blogUser" className="nav-link">Bài viết</Link></li>
+              <li><Link to="/qna" className="nav-link">Hỏi đáp</Link></li>
               <li><Link to="/contact" className="nav-link">Liên hệ</Link></li>
             </ul>
             <div className="nav-right" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -99,6 +76,15 @@ const Navbar = () => {
                   {dropdownOpen && (
                     <div className="dropdown-menu" style={{ position: 'absolute', right: 0, background: '#fff', border: '1px solid #ccc', borderRadius: 4, minWidth: 140, zIndex: 100 }}>
                       <Link to="/profile" className="dropdown-item" onClick={() => setDropdownOpen(false)} style={{ display: 'block', padding: '8px 16px', color: '#333', textDecoration: 'none' }}>Xem hồ sơ</Link>
+                      {localStorage.getItem('userRole') === 'consultant' && (
+                        <>
+                          <Link to="/consultant/profile" className="dropdown-item" onClick={() => setDropdownOpen(false)} style={{ display: 'block', padding: '8px 16px', color: '#333', textDecoration: 'none' }}>Hồ sơ tư vấn viên</Link>
+                          <Link to="/consultant/test-results" className="dropdown-item" onClick={() => setDropdownOpen(false)} style={{ display: 'block', padding: '8px 16px', color: '#333', textDecoration: 'none' }}>Quản lý kết quả</Link>
+                        </>
+                      )}
+                      {localStorage.getItem('userRole') === 'admin' && (
+                        <Link to="/admin" className="dropdown-item" onClick={() => setDropdownOpen(false)} style={{ display: 'block', padding: '8px 16px', color: '#333', textDecoration: 'none' }}>Quản lý hệ thống</Link>
+                      )}
                       <div className="dropdown-item" onClick={handleLogout} style={{ display: 'block', padding: '8px 16px', color: '#e53e3e', cursor: 'pointer' }}>Đăng xuất</div>
                     </div>
                   )}

@@ -94,9 +94,9 @@ const Consultants = () => {
     <div className="consultants-container">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h1 className="text-xl font-bold mb-1">Specialist Management</h1>
+          <h1 className="text-xl font-bold mb-1">Quản Lý Chuyên Gia</h1>
           <p className="text-sm text-gray-500">
-            Manage healthcare specialists in the system
+            Quản lý các chuyên gia y tế trong hệ thống
           </p>
         </div>
         <button 
@@ -106,7 +106,7 @@ const Consultants = () => {
           <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
           </svg>
-          Add Specialist
+          Thêm Chuyên Gia
         </button>
       </div>
 
@@ -119,7 +119,7 @@ const Consultants = () => {
             </svg>
           </div>
           <div className="stats-item-info">
-            <div className="stats-item-title">Total Specialists</div>
+            <div className="stats-item-title">Tổng Số Chuyên Gia</div>
             <div className="stats-item-value">{stats.totalConsultants}</div>
           </div>
         </div>
@@ -131,7 +131,7 @@ const Consultants = () => {
             </svg>
           </div>
           <div className="stats-item-info">
-            <div className="stats-item-title">Active</div>
+            <div className="stats-item-title">Đang Hoạt Động</div>
             <div className="stats-item-value">{stats.activeConsultants}</div>
           </div>
         </div>
@@ -143,7 +143,7 @@ const Consultants = () => {
             </svg>
           </div>
           <div className="stats-item-info">
-            <div className="stats-item-title">Total Consultations</div>
+            <div className="stats-item-title">Tổng Số Buổi Tư Vấn</div>
             <div className="stats-item-value">{stats.totalConsultations}</div>
           </div>
         </div>
@@ -155,7 +155,7 @@ const Consultants = () => {
             </svg>
           </div>
           <div className="stats-item-info">
-            <div className="stats-item-title">Average Rating</div>
+            <div className="stats-item-title">Đánh Giá Trung Bình</div>
             <div className="stats-item-value">{stats.avgRating}</div>
           </div>
         </div>
@@ -167,7 +167,7 @@ const Consultants = () => {
           <div className="search-container">
             <input
               type="text"
-              placeholder="Search by name, email, phone..."
+              placeholder="Tìm kiếm theo tên, email, số điện thoại..."
               className="search-input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -183,10 +183,10 @@ const Consultants = () => {
               value={filterSpecialty}
               onChange={(e) => setFilterSpecialty(e.target.value)}
             >
-              <option value="all">All Specialties</option>
-              <option value="Reproductive Health">Reproductive Health</option>
+              <option value="all">Tất Cả Chuyên Môn</option>
+              <option value="Reproductive Health">Sức Khỏe Sinh Sản</option>
               <option value="HIV/AIDS">HIV/AIDS</option>
-              <option value="STI Treatment">STI Treatment</option>
+              <option value="STI Treatment">Điều Trị STI</option>
             </select>
             
             <select 
@@ -194,15 +194,15 @@ const Consultants = () => {
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
             >
-              <option value="all">All Statuses</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="all">Tất Cả Trạng Thái</option>
+              <option value="active">Đang Hoạt Động</option>
+              <option value="inactive">Không Hoạt Động</option>
             </select>
           </div>
           
           <div className="text-right hidden md:block">
             <span className="text-sm text-gray-500">
-              Showing <span className="font-semibold text-gray-700">{currentConsultants.length}</span> of <span className="font-semibold text-gray-700">{filteredConsultants.length}</span> specialists
+              Hiển thị <span className="font-semibold text-gray-700">{currentConsultants.length}</span> trong số <span className="font-semibold text-gray-700">{filteredConsultants.length}</span> chuyên gia
             </span>
           </div>
         </div>
@@ -244,19 +244,19 @@ const Consultants = () => {
                   <svg xmlns="http://www.w3.org/2000/svg" className="consultant-info-icon" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                   </svg>
-                  Status: <span className={getStatusBadgeClass(consultant.status)} style={{ marginLeft: '0.25rem' }}>
-                    {consultant.status}
+                  Trạng thái: <span className={getStatusBadgeClass(consultant.status)} style={{ marginLeft: '0.25rem' }}>
+                    {consultant.status === 'active' ? 'Đang hoạt động' : 'Không hoạt động'}
                   </span>
                 </div>
               </div>
               <div className="consultant-stats">
                 <div className="consultant-stat">
                   <div className="consultant-stat-value">{consultant.ratings}</div>
-                  <div className="consultant-stat-label">Rating</div>
+                  <div className="consultant-stat-label">Đánh Giá</div>
                 </div>
                 <div className="consultant-stat">
                   <div className="consultant-stat-value">{consultant.consultations}</div>
-                  <div className="consultant-stat-label">Consultations</div>
+                  <div className="consultant-stat-label">Buổi Tư Vấn</div>
                 </div>
               </div>
               <div className="consultant-actions">
@@ -264,13 +264,13 @@ const Consultants = () => {
                   onClick={() => handleEdit(consultant.id)}
                   className="consultant-action-button action-button-edit"
                 >
-                  Edit
+                  Sửa
                 </button>
                 <button 
                   onClick={() => handleDelete(consultant.id)}
                   className="consultant-action-button action-button-delete"
                 >
-                  Delete
+                  Xóa
                 </button>
               </div>
             </div>

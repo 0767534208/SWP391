@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './index.css';
 import './App.css';
@@ -14,22 +13,23 @@ import UserBlog from './pages/Blog/UserBlog';
 import BlogDetail from './pages/Blog/BlogDetail';
 import CycleTracker from './pages/CycleTracker/CycleTracker';
 import Profile from './pages/Profile/Profile';
+import ConsultantProfile from './pages/Profile/ConsultantProfile';
 import TestResults from './pages/TestResults/TestResultUser';
-
+import TestResultConsultant from './pages/TestResults/TestResultConsultant';
+import Services from './pages/Services/Services';
+import QnA from './pages/QnA/QnA';
 
 import Dashboard from './pages/Admin/Dashboard';
 import Users from './pages/Admin/User';
 import Appointments from './pages/Admin/Appointment';
-import AdminTestResults from './pages/Admin/TestResult';
 import Consultants from './pages/Admin/Consultant';
-import AdminBlog from './pages/Admin/BlogManagement';
-import Reports from './pages/Admin/Report';
 
 // Admin route wrapper component
 import type { ReactNode } from 'react';
 import ConfirmBooking from './pages/Booking/ConfirmBooking';
 import Contact from './pages/Contact/Contact';
 
+// Admin route wrapper component
 type AdminRouteProps = {
   children: ReactNode;
 };
@@ -37,6 +37,16 @@ type AdminRouteProps = {
 const AdminRoute = ({ children }: AdminRouteProps) => {
   const isAdmin = localStorage.getItem('userRole') === 'admin';
   return isAdmin ? <>{children}</> : <Navigate to="/auth/login" replace />;
+};
+
+// Consultant route wrapper component
+type ConsultantRouteProps = {
+  children: ReactNode;
+};
+
+const ConsultantRoute = ({ children }: ConsultantRouteProps) => {
+  const isConsultant = localStorage.getItem('userRole') === 'consultant';
+  return isConsultant ? <>{children}</> : <Navigate to="/auth/login" replace />;
 };
 
 function App() {
@@ -51,6 +61,7 @@ function App() {
           <Route path="auth/login" element={<Login />} />
           <Route path="auth/register" element={<Register />} />
           <Route path="booking" element={<Booking />} />
+          <Route path="services" element={<Services />} />
           <Route path="blogUser" element={<UserBlog />} />
           <Route path="/blog/:id" element={<BlogDetail />} />
           <Route path="CycleTracker" element={<CycleTracker />} />
@@ -58,6 +69,18 @@ function App() {
           <Route path="confirm-booking" element={<ConfirmBooking />} />
           <Route path="contact" element={<Contact />} />
           <Route path="test-results/:id" element={<TestResults />} />
+          <Route path="qna" element={<QnA />} />
+        </Route>
+
+        {/* Route dành cho consultant */}
+        <Route path="/consultant" element={
+          <ConsultantRoute>
+            <UserLayout />
+          </ConsultantRoute>
+        }>
+          <Route index element={<ConsultantProfile />} />
+          <Route path="profile" element={<ConsultantProfile />} />
+          <Route path="test-results" element={<TestResultConsultant />} />
         </Route>
 
         {/* Route dành cho admin */}
@@ -69,10 +92,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="users" element={<Users />} />
           <Route path="appointments" element={<Appointments />} />
-          <Route path="tests" element={<AdminTestResults />} />
           <Route path="consultants" element={<Consultants />} />
-          <Route path="blog" element={<AdminBlog />} />
-          <Route path="reports" element={<Reports />} />
         </Route>
       </Routes>
     </Router>

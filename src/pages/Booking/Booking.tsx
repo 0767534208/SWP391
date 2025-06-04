@@ -29,21 +29,51 @@ const Booking = () => {
   const services = [
     {
       id: 1,
-      name: 'Xét nghiệm STI',
-      duration: '60 phút',
-      price: '1.200.000đ'
+      name: 'Xét nghiệm & Tư vấn HIV',
+      duration: '30-45 phút',
+      price: '300.000 VNĐ'
     },
     {
       id: 2,
-      name: 'Tư vấn sức khỏe',
-      duration: '30 phút',
-      price: '800.000đ'
+      name: 'Kiểm tra STI toàn diện',
+      duration: '1 giờ',
+      price: '850.000 VNĐ'
     },
     {
       id: 3,
-      name: 'Khám sức khỏe sinh sản',
-      duration: '45 phút',
-      price: '900.000đ'
+      name: 'Tư vấn sức khỏe tình dục',
+      duration: '45-60 phút',
+      price: '400.000 VNĐ'
+    },
+    {
+      id: 4,
+      name: 'Gói khám sức khỏe sinh sản',
+      duration: '1.5 giờ',
+      price: '1.200.000 VNĐ'
+    },
+    {
+      id: 5,
+      name: 'Tư vấn biện pháp tránh thai',
+      duration: '30-45 phút',
+      price: '350.000 VNĐ'
+    },
+    {
+      id: 6,
+      name: 'Tiêm vắc-xin HPV',
+      duration: '15-20 phút',
+      price: '1.500.000 VNĐ'
+    },
+    {
+      id: 7,
+      name: 'Gói chăm sóc thai sản',
+      duration: '2 giờ (lần khám đầu)',
+      price: '2.500.000 VNĐ'
+    },
+    {
+      id: 8,
+      name: 'Quản lý thời kỳ mãn kinh',
+      duration: '45-60 phút',
+      price: '500.000 VNĐ'
     }
   ];
 
