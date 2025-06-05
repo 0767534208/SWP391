@@ -1,6 +1,7 @@
 .manager-layout {
   display: flex;
   position: relative;
+  background-color:#f3f4f6;
 }
 
 .manager-sidebar-fixed {
@@ -12,6 +13,7 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  background-color:#312e81;
 }
 
 .manager-sidebar-icon {

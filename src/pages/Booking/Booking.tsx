@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './Booking.css';
 import AdvisorModal from '../Booking/AdvisorModal';
 import ServiceCard from '../../components/ServiceCard';
@@ -49,6 +49,7 @@ interface Consultant {
 
 const Booking = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [selectedService, setSelectedService] = useState<number | null>(null);
@@ -446,6 +447,19 @@ const Booking = () => {
     dateInputs.forEach(input => {
       input.setAttribute('lang', 'vi-VN');
     });
+    
+    // Check if service ID was passed in location state
+    if (location.state && location.state.serviceId) {
+      const serviceId = location.state.serviceId;
+      setSelectedService(serviceId);
+      
+      // Find which page the service is on and set that page
+      const serviceIndex = services.findIndex(s => s.id === serviceId);
+      if (serviceIndex >= 0) {
+        const page = Math.floor(serviceIndex / 4);
+        setCurrentServicePage(page);
+      }
+    }
   }, []);
 
   // Reset time when date changes

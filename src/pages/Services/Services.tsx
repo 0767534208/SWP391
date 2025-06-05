@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Services.css';
 
 const Services = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [selectedService, setSelectedService] = useState<null | ServiceType>(null);
@@ -82,6 +84,11 @@ const Services = () => {
     setShowModal(true);
   };
 
+  // Handle navigation to booking
+  const handleBookService = (serviceId: number) => {
+    navigate('/booking', { state: { serviceId } });
+  };
+
   // Handle close modal
   const handleCloseModal = () => {
     setShowModal(false);
@@ -147,7 +154,7 @@ const Services = () => {
               <div className="service-card-actions">
                 <button 
                   className="service-action-button book-button"
-                  onClick={() => window.location.href = '/booking'}
+                  onClick={() => handleBookService(service.id)}
                 >
                   Đặt lịch
                 </button>
@@ -255,7 +262,7 @@ const Services = () => {
               <div className="service-modal-actions">
                 <button 
                   className="service-modal-book-button"
-                  onClick={() => window.location.href = '/booking'}
+                  onClick={() => handleBookService(selectedService.id)}
                 >
                   Đặt lịch ngay
                 </button>

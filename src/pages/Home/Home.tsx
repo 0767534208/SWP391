@@ -1,8 +1,14 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './Home.css';
 
 const Home = () => {
+  const navigate = useNavigate();
+
+  const handleBookService = (serviceId: number) => {
+    navigate('/booking', { state: { serviceId } });
+  };
+
   return (
     <main className="home-main">
       <section className="hero-section">
@@ -29,7 +35,7 @@ const Home = () => {
               <span className="duration">45 phút</span>
               <span className="price">1.200.000 VND</span>
             </div>
-            <Link to="/booking" className="service-link">Đặt lịch ngay</Link>
+            <button className="service-link" onClick={() => handleBookService(2)}>Đặt lịch ngay</button>
           </div>
           <div className="feature-card service-card">
             <img src="/tu van suc khoe.png" alt="Tư vấn sức khỏe" className="service-card-image" />
@@ -39,7 +45,7 @@ const Home = () => {
               <span className="duration">60 phút</span>
               <span className="price">800.000 VND</span>
             </div>
-            <Link to="/booking" className="service-link">Đặt lịch ngay</Link>
+            <button className="service-link" onClick={() => handleBookService(3)}>Đặt lịch ngay</button>
           </div>
           <div className="feature-card service-card">
             <img src="/blog-2.png" alt="Sức khỏe sinh sản" className="service-card-image" />
@@ -49,7 +55,7 @@ const Home = () => {
               <span className="duration">60 phút</span>
               <span className="price">900.000 VND</span>
             </div>
-            <Link to="/booking" className="service-link">Đặt lịch ngay</Link>
+            <button className="service-link" onClick={() => handleBookService(4)}>Đặt lịch ngay</button>
           </div>
           <div className="feature-card service-card">
             <img src="/bang_tinh_chu_ky_kinh_nguyet_va_thoi_diem_rung_trung.jpg" alt="Theo dõi chu kỳ" className="service-card-image" />
