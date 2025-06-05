@@ -41,20 +41,20 @@ const Dashboard = () => {
 
   // Data for pie chart
   const genderData = {
-    labels: ['Nam', 'Nữ', 'Khác'],
+    labels: ['Nam', 'Nữ'],
     datasets: [
       {
         label: 'Người dùng',
-        data: [450, 750, 45],
+        data: [450, 750],
         backgroundColor: [
           'rgba(59, 130, 246, 0.7)',
           'rgba(236, 72, 153, 0.7)',
-          'rgba(107, 114, 128, 0.7)',
+        
         ],
         borderColor: [
           'rgb(59, 130, 246)',
           'rgb(236, 72, 153)',
-          'rgb(107, 114, 128)',
+         
         ],
         borderWidth: 1,
       },
