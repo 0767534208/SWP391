@@ -244,7 +244,7 @@ const QnA = () => {
         // Get current vote status for this question
         const currentVote = userVotes.questions[id];
         
-        // Handle different voting scenarios
+        // Handle different voting scenarios - but always change by exactly 1 unit
         if (currentVote === direction) {
           // Clicking the same direction again = removing vote
           if (direction === 'up') {
@@ -262,13 +262,13 @@ const QnA = () => {
           }
           updatedUserVotes.questions[id] = direction;
         } else {
-          // Changing vote from opposite direction
+          // Changing vote from opposite direction - CHANGED to only adjust by 1
           if (direction === 'up') {
-            // Changing from down to up (+2: remove down, add up)
-            updatedQuestions[questionIndex].votes += 2;
+            // Changing from down to up (just add 1)
+            updatedQuestions[questionIndex].votes += 1;
           } else {
-            // Changing from up to down (-2: remove up, add down)
-            updatedQuestions[questionIndex].votes = Math.max(0, updatedQuestions[questionIndex].votes - 2);
+            // Changing from up to down (just subtract 1)
+            updatedQuestions[questionIndex].votes = Math.max(0, updatedQuestions[questionIndex].votes - 1);
           }
           updatedUserVotes.questions[id] = direction;
         }
@@ -292,7 +292,7 @@ const QnA = () => {
             // Get current vote status for this answer
             const currentVote = userVotes.answers[id];
             
-            // Handle different voting scenarios
+            // Handle different voting scenarios - but always change by exactly 1 unit
             if (currentVote === direction) {
               // Clicking the same direction again = removing vote
               if (direction === 'up') {
@@ -310,13 +310,13 @@ const QnA = () => {
               }
               updatedUserVotes.answers[id] = direction;
             } else {
-              // Changing vote from opposite direction
+              // Changing vote from opposite direction - CHANGED to only adjust by 1
               if (direction === 'up') {
-                // Changing from down to up (+2: remove down, add up)
-                updatedQuestions[questionIndex].answers[answerIndex].votes += 2;
+                // Changing from down to up (just add 1)
+                updatedQuestions[questionIndex].answers[answerIndex].votes += 1;
               } else {
-                // Changing from up to down (-2: remove up, add down)
-                updatedQuestions[questionIndex].answers[answerIndex].votes = Math.max(0, updatedQuestions[questionIndex].answers[answerIndex].votes - 2);
+                // Changing from up to down (just subtract 1)
+                updatedQuestions[questionIndex].answers[answerIndex].votes = Math.max(0, updatedQuestions[questionIndex].answers[answerIndex].votes - 1);
               }
               updatedUserVotes.answers[id] = direction;
             }
@@ -412,8 +412,8 @@ const QnA = () => {
                   onClick={(e) => handleVote(e, question.id, 'question', 'up')}
                   title="Thích"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
                   </svg>
                 </button>
                 <span className="vote-count">{question.votes}</span>
@@ -422,11 +422,12 @@ const QnA = () => {
                   onClick={(e) => handleVote(e, question.id, 'question', 'down')}
                   title="Không thích"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H7"></path>
+                    <path d="M17 2h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path>
                   </svg>
                 </button>
-                <span className="vote-label">bình chọn</span>
+                <span className="vote-label" style={{display: 'none'}}>bình chọn</span>
               </div>
               
               <div className="question-content">
@@ -483,8 +484,9 @@ const QnA = () => {
         <div className="question-modal-overlay" onClick={closeQuestion}>
           <div className="question-modal-content" onClick={e => e.stopPropagation()}>
             <button className="modal-close-button" onClick={closeQuestion}>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
             </button>
             
@@ -514,8 +516,8 @@ const QnA = () => {
                     onClick={(e) => handleVote(e, selectedQuestion.id, 'question', 'up')}
                     title="Thích"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
                     </svg>
                   </button>
                   <span>{selectedQuestion.votes}</span>
@@ -524,8 +526,9 @@ const QnA = () => {
                     onClick={(e) => handleVote(e, selectedQuestion.id, 'question', 'down')}
                     title="Không thích"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H7"></path>
+                      <path d="M17 2h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path>
                     </svg>
                   </button>
                 </div>
@@ -553,8 +556,8 @@ const QnA = () => {
                           onClick={(e) => handleVote(e, answer.id, 'answer', 'up')}
                           title="Thích"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
                           </svg>
                         </button>
                         <span>{answer.votes}</span>
@@ -563,8 +566,9 @@ const QnA = () => {
                           onClick={(e) => handleVote(e, answer.id, 'answer', 'down')}
                           title="Không thích"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H7"></path>
+                            <path d="M17 2h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path>
                           </svg>
                         </button>
                       </div>
@@ -602,8 +606,9 @@ const QnA = () => {
         <div className="ask-modal-overlay" onClick={() => setShowAskModal(false)}>
           <div className="ask-modal-content" onClick={e => e.stopPropagation()}>
             <button className="modal-close-button" onClick={() => setShowAskModal(false)}>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
             </button>
             

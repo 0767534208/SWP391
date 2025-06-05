@@ -295,10 +295,12 @@
   background-color: rgba(0, 0, 0, 0.75);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   z-index: 50;
   padding: 1.5rem;
+  padding-top: 6rem;
   backdrop-filter: blur(8px);
+  overflow-y: auto;
 }
 
 .service-modal-content {
@@ -306,7 +308,7 @@
   border-radius: 1.5rem;
   width: 100%;
   max-width: 800px;
-  max-height: 90vh;
+  max-height: 80vh;
   overflow: hidden;
   position: relative;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
@@ -384,6 +386,7 @@
   padding: 2.5rem;
   overflow-y: auto;
   flex: 1;
+  max-width: 100%;
 }
 
 .service-modal-title {
@@ -685,6 +688,7 @@
 
   .service-modal-overlay {
     padding: 0;
+    padding-top: 4rem;
   }
 
   .service-modal-content {

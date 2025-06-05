@@ -137,7 +137,7 @@
 
 .question-votes {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   min-width: 60px;
   padding-top: 0.25rem;
@@ -164,10 +164,12 @@
   width: 1rem;
   height: 1rem;
   color: #6b7280;
+  stroke: #6b7280;
 }
 
 .question-votes .vote-button:hover svg {
   color: #374151;
+  stroke: #374151;
 }
 
 /* Like/Dislike button styles */
@@ -177,6 +179,7 @@
 
 .vote-button.active-up svg {
   color: #3b82f6;
+  stroke: #3b82f6;
 }
 
 .vote-button.active-down {
@@ -185,6 +188,7 @@
 
 .vote-button.active-down svg {
   color: #dc2626;
+  stroke: #dc2626;
 }
 
 .vote-count {
@@ -299,9 +303,10 @@
   background-color: rgba(0, 0, 0, 0.75);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   z-index: 50;
   padding: 1rem;
+  padding-top: 6rem;
   overflow-y: auto;
 }
 
@@ -309,7 +314,7 @@
   position: relative;
   width: 100%;
   max-width: 800px;
-  max-height: 90vh;
+  max-height: 80vh;
   overflow-y: auto;
   background-color: white;
   border-radius: 0.5rem;
@@ -318,9 +323,13 @@
 }
 
 @media (max-width: 640px) {
+  .question-modal-overlay {
+    padding-top: 4rem;
+  }
+  
   .question-modal-content {
     padding: 1rem;
-    max-height: 85vh;
+    max-height: 80vh;
     width: 95%;
   }
   
@@ -366,23 +375,53 @@
   position: absolute;
   top: 1rem;
   right: 1rem;
-  padding: 0.25rem;
+  padding: 0.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0.25rem;
+  border-radius: 9999px;
   color: #6b7280;
-  transition: color 0.15s ease-in-out;
+  transition: all 0.2s ease-in-out;
+  background-color: #f3f4f6;
+  border: none;
+  width: 2rem;
+  height: 2rem;
+  z-index: 10;
 }
 
 .modal-close-button:hover {
-  color: #111827;
+  color: #ef4444;
+  background-color: #fee2e2;
+  transform: rotate(90deg);
 }
 
 .question-detail-header {
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-minimize-button {
+  position: absolute;
+  top: 1rem;
+  right: 4rem;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  color: #6b7280;
+  transition: all 0.2s ease-in-out;
+  background-color: #f3f4f6;
+  border: none;
+  width: 2rem;
+  height: 2rem;
+  z-index: 10;
+}
+
+.modal-minimize-button:hover {
+  color: #ef4444;
+  background-color: #fee2e2;
 }
 
 .question-detail-header h2 {
@@ -425,7 +464,7 @@
 /* Vote buttons */
 .vote-buttons {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   gap: 0.25rem;
   margin-right: 1rem;
@@ -457,10 +496,12 @@
   width: 1.25rem;
   height: 1.25rem;
   color: #6b7280;
+  stroke: #6b7280;
 }
 
 .vote-button:hover svg {
   color: #374151;
+  stroke: #374151;
 }
 
 /* Answers section */
@@ -487,6 +528,7 @@
 
 .answer-content {
   margin-bottom: 1rem;
+  max-width: 100%;
 }
 
 .answer-content p {
@@ -659,7 +701,7 @@
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding-top: 3rem;
+  padding-top: 6rem;
   z-index: 50;
   overflow-y: auto;
 }
@@ -686,21 +728,25 @@
   position: absolute;
   top: 1rem;
   right: 1rem;
-  padding: 0.25rem;
+  padding: 0.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0.25rem;
+  border-radius: 9999px;
   color: #6b7280;
-  transition: color 0.15s ease-in-out;
-  background: transparent;
+  transition: all 0.2s ease-in-out;
+  background-color: #f3f4f6;
   border: none;
+  width: 2rem;
+  height: 2rem;
+  z-index: 10;
   cursor: pointer;
 }
 
 .ask-modal-content .modal-close-button:hover {
-  color: #111827;
-  background-color: #f3f4f6;
+  color: #ef4444;
+  background-color: #fee2e2;
+  transform: rotate(90deg);
 }
 
 /* Form structure improvements */
@@ -806,6 +852,10 @@
   
   .vote-buttons {
     margin: 0 auto;
+  }
+  
+  .ask-modal-overlay {
+    padding-top: 4rem;
   }
   
   .ask-modal-content {
