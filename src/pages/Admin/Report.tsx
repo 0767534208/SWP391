@@ -221,11 +221,73 @@ const Reports = () => {
   };
 
   const handlePrint = () => {
+    // Ẩn các phần không cần in
+    const originalStyles = document.body.style.cssText;
+    const controlsToHide = document.querySelectorAll('.filter-controls, .print-export-buttons');
+    
+    controlsToHide.forEach(element => {
+      (element as HTMLElement).style.display = 'none';
+    });
+    
+    // Thêm CSS cho chế độ in
+    const style = document.createElement('style');
+    style.id = 'print-styles';
+    style.innerHTML = `
+      @media print {
+        body { padding: 20px; }
+        .reports-container { width: 100%; }
+        .chart-container { page-break-inside: avoid; }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // In tài liệu
     window.print();
+    
+    // Khôi phục lại giao diện
+    controlsToHide.forEach(element => {
+      (element as HTMLElement).style.display = '';
+    });
+    document.body.style.cssText = originalStyles;
+    document.getElementById('print-styles')?.remove();
   };
 
   const handleExport = () => {
-    alert('Export functionality will be implemented in a future update.');
+    // Đối với CSV, ta cần chuyển đổi dữ liệu thành định dạng CSV
+    let csvContent = 'data:text/csv;charset=utf-8,';
+    
+    // Tiêu đề báo cáo
+    csvContent += `Báo cáo ${reportType === 'general' ? 'Tổng Quan' : reportType === 'users' ? 'Người Dùng' : reportType === 'services' ? 'Dịch Vụ' : 'Tài Chính'}\r\n\r\n`;
+    
+    // Thêm thông tin thống kê
+    csvContent += 'Chỉ số,Giá trị\r\n';
+    if (reportType === 'general' || reportType === 'users') {
+      csvContent += `Tổng Người Dùng,${generalStats.totalUsers}\r\n`;
+      csvContent += `Người Dùng Mới Tháng Này,${generalStats.newUsersThisMonth}\r\n`;
+    }
+    if (reportType === 'general' || reportType === 'services') {
+      csvContent += `Tổng Buổi Tư Vấn,${generalStats.totalConsultations}\r\n`;
+      csvContent += `Lịch Hẹn Tháng Này,${generalStats.appointmentsThisMonth}\r\n`;
+      csvContent += `Kết Quả Xét Nghiệm Dương Tính,${generalStats.positiveResults}\r\n`;
+      csvContent += `Tư Vấn Viên Hoạt Động,${generalStats.activeConsultants}\r\n`;
+    }
+    if (reportType === 'general' || reportType === 'financial') {
+      csvContent += `Tổng Doanh Thu,${generalStats.totalRevenue}\r\n`;
+      csvContent += `Doanh Thu Tháng Này,${generalStats.revenueThisMonth}\r\n`;
+    }
+    
+    // Mã hóa URL và tạo tệp để tải xuống
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `bao-cao-${reportType}-${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    
+    // Tải xuống tệp
+    link.click();
+    
+    // Dọn dẹp
+    document.body.removeChild(link);
   };
 
   return (

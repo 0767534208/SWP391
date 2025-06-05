@@ -1,15 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, type ChangeEvent } from 'react';
 import './Consultant.css';
+
+interface ConsultantType {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  specialty: string;
+  status: string;
+  ratings: number;
+  consultations: number;
+  image: string;
+}
+
+interface ConsultantFormData {
+  name: string;
+  email: string;
+  phone: string;
+  specialty: string;
+  status: string;
+  image: string;
+}
 
 const Consultants = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSpecialty, setFilterSpecialty] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [currentConsultant, setCurrentConsultant] = useState<ConsultantType | null>(null);
   const consultantsPerPage = 8; // Changed from 10 to 8 for better grid layout
 
+  // Form state for add/edit consultant
+  const [formData, setFormData] = useState<ConsultantFormData>({
+    name: '',
+    email: '',
+    phone: '',
+    specialty: 'Reproductive Health',
+    status: 'active',
+    image: 'https://randomuser.me/api/portraits/men/1.jpg'
+  });
+
   // Mock data
-  const consultants = [
+  const [consultants, setConsultants] = useState<ConsultantType[]>([
     { id: 1, name: 'Dr. John Smith', email: 'johnsmith@example.com', phone: '0901234567', specialty: 'Reproductive Health', status: 'active', ratings: 4.8, consultations: 158, image: 'https://randomuser.me/api/portraits/men/1.jpg' },
     { id: 2, name: 'Dr. Sarah Johnson', email: 'sarahjohnson@example.com', phone: '0912345678', specialty: 'HIV/AIDS', status: 'active', ratings: 4.9, consultations: 216, image: 'https://randomuser.me/api/portraits/women/2.jpg' },
     { id: 3, name: 'Dr. Michael Brown', email: 'michaelbrown@example.com', phone: '0923456789', specialty: 'STI Treatment', status: 'inactive', ratings: 4.5, consultations: 94, image: 'https://randomuser.me/api/portraits/men/3.jpg' },
@@ -22,7 +57,7 @@ const Consultants = () => {
     { id: 10, name: 'Dr. Jennifer Anderson', email: 'jenniferanderson@example.com', phone: '0990123456', specialty: 'Reproductive Health', status: 'inactive', ratings: 4.4, consultations: 86, image: 'https://randomuser.me/api/portraits/women/10.jpg' },
     { id: 11, name: 'Dr. Thomas White', email: 'thomaswhite@example.com', phone: '0901234568', specialty: 'HIV/AIDS', status: 'active', ratings: 4.8, consultations: 197, image: 'https://randomuser.me/api/portraits/men/11.jpg' },
     { id: 12, name: 'Dr. Mary Clark', email: 'maryclark@example.com', phone: '0912345679', specialty: 'STI Treatment', status: 'active', ratings: 4.6, consultations: 132, image: 'https://randomuser.me/api/portraits/women/12.jpg' },
-  ];
+  ]);
 
   // Statistics
   const stats = {
@@ -74,20 +109,126 @@ const Consultants = () => {
     }
   };
 
+  // Handle form input change
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+  };
+
   // Handle user actions
   const handleEdit = (id: number) => {
-    console.log('Edit consultant', id);
-    // Implementation for edit
+    const consultantToEdit = consultants.find(consultant => consultant.id === id);
+    if (consultantToEdit) {
+      setCurrentConsultant(consultantToEdit);
+      setFormData({
+        name: consultantToEdit.name,
+        email: consultantToEdit.email,
+        phone: consultantToEdit.phone,
+        specialty: consultantToEdit.specialty,
+        status: consultantToEdit.status,
+        image: consultantToEdit.image
+      });
+      setIsEditModalOpen(true);
+    }
   };
 
   const handleDelete = (id: number) => {
-    console.log('Delete consultant', id);
-    // Implementation for delete
+    const consultantToDelete = consultants.find(consultant => consultant.id === id);
+    if (consultantToDelete) {
+      setCurrentConsultant(consultantToDelete);
+      setIsDeleteModalOpen(true);
+    }
   };
 
   const handleAddNew = () => {
-    console.log('Add new consultant');
-    // Implementation for adding new consultant
+    // Reset form data
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      specialty: 'Reproductive Health',
+      status: 'active',
+      image: 'https://randomuser.me/api/portraits/men/1.jpg'
+    });
+    setIsAddModalOpen(true);
+  };
+
+  // CRUD operations
+  const addConsultant = () => {
+    // Validate form
+    if (!formData.name || !formData.email || !formData.phone) {
+      alert('Vui lòng điền đầy đủ thông tin');
+      return;
+    }
+
+    // Create new consultant object
+    const newConsultant: ConsultantType = {
+      id: consultants.length > 0 ? Math.max(...consultants.map(c => c.id)) + 1 : 1,
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      specialty: formData.specialty,
+      status: formData.status,
+      ratings: 0,
+      consultations: 0,
+      image: formData.image
+    };
+
+    // Add new consultant to the list
+    setConsultants([...consultants, newConsultant]);
+    setIsAddModalOpen(false);
+  };
+
+  const updateConsultant = () => {
+    // Validate form
+    if (!formData.name || !formData.email || !formData.phone) {
+      alert('Vui lòng điền đầy đủ thông tin');
+      return;
+    }
+
+    if (currentConsultant) {
+      // Update consultant
+      const updatedConsultants = consultants.map(consultant => {
+        if (consultant.id === currentConsultant.id) {
+          return {
+            ...consultant,
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            specialty: formData.specialty,
+            status: formData.status,
+            image: formData.image
+          };
+        }
+        return consultant;
+      });
+
+      setConsultants(updatedConsultants);
+      setIsEditModalOpen(false);
+    }
+  };
+
+  const deleteConsultant = () => {
+    if (currentConsultant) {
+      const updatedConsultants = consultants.filter(consultant => consultant.id !== currentConsultant.id);
+      setConsultants(updatedConsultants);
+      setIsDeleteModalOpen(false);
+    }
+  };
+
+  // Image preview function
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string>(formData.image);
+  
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setFormData({
+      ...formData,
+      image: value
+    });
+    setImagePreviewUrl(value);
   };
 
   return (
@@ -262,15 +403,21 @@ const Consultants = () => {
               <div className="consultant-actions">
                 <button 
                   onClick={() => handleEdit(consultant.id)}
-                  className="consultant-action-button action-button-edit"
+                  className="action-button action-button-edit"
+                  title="Chỉnh sửa"
                 >
-                  Sửa
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                  </svg>
                 </button>
                 <button 
                   onClick={() => handleDelete(consultant.id)}
-                  className="consultant-action-button action-button-delete"
+                  className="action-button action-button-delete"
+                  title="Xóa"
                 >
-                  Xóa
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -330,6 +477,293 @@ const Consultants = () => {
               <path fillRule="evenodd" d="M4.293 15.707a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clipRule="evenodd" />
             </svg>
           </button>
+        </div>
+      )}
+
+      {/* Add Consultant Modal */}
+      {isAddModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2>Thêm Chuyên Gia Mới</h2>
+              <span className="close" onClick={() => setIsAddModalOpen(false)}>&times;</span>
+            </div>
+            
+            <div className="modal-body">
+              <form onSubmit={(e) => { e.preventDefault(); addConsultant(); }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="form-group">
+                    <label htmlFor="name">Tên Đầy Đủ <span className="required-field">*</span></label>
+                    <input 
+                      id="name"
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="email">Email <span className="required-field">*</span></label>
+                    <input 
+                      id="email"
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="phone">Số Điện Thoại <span className="required-field">*</span></label>
+                    <input 
+                      id="phone"
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="specialty">Chuyên Môn</label>
+                    <select 
+                      id="specialty"
+                      name="specialty"
+                      value={formData.specialty}
+                      onChange={handleInputChange}
+                      className="form-select"
+                    >
+                      <option value="Reproductive Health">Sức Khỏe Sinh Sản</option>
+                      <option value="HIV/AIDS">HIV/AIDS</option>
+                      <option value="STI Treatment">Điều Trị STI</option>
+                    </select>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="status">Trạng Thái</label>
+                    <select 
+                      id="status"
+                      name="status"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                      className="form-select"
+                    >
+                      <option value="active">Hoạt Động</option>
+                      <option value="inactive">Không Hoạt Động</option>
+                    </select>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="image">Avatar URL</label>
+                    <input 
+                      id="image"
+                      type="text"
+                      name="image"
+                      value={formData.image}
+                      onChange={handleImageChange}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+                
+                {/* Image preview */}
+                <div className="mt-4">
+                  <label>Xem Trước Ảnh:</label>
+                  <div className="mt-2">
+                    <img src={imagePreviewUrl} alt="Avatar Preview" className="image-preview" />
+                  </div>
+                </div>
+                
+                <div className="button-group mt-4">
+                  <button 
+                    type="button" 
+                    className="btn-secondary" 
+                    onClick={() => setIsAddModalOpen(false)}
+                  >
+                    Hủy
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn-primary"
+                  >
+                    Thêm Chuyên Gia
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Consultant Modal */}
+      {isEditModalOpen && currentConsultant && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2>Chỉnh Sửa Thông Tin Chuyên Gia</h2>
+              <span className="close" onClick={() => setIsEditModalOpen(false)}>&times;</span>
+            </div>
+            
+            <div className="modal-body">
+              <form onSubmit={(e) => { e.preventDefault(); updateConsultant(); }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="form-group">
+                    <label htmlFor="edit-name">Tên Đầy Đủ <span className="required-field">*</span></label>
+                    <input 
+                      id="edit-name"
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="edit-email">Email <span className="required-field">*</span></label>
+                    <input 
+                      id="edit-email"
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="edit-phone">Số Điện Thoại <span className="required-field">*</span></label>
+                    <input 
+                      id="edit-phone"
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="edit-specialty">Chuyên Môn</label>
+                    <select 
+                      id="edit-specialty"
+                      name="specialty"
+                      value={formData.specialty}
+                      onChange={handleInputChange}
+                      className="form-select"
+                    >
+                      <option value="Reproductive Health">Sức Khỏe Sinh Sản</option>
+                      <option value="HIV/AIDS">HIV/AIDS</option>
+                      <option value="STI Treatment">Điều Trị STI</option>
+                    </select>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="edit-status">Trạng Thái</label>
+                    <select 
+                      id="edit-status"
+                      name="status"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                      className="form-select"
+                    >
+                      <option value="active">Hoạt Động</option>
+                      <option value="inactive">Không Hoạt Động</option>
+                    </select>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="edit-image">Avatar URL</label>
+                    <input 
+                      id="edit-image"
+                      type="text"
+                      name="image"
+                      value={formData.image}
+                      onChange={handleImageChange}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+                
+                {/* Image preview */}
+                <div className="mt-4">
+                  <label>Xem Trước Ảnh:</label>
+                  <div className="mt-2">
+                    <img src={imagePreviewUrl} alt="Avatar Preview" className="image-preview" />
+                  </div>
+                </div>
+                
+                <div className="button-group mt-4">
+                  <button 
+                    type="button" 
+                    className="btn-secondary" 
+                    onClick={() => setIsEditModalOpen(false)}
+                  >
+                    Hủy
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn-primary"
+                  >
+                    Cập Nhật
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && currentConsultant && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2>Xác Nhận Xóa</h2>
+              <span className="close" onClick={() => setIsDeleteModalOpen(false)}>&times;</span>
+            </div>
+            
+            <div className="modal-body">
+              <div className="flex items-center mb-4">
+                <img src={currentConsultant.image} alt={currentConsultant.name} className="w-16 h-16 rounded-full mr-4 object-cover" />
+                <div>
+                  <p className="font-medium">{currentConsultant.name}</p>
+                  <p className="text-sm text-gray-500">{currentConsultant.specialty}</p>
+                </div>
+              </div>
+              
+              <p className="mb-2">Bạn có chắc chắn muốn xóa chuyên gia này khỏi hệ thống?</p>
+              <p className="text-sm text-red-500">Hành động này không thể hoàn tác!</p>
+            </div>
+            
+            <div className="button-group mt-4">
+              <button 
+                className="btn-secondary" 
+                onClick={() => setIsDeleteModalOpen(false)}
+              >
+                Hủy
+              </button>
+              <button 
+                className="btn-danger" 
+                onClick={() => {
+                  deleteConsultant();
+                  setIsDeleteModalOpen(false);
+                }}
+              >
+                Xác Nhận Xóa
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
