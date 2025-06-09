@@ -1,35 +1,68 @@
-import React, { useState } from 'react';
+import React, { useState, type ChangeEvent } from 'react';
 import './Consultant.css';
+
+interface ConsultantType {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  specialty: string;
+  status: string;
+  consultations: number;
+  image: string;
+}
+
+interface ConsultantFormData {
+  name: string;
+  email: string;
+  phone: string;
+  specialty: string;
+  status: string;
+  image: string;
+}
 
 const Consultants = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSpecialty, setFilterSpecialty] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [currentConsultant, setCurrentConsultant] = useState<ConsultantType | null>(null);
   const consultantsPerPage = 8; // Changed from 10 to 8 for better grid layout
 
+  // Form state for add/edit consultant
+  const [formData, setFormData] = useState<ConsultantFormData>({
+    name: '',
+    email: '',
+    phone: '',
+    specialty: 'Reproductive Health',
+    status: 'active',
+    image: 'https://randomuser.me/api/portraits/men/1.jpg'
+  });
+
   // Mock data
-  const consultants = [
-    { id: 1, name: 'Dr. John Smith', email: 'johnsmith@example.com', phone: '0901234567', specialty: 'Reproductive Health', status: 'active', ratings: 4.8, consultations: 158, image: 'https://randomuser.me/api/portraits/men/1.jpg' },
-    { id: 2, name: 'Dr. Sarah Johnson', email: 'sarahjohnson@example.com', phone: '0912345678', specialty: 'HIV/AIDS', status: 'active', ratings: 4.9, consultations: 216, image: 'https://randomuser.me/api/portraits/women/2.jpg' },
-    { id: 3, name: 'Dr. Michael Brown', email: 'michaelbrown@example.com', phone: '0923456789', specialty: 'STI Treatment', status: 'inactive', ratings: 4.5, consultations: 94, image: 'https://randomuser.me/api/portraits/men/3.jpg' },
-    { id: 4, name: 'Dr. Emily Davis', email: 'emilydavis@example.com', phone: '0934567890', specialty: 'Reproductive Health', status: 'active', ratings: 4.7, consultations: 172, image: 'https://randomuser.me/api/portraits/women/4.jpg' },
-    { id: 5, name: 'Dr. Robert Wilson', email: 'robertwilson@example.com', phone: '0945678901', specialty: 'HIV/AIDS', status: 'active', ratings: 4.6, consultations: 143, image: 'https://randomuser.me/api/portraits/men/5.jpg' },
-    { id: 6, name: 'Dr. Jessica Miller', email: 'jessicamiller@example.com', phone: '0956789012', specialty: 'STI Treatment', status: 'inactive', ratings: 4.3, consultations: 78, image: 'https://randomuser.me/api/portraits/women/6.jpg' },
-    { id: 7, name: 'Dr. David Garcia', email: 'davidgarcia@example.com', phone: '0967890123', specialty: 'Reproductive Health', status: 'active', ratings: 4.9, consultations: 201, image: 'https://randomuser.me/api/portraits/men/7.jpg' },
-    { id: 8, name: 'Dr. Linda Martinez', email: 'lindamartinez@example.com', phone: '0978901234', specialty: 'HIV/AIDS', status: 'active', ratings: 4.7, consultations: 165, image: 'https://randomuser.me/api/portraits/women/8.jpg' },
-    { id: 9, name: 'Dr. James Taylor', email: 'jamestaylor@example.com', phone: '0989012345', specialty: 'STI Treatment', status: 'active', ratings: 4.5, consultations: 112, image: 'https://randomuser.me/api/portraits/men/9.jpg' },
-    { id: 10, name: 'Dr. Jennifer Anderson', email: 'jenniferanderson@example.com', phone: '0990123456', specialty: 'Reproductive Health', status: 'inactive', ratings: 4.4, consultations: 86, image: 'https://randomuser.me/api/portraits/women/10.jpg' },
-    { id: 11, name: 'Dr. Thomas White', email: 'thomaswhite@example.com', phone: '0901234568', specialty: 'HIV/AIDS', status: 'active', ratings: 4.8, consultations: 197, image: 'https://randomuser.me/api/portraits/men/11.jpg' },
-    { id: 12, name: 'Dr. Mary Clark', email: 'maryclark@example.com', phone: '0912345679', specialty: 'STI Treatment', status: 'active', ratings: 4.6, consultations: 132, image: 'https://randomuser.me/api/portraits/women/12.jpg' },
-  ];
+  const [consultants, setConsultants] = useState<ConsultantType[]>([
+    { id: 1, name: 'Dr. John Smith', email: 'johnsmith@example.com', phone: '0901234567', specialty: 'Reproductive Health', status: 'active', consultations: 158, image: 'https://randomuser.me/api/portraits/men/1.jpg' },
+    { id: 2, name: 'Dr. Sarah Johnson', email: 'sarahjohnson@example.com', phone: '0912345678', specialty: 'HIV/AIDS', status: 'active', consultations: 216, image: 'https://randomuser.me/api/portraits/women/2.jpg' },
+    { id: 3, name: 'Dr. Michael Brown', email: 'michaelbrown@example.com', phone: '0923456789', specialty: 'STI Treatment', status: 'inactive', consultations: 94, image: 'https://randomuser.me/api/portraits/men/3.jpg' },
+    { id: 4, name: 'Dr. Emily Davis', email: 'emilydavis@example.com', phone: '0934567890', specialty: 'Reproductive Health', status: 'active', consultations: 172, image: 'https://randomuser.me/api/portraits/women/4.jpg' },
+    { id: 5, name: 'Dr. Robert Wilson', email: 'robertwilson@example.com', phone: '0945678901', specialty: 'HIV/AIDS', status: 'active', consultations: 143, image: 'https://randomuser.me/api/portraits/men/5.jpg' },
+    { id: 6, name: 'Dr. Jessica Miller', email: 'jessicamiller@example.com', phone: '0956789012', specialty: 'STI Treatment', status: 'inactive', consultations: 78, image: 'https://randomuser.me/api/portraits/women/6.jpg' },
+    { id: 7, name: 'Dr. David Garcia', email: 'davidgarcia@example.com', phone: '0967890123', specialty: 'Reproductive Health', status: 'active', consultations: 201, image: 'https://randomuser.me/api/portraits/men/7.jpg' },
+    { id: 8, name: 'Dr. Linda Martinez', email: 'lindamartinez@example.com', phone: '0978901234', specialty: 'HIV/AIDS', status: 'active', consultations: 165, image: 'https://randomuser.me/api/portraits/women/8.jpg' },
+    { id: 9, name: 'Dr. James Taylor', email: 'jamestaylor@example.com', phone: '0989012345', specialty: 'STI Treatment', status: 'active', consultations: 112, image: 'https://randomuser.me/api/portraits/men/9.jpg' },
+    { id: 10, name: 'Dr. Jennifer Anderson', email: 'jenniferanderson@example.com', phone: '0990123456', specialty: 'Reproductive Health', status: 'inactive', consultations: 86, image: 'https://randomuser.me/api/portraits/women/10.jpg' },
+    { id: 11, name: 'Dr. Thomas White', email: 'thomaswhite@example.com', phone: '0901234568', specialty: 'HIV/AIDS', status: 'active', consultations: 197, image: 'https://randomuser.me/api/portraits/men/11.jpg' },
+    { id: 12, name: 'Dr. Mary Clark', email: 'maryclark@example.com', phone: '0912345679', specialty: 'STI Treatment', status: 'active', consultations: 132, image: 'https://randomuser.me/api/portraits/women/12.jpg' },
+  ]);
 
   // Statistics
   const stats = {
     totalConsultants: consultants.length,
     activeConsultants: consultants.filter(consultant => consultant.status === 'active').length,
-    totalConsultations: consultants.reduce((sum, consultant) => sum + consultant.consultations, 0),
-    avgRating: (consultants.reduce((sum, consultant) => sum + consultant.ratings, 0) / consultants.length).toFixed(1)
+    totalConsultations: consultants.reduce((sum, consultant) => sum + consultant.consultations, 0)
   };
 
   // Filter consultants
@@ -74,29 +107,134 @@ const Consultants = () => {
     }
   };
 
+  // Handle form input change
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+  };
+
   // Handle user actions
   const handleEdit = (id: number) => {
-    console.log('Edit consultant', id);
-    // Implementation for edit
+    const consultantToEdit = consultants.find(consultant => consultant.id === id);
+    if (consultantToEdit) {
+      setCurrentConsultant(consultantToEdit);
+      setFormData({
+        name: consultantToEdit.name,
+        email: consultantToEdit.email,
+        phone: consultantToEdit.phone,
+        specialty: consultantToEdit.specialty,
+        status: consultantToEdit.status,
+        image: consultantToEdit.image
+      });
+      setIsEditModalOpen(true);
+    }
   };
 
   const handleDelete = (id: number) => {
-    console.log('Delete consultant', id);
-    // Implementation for delete
+    const consultantToDelete = consultants.find(consultant => consultant.id === id);
+    if (consultantToDelete) {
+      setCurrentConsultant(consultantToDelete);
+      setIsDeleteModalOpen(true);
+    }
   };
 
   const handleAddNew = () => {
-    console.log('Add new consultant');
-    // Implementation for adding new consultant
+    // Reset form data
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      specialty: 'Reproductive Health',
+      status: 'active',
+      image: 'https://randomuser.me/api/portraits/men/1.jpg'
+    });
+    setIsAddModalOpen(true);
+  };
+
+  // CRUD operations
+  const addConsultant = () => {
+    // Validate form
+    if (!formData.name || !formData.email || !formData.phone) {
+      alert('Vui lòng điền đầy đủ thông tin');
+      return;
+    }
+
+    // Create new consultant object
+    const newConsultant: ConsultantType = {
+      id: consultants.length > 0 ? Math.max(...consultants.map(c => c.id)) + 1 : 1,
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      specialty: formData.specialty,
+      status: formData.status,
+      consultations: 0,
+      image: formData.image
+    };
+
+    // Add new consultant to the list
+    setConsultants([...consultants, newConsultant]);
+    setIsAddModalOpen(false);
+  };
+
+  const updateConsultant = () => {
+    // Validate form
+    if (!formData.name || !formData.email || !formData.phone) {
+      alert('Vui lòng điền đầy đủ thông tin');
+      return;
+    }
+
+    if (currentConsultant) {
+      // Update consultant
+      const updatedConsultants = consultants.map(consultant => {
+        if (consultant.id === currentConsultant.id) {
+          return {
+            ...consultant,
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            specialty: formData.specialty,
+            status: formData.status,
+            image: formData.image
+          };
+        }
+        return consultant;
+      });
+
+      setConsultants(updatedConsultants);
+      setIsEditModalOpen(false);
+    }
+  };
+
+  const deleteConsultant = () => {
+    if (currentConsultant) {
+      const updatedConsultants = consultants.filter(consultant => consultant.id !== currentConsultant.id);
+      setConsultants(updatedConsultants);
+      setIsDeleteModalOpen(false);
+    }
+  };
+
+  // Image preview function
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string>(formData.image);
+  
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setFormData({
+      ...formData,
+      image: value
+    });
+    setImagePreviewUrl(value);
   };
 
   return (
     <div className="consultants-container">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h1 className="text-xl font-bold mb-1">Specialist Management</h1>
+          <h1 className="text-xl font-bold mb-1">Quản Lý Chuyên Gia</h1>
           <p className="text-sm text-gray-500">
-            Manage healthcare specialists in the system
+            Quản lý các chuyên gia y tế trong hệ thống
           </p>
         </div>
         <button 
@@ -106,7 +244,7 @@ const Consultants = () => {
           <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
           </svg>
-          Add Specialist
+          Thêm Chuyên Gia
         </button>
       </div>
 
@@ -119,7 +257,7 @@ const Consultants = () => {
             </svg>
           </div>
           <div className="stats-item-info">
-            <div className="stats-item-title">Total Specialists</div>
+            <div className="stats-item-title">Tổng Số Chuyên Gia</div>
             <div className="stats-item-value">{stats.totalConsultants}</div>
           </div>
         </div>
@@ -131,7 +269,7 @@ const Consultants = () => {
             </svg>
           </div>
           <div className="stats-item-info">
-            <div className="stats-item-title">Active</div>
+            <div className="stats-item-title">Đang Hoạt Động</div>
             <div className="stats-item-value">{stats.activeConsultants}</div>
           </div>
         </div>
@@ -143,20 +281,8 @@ const Consultants = () => {
             </svg>
           </div>
           <div className="stats-item-info">
-            <div className="stats-item-title">Total Consultations</div>
+            <div className="stats-item-title">Tổng Số Buổi Tư Vấn</div>
             <div className="stats-item-value">{stats.totalConsultations}</div>
-          </div>
-        </div>
-
-        <div className="stats-item">
-          <div className="stats-item-icon icon-bg-warning">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
-          </div>
-          <div className="stats-item-info">
-            <div className="stats-item-title">Average Rating</div>
-            <div className="stats-item-value">{stats.avgRating}</div>
           </div>
         </div>
       </div>
@@ -167,7 +293,7 @@ const Consultants = () => {
           <div className="search-container">
             <input
               type="text"
-              placeholder="Search by name, email, phone..."
+              placeholder="Tìm kiếm theo tên, email, số điện thoại..."
               className="search-input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -183,10 +309,10 @@ const Consultants = () => {
               value={filterSpecialty}
               onChange={(e) => setFilterSpecialty(e.target.value)}
             >
-              <option value="all">All Specialties</option>
-              <option value="Reproductive Health">Reproductive Health</option>
+              <option value="all">Tất Cả Chuyên Môn</option>
+              <option value="Reproductive Health">Sức Khỏe Sinh Sản</option>
               <option value="HIV/AIDS">HIV/AIDS</option>
-              <option value="STI Treatment">STI Treatment</option>
+              <option value="STI Treatment">Điều Trị STI</option>
             </select>
             
             <select 
@@ -194,15 +320,15 @@ const Consultants = () => {
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
             >
-              <option value="all">All Statuses</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="all">Tất Cả Trạng Thái</option>
+              <option value="active">Đang Hoạt Động</option>
+              <option value="inactive">Không Hoạt Động</option>
             </select>
           </div>
           
           <div className="text-right hidden md:block">
             <span className="text-sm text-gray-500">
-              Showing <span className="font-semibold text-gray-700">{currentConsultants.length}</span> of <span className="font-semibold text-gray-700">{filteredConsultants.length}</span> specialists
+              Hiển thị <span className="font-semibold text-gray-700">{currentConsultants.length}</span> trong số <span className="font-semibold text-gray-700">{filteredConsultants.length}</span> chuyên gia
             </span>
           </div>
         </div>
@@ -244,33 +370,35 @@ const Consultants = () => {
                   <svg xmlns="http://www.w3.org/2000/svg" className="consultant-info-icon" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                   </svg>
-                  Status: <span className={getStatusBadgeClass(consultant.status)} style={{ marginLeft: '0.25rem' }}>
-                    {consultant.status}
+                  Trạng thái: <span className={getStatusBadgeClass(consultant.status)} style={{ marginLeft: '0.25rem' }}>
+                    {consultant.status === 'active' ? 'Đang hoạt động' : 'Không hoạt động'}
                   </span>
                 </div>
               </div>
               <div className="consultant-stats">
                 <div className="consultant-stat">
-                  <div className="consultant-stat-value">{consultant.ratings}</div>
-                  <div className="consultant-stat-label">Rating</div>
-                </div>
-                <div className="consultant-stat">
                   <div className="consultant-stat-value">{consultant.consultations}</div>
-                  <div className="consultant-stat-label">Consultations</div>
+                  <div className="consultant-stat-label">Buổi Tư Vấn</div>
                 </div>
               </div>
               <div className="consultant-actions">
                 <button 
                   onClick={() => handleEdit(consultant.id)}
-                  className="consultant-action-button action-button-edit"
+                  className="action-button action-button-edit"
+                  title="Chỉnh sửa"
                 >
-                  Edit
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                  </svg>
                 </button>
                 <button 
                   onClick={() => handleDelete(consultant.id)}
-                  className="consultant-action-button action-button-delete"
+                  className="action-button action-button-delete"
+                  title="Xóa"
                 >
-                  Delete
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -330,6 +458,293 @@ const Consultants = () => {
               <path fillRule="evenodd" d="M4.293 15.707a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clipRule="evenodd" />
             </svg>
           </button>
+        </div>
+      )}
+
+      {/* Add Consultant Modal */}
+      {isAddModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2>Thêm Chuyên Gia Mới</h2>
+              <span className="close" onClick={() => setIsAddModalOpen(false)}>&times;</span>
+            </div>
+            
+            <div className="modal-body">
+              <form onSubmit={(e) => { e.preventDefault(); addConsultant(); }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="form-group">
+                    <label htmlFor="name">Tên Đầy Đủ <span className="required-field">*</span></label>
+                    <input 
+                      id="name"
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="email">Email <span className="required-field">*</span></label>
+                    <input 
+                      id="email"
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="phone">Số Điện Thoại <span className="required-field">*</span></label>
+                    <input 
+                      id="phone"
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="specialty">Chuyên Môn</label>
+                    <select 
+                      id="specialty"
+                      name="specialty"
+                      value={formData.specialty}
+                      onChange={handleInputChange}
+                      className="form-select"
+                    >
+                      <option value="Reproductive Health">Sức Khỏe Sinh Sản</option>
+                      <option value="HIV/AIDS">HIV/AIDS</option>
+                      <option value="STI Treatment">Điều Trị STI</option>
+                    </select>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="status">Trạng Thái</label>
+                    <select 
+                      id="status"
+                      name="status"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                      className="form-select"
+                    >
+                      <option value="active">Hoạt Động</option>
+                      <option value="inactive">Không Hoạt Động</option>
+                    </select>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="image">Avatar URL</label>
+                    <input 
+                      id="image"
+                      type="text"
+                      name="image"
+                      value={formData.image}
+                      onChange={handleImageChange}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+                
+                {/* Image preview */}
+                <div className="mt-4">
+                  <label>Xem Trước Ảnh:</label>
+                  <div className="mt-2">
+                    <img src={imagePreviewUrl} alt="Avatar Preview" className="image-preview" />
+                  </div>
+                </div>
+                
+                <div className="button-group mt-4">
+                  <button 
+                    type="button" 
+                    className="btn-secondary" 
+                    onClick={() => setIsAddModalOpen(false)}
+                  >
+                    Hủy
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn-primary"
+                  >
+                    Thêm Chuyên Gia
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Consultant Modal */}
+      {isEditModalOpen && currentConsultant && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2>Chỉnh Sửa Thông Tin Chuyên Gia</h2>
+              <span className="close" onClick={() => setIsEditModalOpen(false)}>&times;</span>
+            </div>
+            
+            <div className="modal-body">
+              <form onSubmit={(e) => { e.preventDefault(); updateConsultant(); }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="form-group">
+                    <label htmlFor="edit-name">Tên Đầy Đủ <span className="required-field">*</span></label>
+                    <input 
+                      id="edit-name"
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="edit-email">Email <span className="required-field">*</span></label>
+                    <input 
+                      id="edit-email"
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="edit-phone">Số Điện Thoại <span className="required-field">*</span></label>
+                    <input 
+                      id="edit-phone"
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="edit-specialty">Chuyên Môn</label>
+                    <select 
+                      id="edit-specialty"
+                      name="specialty"
+                      value={formData.specialty}
+                      onChange={handleInputChange}
+                      className="form-select"
+                    >
+                      <option value="Reproductive Health">Sức Khỏe Sinh Sản</option>
+                      <option value="HIV/AIDS">HIV/AIDS</option>
+                      <option value="STI Treatment">Điều Trị STI</option>
+                    </select>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="edit-status">Trạng Thái</label>
+                    <select 
+                      id="edit-status"
+                      name="status"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                      className="form-select"
+                    >
+                      <option value="active">Hoạt Động</option>
+                      <option value="inactive">Không Hoạt Động</option>
+                    </select>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="edit-image">Avatar URL</label>
+                    <input 
+                      id="edit-image"
+                      type="text"
+                      name="image"
+                      value={formData.image}
+                      onChange={handleImageChange}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+                
+                {/* Image preview */}
+                <div className="mt-4">
+                  <label>Xem Trước Ảnh:</label>
+                  <div className="mt-2">
+                    <img src={imagePreviewUrl} alt="Avatar Preview" className="image-preview" />
+                  </div>
+                </div>
+                
+                <div className="button-group mt-4">
+                  <button 
+                    type="button" 
+                    className="btn-secondary" 
+                    onClick={() => setIsEditModalOpen(false)}
+                  >
+                    Hủy
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn-primary"
+                  >
+                    Cập Nhật
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && currentConsultant && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2>Xác Nhận Xóa</h2>
+              <span className="close" onClick={() => setIsDeleteModalOpen(false)}>&times;</span>
+            </div>
+            
+            <div className="modal-body">
+              <div className="flex items-center mb-4">
+                <img src={currentConsultant.image} alt={currentConsultant.name} className="w-16 h-16 rounded-full mr-4 object-cover" />
+                <div>
+                  <p className="font-medium">{currentConsultant.name}</p>
+                  <p className="text-sm text-gray-500">{currentConsultant.specialty}</p>
+                </div>
+              </div>
+              
+              <p className="mb-2">Bạn có chắc chắn muốn xóa chuyên gia này khỏi hệ thống?</p>
+              <p className="text-sm text-red-500">Hành động này không thể hoàn tác!</p>
+            </div>
+            
+            <div className="button-group mt-4">
+              <button 
+                className="btn-secondary" 
+                onClick={() => setIsDeleteModalOpen(false)}
+              >
+                Hủy
+              </button>
+              <button 
+                className="btn-danger" 
+                onClick={() => {
+                  deleteConsultant();
+                  setIsDeleteModalOpen(false);
+                }}
+              >
+                Xác Nhận Xóa
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -1,16 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, type ChangeEvent } from 'react';
 import './User.css';
+
+interface UserType {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+  status: string;
+  lastLogin: string;
+}
+
+interface UserFormData {
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+  status: string;
+  password: string;
+  confirmPassword: string;
+}
 
 const User = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<UserType | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 10;
 
+  // Form states for add/edit user
+  const [formData, setFormData] = useState<UserFormData>({
+    name: '',
+    email: '',
+    phone: '',
+    role: 'user',
+    status: 'active',
+    password: '',
+    confirmPassword: ''
+  });
+
   // Mock data
-  const users = [
+  const [users, setUsers] = useState<UserType[]>([
     { id: 1, name: "John Smith", email: "johnsmith@example.com", phone: "0912345678", role: "user", status: "active", lastLogin: "10/05/2023 08:15" },
     { id: 2, name: "Sarah Johnson", email: "sarahjohnson@example.com", phone: "0923456789", role: "user", status: "active", lastLogin: "11/05/2023 14:20" },
     { id: 3, name: "Michael Brown", email: "michaelbrown@example.com", phone: "0934567890", role: "admin", status: "active", lastLogin: "12/05/2023 09:30" },
@@ -23,7 +57,7 @@ const User = () => {
     { id: 10, name: "Patricia White", email: "patriciawhite@example.com", phone: "0901234567", role: "admin", status: "active", lastLogin: "16/05/2023 09:15" },
     { id: 11, name: "Richard Harris", email: "richardharris@example.com", phone: "0912345670", role: "user", status: "active", lastLogin: "17/05/2023 14:20" },
     { id: 12, name: "Elizabeth Clark", email: "elizabethclark@example.com", phone: "0923456781", role: "user", status: "blocked", lastLogin: "02/05/2023 10:35" },
-  ];
+  ]);
 
   // Filter users
   const filteredUsers = users.filter(user => {
@@ -73,34 +107,143 @@ const User = () => {
     }
   };
 
+  // Handle form input change
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+  };
+
   // Handle user actions
   const handleEdit = (userId: number) => {
-    console.log('Edit user', userId);
-    // Open edit modal with user data
+    const userToEdit = users.find(user => user.id === userId);
+    if (userToEdit) {
+      setCurrentUser(userToEdit);
+      setFormData({
+        name: userToEdit.name,
+        email: userToEdit.email,
+        phone: userToEdit.phone,
+        role: userToEdit.role,
+        status: userToEdit.status,
+        password: '',
+        confirmPassword: ''
+      });
+      setIsEditModalOpen(true);
+    }
   };
 
   const handleDelete = (userId: number) => {
-    console.log('Delete user', userId);
-    // Show confirmation dialog
+    const userToDelete = users.find(user => user.id === userId);
+    if (userToDelete) {
+      setCurrentUser(userToDelete);
+      setIsDeleteModalOpen(true);
+    }
+  };
+
+  const handleAddUser = () => {
+    // Reset form data
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      role: 'user',
+      status: 'active',
+      password: '',
+      confirmPassword: ''
+    });
+    setIsAddModalOpen(true);
+  };
+
+  // CRUD operations
+  const addUser = () => {
+    // Validate form
+    if (!formData.name || !formData.email || !formData.phone || !formData.password) {
+      alert('Vui lòng điền đầy đủ thông tin');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      alert('Mật khẩu xác nhận không khớp');
+      return;
+    }
+
+    // Create new user object
+    const newUser: UserType = {
+      id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      role: formData.role,
+      status: formData.status,
+      lastLogin: 'Chưa đăng nhập'
+    };
+
+    // Add new user to the list
+    setUsers([...users, newUser]);
+    setIsAddModalOpen(false);
+  };
+
+  const updateUser = () => {
+    // Validate form
+    if (!formData.name || !formData.email || !formData.phone) {
+      alert('Vui lòng điền đầy đủ thông tin');
+      return;
+    }
+
+    // Check password if provided
+    if (formData.password && formData.password !== formData.confirmPassword) {
+      alert('Mật khẩu xác nhận không khớp');
+      return;
+    }
+
+    if (currentUser) {
+      // Update user
+      const updatedUsers = users.map(user => {
+        if (user.id === currentUser.id) {
+          return {
+            ...user,
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            role: formData.role,
+            status: formData.status
+          };
+        }
+        return user;
+      });
+
+      setUsers(updatedUsers);
+      setIsEditModalOpen(false);
+    }
+  };
+
+  const deleteUser = () => {
+    if (currentUser) {
+      const updatedUsers = users.filter(user => user.id !== currentUser.id);
+      setUsers(updatedUsers);
+      setIsDeleteModalOpen(false);
+    }
   };
 
   return (
     <div className="users-container">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h1 className="text-xl font-bold mb-1">User Management</h1>
+          <h1 className="text-xl font-bold mb-1">Quản Lý Người Dùng</h1>
           <p className="text-sm text-gray-500">
-            Manage all users in the HSSC system
+            Quản lý tất cả người dùng trong hệ thống
           </p>
         </div>
         <button 
           className="add-user-button"
-          onClick={() => setIsAddModalOpen(true)}
+          onClick={handleAddUser}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
           </svg>
-          <span>Add User</span>
+          <span>Thêm Người Dùng</span>
         </button>
       </div>
 
@@ -110,7 +253,7 @@ const User = () => {
           <div className="search-container">
             <input
               type="text"
-              placeholder="Search by name, email, phone..."
+              placeholder="Tìm kiếm theo tên, email, số điện thoại..."
               className="search-input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -126,10 +269,10 @@ const User = () => {
               value={filterRole}
               onChange={(e) => setFilterRole(e.target.value)}
             >
-              <option value="all">All Roles</option>
-              <option value="admin">Administrator</option>
-              <option value="consultant">Consultant</option>
-              <option value="user">User</option>
+              <option value="all">Tất Cả Vai Trò</option>
+              <option value="admin">Quản Trị Viên</option>
+              <option value="consultant">Tư Vấn Viên</option>
+              <option value="user">Người Dùng</option>
             </select>
             
             <select 
@@ -137,15 +280,15 @@ const User = () => {
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
             >
-              <option value="all">All Statuses</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="blocked">Blocked</option>
+              <option value="all">Tất Cả Trạng Thái</option>
+              <option value="active">Hoạt Động</option>
+              <option value="inactive">Không Hoạt Động</option>
+              <option value="blocked">Đã Khóa</option>
             </select>
           </div>
           
           <div className="text-right hidden md:block">
-            <span className="text-sm text-gray-500">Total: <span className="font-semibold text-gray-800">{filteredUsers.length} users</span></span>
+            <span className="text-sm text-gray-500">Tổng: <span className="font-semibold text-gray-800">{filteredUsers.length} người dùng</span></span>
           </div>
         </div>
       </div>
@@ -157,13 +300,13 @@ const User = () => {
             <thead>
               <tr>
                 <th className="w-12">ID</th>
-                <th>Name</th>
+                <th>Tên</th>
                 <th>Email</th>
-                <th>Phone</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Last Login</th>
-                <th className="w-20">Actions</th>
+                <th>Số Điện Thoại</th>
+                <th>Vai Trò</th>
+                <th>Trạng Thái</th>
+                <th>Đăng Nhập Cuối</th>
+                <th className="w-20">Thao Tác</th>
               </tr>
             </thead>
             <tbody>
@@ -176,36 +319,36 @@ const User = () => {
                     <td>{user.phone}</td>
                     <td>
                       <span className={getRoleBadgeClass(user.role)}>
-                        {user.role === 'admin' ? 'Administrator' : 
-                         user.role === 'consultant' ? 'Consultant' : 'User'}
+                        {user.role === 'admin' ? 'Quản Trị Viên' : 
+                         user.role === 'consultant' ? 'Tư Vấn Viên' : 'Người Dùng'}
                       </span>
                     </td>
                     <td>
                       <span className={getBadgeClass(user.status)}>
-                        {user.status === 'active' ? 'Active' : 
-                         user.status === 'inactive' ? 'Inactive' : 'Blocked'}
+                        {user.status === 'active' ? 'Hoạt Động' : 
+                         user.status === 'inactive' ? 'Không Hoạt Động' : 'Đã Khóa'}
                       </span>
                     </td>
                     <td>{user.lastLogin}</td>
                     <td>
                       <div className="flex space-x-1">
                         <button 
-                          className="action-button action-button-edit"
+                          className="action-button action-button-edit" 
                           onClick={() => handleEdit(user.id)}
+                          title="Chỉnh sửa"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                           </svg>
-                          <span>Edit</span>
                         </button>
                         <button 
-                          className="action-button action-button-delete"
+                          className="action-button action-button-delete" 
                           onClick={() => handleDelete(user.id)}
+                          title="Xóa"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                           </svg>
-                          <span>Delete</span>
                         </button>
                       </div>
                     </td>
@@ -213,7 +356,7 @@ const User = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="text-center py-4 text-gray-500">No users found</td>
+                  <td colSpan={8} className="text-center py-4 text-gray-500">Không tìm thấy người dùng nào</td>
                 </tr>
               )}
             </tbody>
@@ -276,12 +419,12 @@ const User = () => {
         )}
       </div>
 
-      {/* Add User Modal - In a real app, this would be a separate component */}
+      {/* Add User Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 overflow-auto bg-gray-800 bg-opacity-75 flex items-center justify-center">
           <div className="bg-white rounded-lg w-full max-w-md mx-3 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900">Add New User</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Thêm Người Dùng Mới</h3>
               <button 
                 className="text-gray-400 hover:text-gray-600"
                 onClick={() => setIsAddModalOpen(false)}
@@ -295,11 +438,14 @@ const User = () => {
               <form>
                 <div className="grid grid-cols-1 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Họ và Tên</label>
                     <input 
                       type="text" 
+                      name="name"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="Enter user's full name"
+                      placeholder="Nhập họ tên đầy đủ"
+                      value={formData.name}
+                      onChange={handleInputChange}
                     />
                   </div>
 
@@ -307,44 +453,75 @@ const User = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                     <input 
                       type="email" 
+                      name="email"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="Enter email address"
+                      placeholder="Nhập địa chỉ email"
+                      value={formData.email}
+                      onChange={handleInputChange}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Số Điện Thoại</label>
                     <input 
                       type="tel" 
+                      name="phone"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="Enter phone number"
+                      placeholder="Nhập số điện thoại"
+                      value={formData.phone}
+                      onChange={handleInputChange}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                      <option value="user">User</option>
-                      <option value="consultant">Consultant</option>
-                      <option value="admin">Administrator</option>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Vai Trò</label>
+                    <select 
+                      name="role"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      value={formData.role}
+                      onChange={handleInputChange}
+                    >
+                      <option value="user">Người Dùng</option>
+                      <option value="consultant">Tư Vấn Viên</option>
+                      <option value="admin">Quản Trị Viên</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Trạng Thái</label>
+                    <select 
+                      name="status"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                    >
+                      <option value="active">Hoạt Động</option>
+                      <option value="inactive">Không Hoạt Động</option>
+                      <option value="blocked">Đã Khóa</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Mật Khẩu</label>
                     <input 
                       type="password" 
+                      name="password"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="Enter password"
+                      placeholder="Nhập mật khẩu"
+                      value={formData.password}
+                      onChange={handleInputChange}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Xác Nhận Mật Khẩu</label>
                     <input 
                       type="password" 
+                      name="confirmPassword"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="Confirm password"
+                      placeholder="Xác nhận mật khẩu"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
                     />
                   </div>
                 </div>
@@ -355,16 +532,180 @@ const User = () => {
                 className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
                 onClick={() => setIsAddModalOpen(false)}
               >
-                Cancel
+                Hủy
               </button>
               <button 
                 className="px-4 py-2 bg-indigo-600 border border-indigo-600 rounded-md text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none"
-                onClick={() => {
-                  // Logic to add user
-                  setIsAddModalOpen(false);
-                }}
+                onClick={addUser}
               >
-                Add User
+                Thêm Người Dùng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {isEditModalOpen && currentUser && (
+        <div className="fixed inset-0 z-50 overflow-auto bg-gray-800 bg-opacity-75 flex items-center justify-center">
+          <div className="bg-white rounded-lg w-full max-w-md mx-3 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900">Chỉnh Sửa Người Dùng</h3>
+              <button 
+                className="text-gray-400 hover:text-gray-600"
+                onClick={() => setIsEditModalOpen(false)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4">
+              <form>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Họ và Tên</label>
+                    <input 
+                      type="text" 
+                      name="name"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      placeholder="Nhập họ tên đầy đủ"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input 
+                      type="email" 
+                      name="email"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      placeholder="Nhập địa chỉ email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Số Điện Thoại</label>
+                    <input 
+                      type="tel" 
+                      name="phone"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      placeholder="Nhập số điện thoại"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Vai Trò</label>
+                    <select 
+                      name="role"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      value={formData.role}
+                      onChange={handleInputChange}
+                    >
+                      <option value="user">Người Dùng</option>
+                      <option value="consultant">Tư Vấn Viên</option>
+                      <option value="admin">Quản Trị Viên</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Trạng Thái</label>
+                    <select 
+                      name="status"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                    >
+                      <option value="active">Hoạt Động</option>
+                      <option value="inactive">Không Hoạt Động</option>
+                      <option value="blocked">Đã Khóa</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Mật Khẩu Mới (để trống nếu không thay đổi)</label>
+                    <input 
+                      type="password" 
+                      name="password"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      placeholder="Nhập mật khẩu mới"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Xác Nhận Mật Khẩu</label>
+                    <input 
+                      type="password" 
+                      name="confirmPassword"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      placeholder="Xác nhận mật khẩu mới"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+              </form>
+            </div>
+            <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
+              <button 
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+                onClick={() => setIsEditModalOpen(false)}
+              >
+                Hủy
+              </button>
+              <button 
+                className="px-4 py-2 bg-indigo-600 border border-indigo-600 rounded-md text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none"
+                onClick={updateUser}
+              >
+                Cập Nhật
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && currentUser && (
+        <div className="fixed inset-0 z-50 overflow-auto bg-gray-800 bg-opacity-75 flex items-center justify-center">
+          <div className="bg-white rounded-lg w-full max-w-md mx-3 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900">Xác Nhận Xóa</h3>
+              <button 
+                className="text-gray-400 hover:text-gray-600"
+                onClick={() => setIsDeleteModalOpen(false)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4">
+              <p className="text-gray-700">
+                Bạn có chắc chắn muốn xóa người dùng <span className="font-semibold">{currentUser.name}</span>?
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                Hành động này không thể hoàn tác.
+              </p>
+            </div>
+            <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
+              <button 
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+                onClick={() => setIsDeleteModalOpen(false)}
+              >
+                Hủy
+              </button>
+              <button 
+                className="px-4 py-2 bg-red-600 border border-red-600 rounded-md text-sm font-medium text-white hover:bg-red-700 focus:outline-none"
+                onClick={deleteUser}
+              >
+                Xác Nhận Xóa
               </button>
             </div>
           </div>

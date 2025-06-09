@@ -270,9 +270,101 @@
 
 .login-note {
   margin-top: 1.5rem;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 1rem;
+  border-radius: 8px;
+  max-width: 450px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.login-note p {
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-color);
   text-align: center;
-  color: white;
+}
+
+.login-accounts {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.login-accounts li {
+  padding: 0.5rem;
+  border-bottom: 1px solid rgba(209, 213, 219, 0.5);
   font-size: 0.875rem;
+}
+
+.login-accounts li:last-child {
+  border-bottom: none;
+}
+
+/* OTP Form Styles */
+.otp-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.otp-inputs {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.otp-input {
+  width: 3rem;
+  height: 3rem;
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background: white;
+  color: var(--text-color);
+  transition: all 0.2s ease;
+}
+
+.otp-input:focus {
+  border-color: #646cff;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.resend-section {
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.resend-section p {
+  color: var(--text-light);
+  font-size: 0.875rem;
+}
+
+.resend-button {
+  background: none;
+  border: none;
+  color: #646cff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  transition: all 0.2s ease;
+}
+
+.resend-button:hover:not(:disabled) {
+  color: #535bf2;
+  text-decoration: underline;
+}
+
+.resend-button:disabled {
+  color: var(--text-light);
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 /* Responsive Styles */

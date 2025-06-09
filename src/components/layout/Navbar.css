@@ -1,12 +1,12 @@
 .navbar {
-  background-color: #1f2937;
+  background-color: #66aff9;
   padding: 1rem 0;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(43, 57, 213, 0.1);
   height: 80px;
   display: flex;
   align-items: center;
@@ -26,6 +26,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  cursor: pointer;
 }
 
 .logo-text {
@@ -72,6 +73,7 @@
   transition: color 0.3s ease;
   padding: 0.5rem 0;
   position: relative;
+  cursor: pointer;
 }
 
 .nav-link::after {
@@ -81,7 +83,7 @@
   left: 0;
   width: 0;
   height: 2px;
-  background-color: #3b82f6;
+  background-color: #fff;
   transition: width 0.3s ease;
 }
 
@@ -109,6 +111,7 @@
   background: #fff;
   color: #646cff;
   border: 1px solid #646cff;
+  cursor: pointer;
 }
 
 .auth-button:hover {
@@ -158,7 +161,7 @@
     top: 100%;
     left: 0;
     right: 0;
-    background-color: #1f2937;
+    background-color: #646cff;
     padding: 1rem;
     flex-direction: column;
     align-items: stretch;

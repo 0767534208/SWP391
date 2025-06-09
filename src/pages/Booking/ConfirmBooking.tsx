@@ -7,6 +7,27 @@ interface Service {
   name: string;
   duration: string;
   price: string;
+  requiresConsultant: boolean;
+}
+
+interface Certificate {
+  id: number;
+  name: string;
+  issuer: string;
+  year: number;
+}
+
+interface Consultant {
+  id: number;
+  name: string;
+  specialty: string;
+  image: string;
+  education: string;
+  experience: string;
+  certificates: Certificate[];
+  schedule: {
+    [key: string]: Array<{ start: string; end: string }>;
+  };
 }
 
 interface PersonalInfo {
@@ -18,35 +39,16 @@ interface PersonalInfo {
 
 interface LocationState {
   service: Service;
+  consultant: Consultant | null;
   date: string;
   time: string;
   personal: PersonalInfo;
 }
 
-const SuccessModal: React.FC<{ onClose: () => void }> = ({ onClose }) => (
-  <div className="modal-overlay">
-    <div className="success-modal">
-      <div className="success-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M20 6L9 17l-5-5" />
-        </svg>
-      </div>
-      <h2 className="success-title">Đặt Lịch Thành Công!</h2>
-      <p className="success-message">
-        Cảm ơn bạn đã đặt lịch khám.
-      </p>
-      <button className="success-button" onClick={onClose}>
-        Hoàn Tất
-      </button>
-    </div>
-  </div>
-);
-
 const ConfirmBooking: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as LocationState | undefined;
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Redirect to booking if accessed directly
   if (!state) {
@@ -54,16 +56,22 @@ const ConfirmBooking: React.FC = () => {
     return null;
   }
 
-  const { service, date, time, personal } = state;
+  const { service, consultant, date, time, personal } = state;
 
   const handleFinalConfirm = () => {
-    // Here you would typically make an API call to save the booking
-    setShowSuccessModal(true);
+    // Navigate to payment page with booking details
+    navigate('/payment', { state });
   };
 
-  const handleSuccessClose = () => {
-    setShowSuccessModal(false);
-    navigate('/');  // Navigate to home page after successful booking
+  // Format date to display in Vietnamese format
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    };
+    return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
 
   return (
@@ -90,11 +98,29 @@ const ConfirmBooking: React.FC = () => {
               <span className="label">Giá:</span>
               <span className="value">{service.price}</span>
             </div>
+            
+            {consultant && (
+              <>
+                <hr />
+                <h3 className="confirm-card-title">Tư Vấn Viên</h3>
+                <div className="confirm-consultant">
+                  <div className="confirm-consultant-info">
+                    <div className="confirm-item">
+                      <span className="value consultant-name">{consultant.name}</span>
+                    </div>
+                    <div className="confirm-item">
+                      <span className="value consultant-specialty">{consultant.specialty}</span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+            
             <hr />
             <h3 className="confirm-card-title">Lịch Hẹn</h3>
             <div className="confirm-item">
               <span className="label">Ngày:</span>
-              <span className="value">{date}</span>
+              <span className="value">{formatDate(date)}</span>
             </div>
             <div className="confirm-item">
               <span className="label">Giờ:</span>
@@ -133,12 +159,10 @@ const ConfirmBooking: React.FC = () => {
             Chỉnh Sửa
           </button>
           <button className="btn-confirm" onClick={handleFinalConfirm}>
-            Xác Nhận Đặt Lịch
+            Tiếp tục thanh toán
           </button>
         </div>
       </div>
-
-      {showSuccessModal && <SuccessModal onClose={handleSuccessClose} />}
     </div>
   );
 };

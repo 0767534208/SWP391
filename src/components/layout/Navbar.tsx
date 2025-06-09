@@ -48,68 +48,55 @@ const Navbar = () => {
     navigate('/auth/login');
   };
 
+  const handleNavigation = (path: string) => {
+    // Force reload when navigating
+    window.location.href = path;
+  };
+
   return (
     <nav className="navbar">
       <div className="navbar-container" style={{ display: 'flex', alignItems: 'center' }}>
-        <Link to="" className="navbar-logo" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="navbar-logo" style={{ display: 'flex', alignItems: 'center', gap: 12 }} onClick={() => handleNavigation('/')}>
           <img src="/logo.png" alt="logo" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 12, background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', padding: 2 }} />
           <span className="logo-text" style={{ marginLeft: 8 }}>Trung Tâm Sức Khỏe</span>
-        </Link>
+        </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
           <div className={`navbar-links ${isMenuOpen ? 'active' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
             <ul className="nav-items" style={{ display: 'flex', alignItems: 'center', gap: '3rem', margin: 0 }}>
-              <li><Link to="/" className="nav-link">Trang chủ</Link></li>
-              <li ref={servicesDropdownRef} style={{ position: 'relative' }}>
-                <div 
-                  className="nav-link services-link" 
-                  onClick={() => setServicesDropdownOpen(!servicesDropdownOpen)}
-                >
-                  Dịch vụ <FaChevronDown style={{ fontSize: 12, marginLeft: 4 }} />
-                </div>
-                {servicesDropdownOpen && (
-                  <div className="services-dropdown">
-                    <Link 
-                      to="/booking" 
-                      className="dropdown-item" 
-                      onClick={() => setServicesDropdownOpen(false)}
-                    >
-                      Đặt lịch khám
-                    </Link>
-                    <Link 
-                      to="/cycletracker" 
-                      className="dropdown-item" 
-                      onClick={() => setServicesDropdownOpen(false)}
-                    >
-                      Theo dõi chu kỳ
-                    </Link>
+              <li><span className="nav-link" onClick={() => handleNavigation('/')}>Trang chủ</span></li>
+              <li><span className="nav-link" onClick={() => handleNavigation('/services')}>Dịch vụ</span></li>
+              <li><span className="nav-link" onClick={() => handleNavigation('/cycletracker')}>Theo dõi chu kỳ</span></li>
+              <li><span className="nav-link" onClick={() => handleNavigation('/blogUser')}>Bài viết</span></li>
+              <li><span className="nav-link" onClick={() => handleNavigation('/qna')}>Hỏi đáp</span></li>
+              <li><span className="nav-link" onClick={() => handleNavigation('/contact')}>Liên hệ</span></li>
+            </ul>
+            
+            {user ? (
+              <div className="user-dropdown" ref={dropdownRef} style={{ position: 'relative' }}>
+                <span className="user-name" onClick={() => setDropdownOpen(!dropdownOpen)} style={{ cursor: 'pointer', color: '#fff', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <FaUserCircle style={{ fontSize: 22, marginRight: 4 }} />
+                  {user.name || user.email}
+                  <FaChevronDown style={{ fontSize: 16, marginLeft: 4 }} />
+                </span>
+                {dropdownOpen && (
+                  <div className="dropdown-menu" style={{ position: 'absolute', right: 0, background: '#fff', border: '1px solid #ccc', borderRadius: 4, minWidth: 140, zIndex: 100 }}>
+                    <span className="dropdown-item" onClick={() => handleNavigation('/profile')} style={{ display: 'block', padding: '8px 16px', color: '#333', textDecoration: 'none' }}>Xem hồ sơ</span>
+                    {localStorage.getItem('userRole') === 'consultant' && (
+                      <>
+                        <span className="dropdown-item" onClick={() => handleNavigation('/consultant/profile')} style={{ display: 'block', padding: '8px 16px', color: '#333', textDecoration: 'none' }}>Hồ sơ tư vấn viên</span>
+                        <span className="dropdown-item" onClick={() => handleNavigation('/consultant/test-results')} style={{ display: 'block', padding: '8px 16px', color: '#333', textDecoration: 'none' }}>Quản lý kết quả</span>
+                      </>
+                    )}
+                    <div className="dropdown-item" onClick={handleLogout} style={{ display: 'block', padding: '8px 16px', color: '#e53e3e', cursor: 'pointer' }}>Đăng xuất</div>
                   </div>
                 )}
-              </li>
-              <li><Link to="/blogUser" className="nav-link">Bài viết</Link></li>
-              <li><Link to="/contact" className="nav-link">Liên hệ</Link></li>
-            </ul>
-            <div className="nav-right" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              {user ? (
-                <div className="user-dropdown" ref={dropdownRef} style={{ position: 'relative' }}>
-                  <span className="user-name" onClick={() => setDropdownOpen(!dropdownOpen)} style={{ cursor: 'pointer', color: '#fff', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <FaUserCircle style={{ fontSize: 22, marginRight: 4 }} />
-                    {user.name || user.email}
-                    <FaChevronDown style={{ fontSize: 16, marginLeft: 4 }} />
-                  </span>
-                  {dropdownOpen && (
-                    <div className="dropdown-menu" style={{ position: 'absolute', right: 0, background: '#fff', border: '1px solid #ccc', borderRadius: 4, minWidth: 140, zIndex: 100 }}>
-                      <Link to="/profile" className="dropdown-item" onClick={() => setDropdownOpen(false)} style={{ display: 'block', padding: '8px 16px', color: '#333', textDecoration: 'none' }}>Xem hồ sơ</Link>
-                      <div className="dropdown-item" onClick={handleLogout} style={{ display: 'block', padding: '8px 16px', color: '#e53e3e', cursor: 'pointer' }}>Đăng xuất</div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="auth-buttons" style={{ display: 'flex', gap: '1rem' }}>
-                  <Link to="/auth/login" className="auth-button login">Đăng nhập</Link>
-                  <Link to="/auth/register" className="auth-button register">Đăng ký</Link>
-                </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="auth-buttons" style={{ display: 'flex', gap: '1rem' }}>
+                <span className="auth-button login" onClick={() => handleNavigation('/auth/login')}>Đăng nhập</span>
+                <span className="auth-button register" onClick={() => handleNavigation('/auth/register')}>Đăng ký</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

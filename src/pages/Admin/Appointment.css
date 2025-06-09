@@ -257,7 +257,7 @@
   
   /* Action buttons */
   .action-button {
-    padding: 0.5rem 0.75rem;
+    padding: 0.3rem;
     border-radius: 0.375rem;
     transition: all 0.15s;
     display: inline-flex;
@@ -267,6 +267,9 @@
     font-weight: 500;
     margin-right: 0.25rem;
     white-space: nowrap;
+    height: 2rem;
+    width: 2rem;
+    cursor: pointer;
   }
   
   .action-button-edit {
@@ -287,6 +290,13 @@
   
   .action-button-delete:hover {
     background-color: #fee2e2;
+  }
+  
+  .action-button svg {
+    width: 1rem;
+    height: 1rem;
+    visibility: visible !important;
+    display: block !important;
   }
   
   /* Calendar view */
@@ -447,4 +457,243 @@
   .pagination-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+  
+  /* Modal styles */
+  .fixed {
+    position: fixed;
+  }
+  
+  .inset-0 {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+  
+  .z-50 {
+    z-index: 50;
+  }
+  
+  .overflow-auto {
+    overflow: auto;
+  }
+  
+  .bg-gray-800 {
+    background-color: rgba(31, 41, 55, 0.75);
+  }
+  
+  .bg-opacity-75 {
+    --tw-bg-opacity: 0.75;
+  }
+  
+  .flex {
+    display: flex;
+  }
+  
+  .items-center {
+    align-items: center;
+  }
+  
+  .justify-center {
+    justify-content: center;
+  }
+  
+  .bg-white {
+    background-color: white;
+  }
+  
+  .rounded-lg {
+    border-radius: 0.5rem;
+  }
+  
+  .w-full {
+    width: 100%;
+  }
+  
+  .max-w-md {
+    max-width: 28rem;
+  }
+  
+  .mx-3 {
+    margin-left: 0.75rem;
+    margin-right: 0.75rem;
+  }
+  
+  .overflow-hidden {
+    overflow: hidden;
+  }
+  
+  .px-4 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .py-3 {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+  
+  .border-b {
+    border-bottom-width: 1px;
+  }
+  
+  .border-gray-200 {
+    border-color: rgb(229, 231, 235);
+  }
+  
+  .text-lg {
+    font-size: 1.125rem;
+  }
+  
+  .font-semibold {
+    font-weight: 600;
+  }
+  
+  .text-gray-900 {
+    color: rgb(17, 24, 39);
+  }
+  
+  .text-gray-400:hover {
+    color: rgb(156, 163, 175);
+  }
+  
+  .hover\:text-gray-600:hover {
+    color: rgb(75, 85, 99);
+  }
+  
+  .p-4 {
+    padding: 1rem;
+  }
+  
+  .grid {
+    display: grid;
+  }
+  
+  .grid-cols-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+  
+  .gap-4 {
+    gap: 1rem;
+  }
+  
+  .block {
+    display: block;
+  }
+  
+  .text-sm {
+    font-size: 0.875rem;
+  }
+  
+  .font-medium {
+    font-weight: 500;
+  }
+  
+  .text-gray-700 {
+    color: rgb(55, 65, 81);
+  }
+  
+  .mb-1 {
+    margin-bottom: 0.25rem;
+  }
+  
+  .text-red-500 {
+    color: rgb(239, 68, 68);
+  }
+  
+  .border {
+    border-width: 1px;
+  }
+  
+  .border-gray-300 {
+    border-color: rgb(209, 213, 219);
+  }
+  
+  .rounded-md {
+    border-radius: 0.375rem;
+  }
+  
+  .focus\:outline-none:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+  
+  .focus\:ring-1:focus {
+    --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+    --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+    box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+  }
+  
+  .focus\:ring-indigo-500:focus {
+    --tw-ring-color: rgb(99, 102, 241);
+  }
+  
+  .bg-gray-50 {
+    background-color: rgb(249, 250, 251);
+  }
+  
+  .border-t {
+    border-top-width: 1px;
+  }
+  
+  .justify-end {
+    justify-content: flex-end;
+  }
+  
+  .space-x-3 > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-x-reverse: 0;
+    margin-right: calc(0.75rem * var(--tw-space-x-reverse));
+    margin-left: calc(0.75rem * calc(1 - var(--tw-space-x-reverse)));
+  }
+  
+  .hover\:bg-gray-50:hover {
+    background-color: rgb(249, 250, 251);
+  }
+  
+  .bg-indigo-600 {
+    background-color: rgb(79, 70, 229);
+  }
+  
+  .border-indigo-600 {
+    border-color: rgb(79, 70, 229);
+  }
+  
+  .text-white {
+    color: rgb(255, 255, 255);
+  }
+  
+  .hover\:bg-indigo-700:hover {
+    background-color: rgb(67, 56, 202);
+  }
+  
+  .bg-red-600 {
+    background-color: rgb(220, 38, 38);
+  }
+  
+  .border-red-600 {
+    border-color: rgb(220, 38, 38);
+  }
+  
+  .hover\:bg-red-700:hover {
+    background-color: rgb(185, 28, 28);
+  }
+  
+  @media (min-width: 768px) {
+    .md\:grid-cols-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    
+    .md\:grid-cols-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  
+  /* Estilo específico para o preview da imagem */
+  .image-preview {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 1rem;
   } 

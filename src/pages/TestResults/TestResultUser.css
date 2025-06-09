@@ -13,6 +13,7 @@
   --text-light: #6b7280;
   --hover-bg: #f3f4f6;
   --header-bg-color: #60a5fa;
+  --header-bg-color-test: #6366f1;
 }
 
 /* Main container */
@@ -38,7 +39,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 30px;
-  background-color: var(--header-bg-color);
+  background-color: var(--header-bg-color-test);
   color: white;
 }
 

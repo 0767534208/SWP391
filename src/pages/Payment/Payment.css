@@ -1,0 +1,261 @@
+:root {
+  --primary-color: #4f46e5;
+  --secondary-color: #6366f1;
+  --accent-color: #3b82f6;
+  --background-color: #ffffff;
+  --hover-color: #f3f4f6;
+  --border-color: #d1d5db;
+  --text-color: #111827;
+  --text-light: #6b7280;
+  --selected-color: #4338ca;
+  --success-color: #10b981;
+  --vnpay-color: #0052b4;
+}
+
+.payment-page {
+  min-height: 100vh;
+  background: var(--hover-color);
+  padding: 6rem 1rem 2rem;
+  position: relative;
+  overflow: visible;
+  margin-bottom: 2rem;
+}
+
+.payment-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: var(--background-color);
+  border-radius: 16px;
+  padding: 2rem 2.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 10;
+  overflow: visible;
+}
+
+.payment-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.payment-header h1 {
+  font-size: 2.75rem;
+  font-weight: 700;
+  color: var(--text-color);
+  margin-bottom: 0.5rem;
+}
+
+.payment-header p {
+  font-size: 1.125rem;
+  color: var(--text-light);
+}
+
+/* Main layout */
+.payment-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 2.5rem;
+}
+
+.payment-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Booking summary styles */
+.booking-summary h3,
+.payment-methods h3,
+.payment-summary h3 {
+  font-size: 1.375rem;
+  margin-bottom: 1rem;
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.summary-card {
+  background-color: #f9fafb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.summary-item:last-child {
+  border-bottom: none;
+}
+
+.summary-item .label {
+  font-weight: 500;
+  color: var(--text-light);
+}
+
+.summary-item .value {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+/* Payment methods styles */
+.methods-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.payment-method {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background-color: var(--background-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.payment-method:hover {
+  border-color: var(--primary-color);
+  background-color: var(--hover-color);
+}
+
+.payment-method.selected {
+  border-color: var(--primary-color);
+  background-color: rgba(79, 70, 229, 0.05);
+}
+
+.method-logo {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: white;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+}
+
+.method-logo img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.method-logo.banking img,
+.method-logo.cash img {
+  width: 70%;
+}
+
+.method-info h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  color: var(--text-color);
+}
+
+.method-info p {
+  font-size: 0.875rem;
+  color: var(--text-light);
+  margin: 0;
+}
+
+/* Payment summary styles */
+.payment-card {
+  background-color: white;
+  border: 1px solid var(--border-color);
+}
+
+.price-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  font-size: 0.95rem;
+  color: var(--text-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.price-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem 0;
+  margin-top: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.payment-button {
+  width: 100%;
+  padding: 1rem;
+  margin-top: 1.5rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.payment-button:hover:not(:disabled) {
+  background-color: var(--selected-color);
+}
+
+.payment-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.secure-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  color: var(--text-light);
+  margin-top: 1rem;
+}
+
+.secure-icon {
+  margin-right: 0.5rem;
+}
+
+/* VNPay specific styles */
+.payment-method.selected .method-info h4 {
+  color: var(--primary-color);
+}
+
+/* Responsive styles */
+@media (max-width: 1024px) {
+  .payment-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .payment-container {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .payment-header h1 {
+    font-size: 2.25rem;
+  }
+  
+  .payment-container {
+    padding: 1.25rem;
+  }
+  
+  .method-logo {
+    width: 50px;
+    height: 50px;
+  }
+} 

@@ -37,10 +37,10 @@ const Reports = () => {
 
   // Chart data
   const monthlyUsersData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    labels: ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'],
     datasets: [
       {
-        label: 'New Users',
+        label: 'Người Dùng Mới',
         data: [65, 72, 86, 93, 105, 112, 98, 85, 91, 83, 77, 83],
         backgroundColor: 'rgba(79, 70, 229, 0.2)',
         borderColor: 'rgba(79, 70, 229, 1)',
@@ -52,10 +52,10 @@ const Reports = () => {
   };
 
   const monthlyRevenueData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    labels: ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'],
     datasets: [
       {
-        label: 'Revenue (million VND)',
+        label: 'Doanh Thu (triệu VND)',
         data: [45, 52, 48, 65, 57, 63, 58, 72, 75, 82, 87, 86.5],
         backgroundColor: 'rgba(16, 185, 129, 0.7)',
         borderRadius: 4,
@@ -64,7 +64,7 @@ const Reports = () => {
   };
 
   const appointmentTypeData = {
-    labels: ['STI Consultation', 'HIV Testing', 'Sexual Health Consultation', 'STI Testing', 'Pre/Post Test Counseling'],
+    labels: ['Tư Vấn STI', 'Xét Nghiệm HIV', 'Tư Vấn Sức Khỏe Tình Dục', 'Xét Nghiệm STI', 'Tư Vấn Trước/Sau Xét Nghiệm'],
     datasets: [
       {
         label: 'Count',
@@ -82,10 +82,10 @@ const Reports = () => {
   };
 
   const testResultsData = {
-    labels: ['Negative', 'Positive', 'Pending'],
+    labels: ['Âm Tính', 'Dương Tính', 'Đang Chờ'],
     datasets: [
       {
-        label: 'Test Results',
+        label: 'Kết Quả Xét Nghiệm',
         data: [
           684, // Negative
           132, // Positive
@@ -107,16 +107,16 @@ const Reports = () => {
   };
 
   const serviceUsageData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    labels: ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'],
     datasets: [
       {
-        label: 'Consultations',
+        label: 'Buổi Tư Vấn',
         data: [35, 40, 38, 45, 42, 50, 48, 52, 55, 60, 58, 62],
         backgroundColor: 'rgba(79, 70, 229, 0.7)',
         borderRadius: 4,
       },
       {
-        label: 'Tests',
+        label: 'Xét Nghiệm',
         data: [28, 32, 30, 36, 35, 42, 40, 45, 48, 52, 50, 54],
         backgroundColor: 'rgba(16, 185, 129, 0.7)',
         borderRadius: 4,
@@ -221,20 +221,82 @@ const Reports = () => {
   };
 
   const handlePrint = () => {
+    // Ẩn các phần không cần in
+    const originalStyles = document.body.style.cssText;
+    const controlsToHide = document.querySelectorAll('.filter-controls, .print-export-buttons');
+    
+    controlsToHide.forEach(element => {
+      (element as HTMLElement).style.display = 'none';
+    });
+    
+    // Thêm CSS cho chế độ in
+    const style = document.createElement('style');
+    style.id = 'print-styles';
+    style.innerHTML = `
+      @media print {
+        body { padding: 20px; }
+        .reports-container { width: 100%; }
+        .chart-container { page-break-inside: avoid; }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // In tài liệu
     window.print();
+    
+    // Khôi phục lại giao diện
+    controlsToHide.forEach(element => {
+      (element as HTMLElement).style.display = '';
+    });
+    document.body.style.cssText = originalStyles;
+    document.getElementById('print-styles')?.remove();
   };
 
   const handleExport = () => {
-    alert('Export functionality will be implemented in a future update.');
+    // Đối với CSV, ta cần chuyển đổi dữ liệu thành định dạng CSV
+    let csvContent = 'data:text/csv;charset=utf-8,';
+    
+    // Tiêu đề báo cáo
+    csvContent += `Báo cáo ${reportType === 'general' ? 'Tổng Quan' : reportType === 'users' ? 'Người Dùng' : reportType === 'services' ? 'Dịch Vụ' : 'Tài Chính'}\r\n\r\n`;
+    
+    // Thêm thông tin thống kê
+    csvContent += 'Chỉ số,Giá trị\r\n';
+    if (reportType === 'general' || reportType === 'users') {
+      csvContent += `Tổng Người Dùng,${generalStats.totalUsers}\r\n`;
+      csvContent += `Người Dùng Mới Tháng Này,${generalStats.newUsersThisMonth}\r\n`;
+    }
+    if (reportType === 'general' || reportType === 'services') {
+      csvContent += `Tổng Buổi Tư Vấn,${generalStats.totalConsultations}\r\n`;
+      csvContent += `Lịch Hẹn Tháng Này,${generalStats.appointmentsThisMonth}\r\n`;
+      csvContent += `Kết Quả Xét Nghiệm Dương Tính,${generalStats.positiveResults}\r\n`;
+      csvContent += `Tư Vấn Viên Hoạt Động,${generalStats.activeConsultants}\r\n`;
+    }
+    if (reportType === 'general' || reportType === 'financial') {
+      csvContent += `Tổng Doanh Thu,${generalStats.totalRevenue}\r\n`;
+      csvContent += `Doanh Thu Tháng Này,${generalStats.revenueThisMonth}\r\n`;
+    }
+    
+    // Mã hóa URL và tạo tệp để tải xuống
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `bao-cao-${reportType}-${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    
+    // Tải xuống tệp
+    link.click();
+    
+    // Dọn dẹp
+    document.body.removeChild(link);
   };
 
   return (
     <div className="reports-container">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h1 className="text-xl font-bold mb-1">Reports</h1>
+          <h1 className="text-xl font-bold mb-1">Báo Cáo</h1>
           <p className="text-sm text-gray-500">
-            Analytics and statistics for your health services
+            Phân tích và thống kê cho dịch vụ y tế của bạn
           </p>
         </div>
         <div className="flex space-x-2">
@@ -245,7 +307,7 @@ const Reports = () => {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
-            <span>Export CSV</span>
+            <span>Xuất CSV</span>
           </button>
           <button 
             className="print-button"
@@ -254,7 +316,7 @@ const Reports = () => {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clipRule="evenodd" />
             </svg>
-            <span>Print Report</span>
+            <span>In Báo Cáo</span>
           </button>
         </div>
       </div>
@@ -266,11 +328,11 @@ const Reports = () => {
             value={reportType}
             onChange={handleReportTypeChange}
           >
-            <option value="general">General Statistics</option>
-            <option value="users">User Reports</option>
-            <option value="appointments">Appointment Reports</option>
-            <option value="tests">Test Result Reports</option>
-            <option value="revenue">Revenue Reports</option>
+            <option value="general">Thống Kê Chung</option>
+            <option value="users">Báo Cáo Người Dùng</option>
+            <option value="appointments">Báo Cáo Lịch Hẹn</option>
+            <option value="tests">Báo Cáo Kết Quả Xét Nghiệm</option>
+            <option value="revenue">Báo Cáo Doanh Thu</option>
           </select>
         </div>
         <div>
@@ -279,11 +341,11 @@ const Reports = () => {
             value={timeRange}
             onChange={handleTimeRangeChange}
           >
-            <option value="week">Last Week</option>
-            <option value="month">Last Month</option>
-            <option value="quarter">Last Quarter</option>
-            <option value="year">Last Year</option>
-            <option value="all">All Time</option>
+            <option value="week">Tuần Vừa Qua</option>
+            <option value="month">Tháng Vừa Qua</option>
+            <option value="quarter">Quý Vừa Qua</option>
+            <option value="year">Năm Vừa Qua</option>
+            <option value="all">Tất Cả Thời Gian</option>
           </select>
         </div>
       </div>
@@ -293,43 +355,43 @@ const Reports = () => {
         <>
           <div className="stats-grid">
             <div className="reports-card stat-card">
-              <div className="stat-label">Total Users</div>
+              <div className="stat-label">Tổng Số Người Dùng</div>
               <div className="stat-value">{generalStats.totalUsers}</div>
               <div className="stat-change stat-change-positive">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586l3.293-3.293A1 1 0 0112 7z" clipRule="evenodd" />
                 </svg>
-                <span>+{generalStats.newUsersThisMonth} new this month</span>
+                <span>+{generalStats.newUsersThisMonth} mới tháng này</span>
               </div>
             </div>
             <div className="reports-card stat-card">
-              <div className="stat-label">Consultations</div>
+              <div className="stat-label">Tư Vấn</div>
               <div className="stat-value">{generalStats.totalConsultations}</div>
               <div className="stat-change stat-change-positive">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586l3.293-3.293A1 1 0 0112 7z" clipRule="evenodd" />
                 </svg>
-                <span>+{generalStats.consultationsThisMonth} this month</span>
+                <span>+{generalStats.consultationsThisMonth} tháng này</span>
               </div>
             </div>
             <div className="reports-card stat-card">
-              <div className="stat-label">Appointments</div>
+              <div className="stat-label">Lịch Hẹn</div>
               <div className="stat-value">{generalStats.totalAppointments}</div>
               <div className="stat-change stat-change-positive">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586l3.293-3.293A1 1 0 0112 7z" clipRule="evenodd" />
                 </svg>
-                <span>+{generalStats.appointmentsThisMonth} this month</span>
+                <span>+{generalStats.appointmentsThisMonth} tháng này</span>
               </div>
             </div>
             <div className="reports-card stat-card">
-              <div className="stat-label">Revenue</div>
+              <div className="stat-label">Doanh Thu</div>
               <div className="stat-value">{formatCurrency(generalStats.totalRevenue)}</div>
               <div className="stat-change stat-change-positive">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586l3.293-3.293A1 1 0 0112 7z" clipRule="evenodd" />
                 </svg>
-                <span>+{formatCurrency(generalStats.revenueThisMonth)} this month</span>
+                <span>+{formatCurrency(generalStats.revenueThisMonth)} tháng này</span>
               </div>
             </div>
           </div>
@@ -337,7 +399,7 @@ const Reports = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <div className="reports-card">
               <div className="chart-header">
-                <h3 className="chart-title">Monthly Users</h3>
+                <h3 className="chart-title">Người Dùng Hàng Tháng</h3>
               </div>
               <div className="chart-container-sm">
                 <Line options={lineOptions} data={monthlyUsersData} />
@@ -345,7 +407,7 @@ const Reports = () => {
             </div>
             <div className="reports-card">
               <div className="chart-header">
-                <h3 className="chart-title">Monthly Revenue</h3>
+                <h3 className="chart-title">Doanh Thu Hàng Tháng</h3>
               </div>
               <div className="chart-container-sm">
                 <Bar options={barOptions} data={monthlyRevenueData} />
@@ -356,7 +418,7 @@ const Reports = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <div className="reports-card">
               <div className="chart-header">
-                <h3 className="chart-title">Appointment Types</h3>
+                <h3 className="chart-title">Loại Lịch Hẹn</h3>
               </div>
               <div className="chart-container-sm">
                 <Doughnut options={pieOptions} data={appointmentTypeData} />
@@ -364,7 +426,7 @@ const Reports = () => {
             </div>
             <div className="reports-card">
               <div className="chart-header">
-                <h3 className="chart-title">Test Results</h3>
+                <h3 className="chart-title">Kết Quả Xét Nghiệm</h3>
               </div>
               <div className="chart-container-sm">
                 <Doughnut options={pieOptions} data={testResultsData} />
@@ -374,7 +436,7 @@ const Reports = () => {
 
           <div className="reports-card mb-8">
             <div className="chart-header">
-              <h3 className="chart-title">Service Usage Comparison</h3>
+              <h3 className="chart-title">So Sánh Sử Dụng Dịch Vụ</h3>
             </div>
             <div className="chart-container-sm">
               <Bar options={multiBarOptions} data={serviceUsageData} />
@@ -386,17 +448,17 @@ const Reports = () => {
       {/* User Reports */}
       {reportType === 'users' && (
         <div className="reports-card p-4 mb-6">
-          <h2 className="text-lg font-semibold mb-4">User Statistics</h2>
+          <h2 className="text-lg font-semibold mb-4">Thống Kê Người Dùng</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             <div className="p-4 bg-gray-50 rounded-lg">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Total Users</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Tổng Số Người Dùng</h3>
               <p className="text-2xl font-bold">{generalStats.totalUsers}</p>
               <div className="flex items-center mt-2 text-xs text-green-600">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586l3.293-3.293A1 1 0 0112 7z" clipRule="evenodd" />
                 </svg>
-                <span>7.2% growth rate</span>
+                <span>Tăng trưởng 7.2%</span>
               </div>
             </div>
             <div className="p-4 bg-gray-50 rounded-lg">
