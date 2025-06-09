@@ -5,7 +5,7 @@ import './App.css';
 import UserLayout from './components/layout/UserLayout';
 import AdminLayout from './components/layout/AdminLayout';
 import ManagerLayout from './components/layout/ManagerLayout';
-import ScrollToTop from './components/ScrollToTop';
+import ScrollToTop from './components/layout/ScrollToTop';
 import Home from './pages/Home/Home';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';

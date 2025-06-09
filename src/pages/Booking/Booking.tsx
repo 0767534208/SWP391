@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Booking.css';
 import AdvisorModal from '../Booking/AdvisorModal';
-import ServiceCard from '../../components/ServiceCard';
+import ServiceCard from './ServiceCard';
 
 interface PersonalDetails {
   name: string;
