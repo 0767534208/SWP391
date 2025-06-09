@@ -32,7 +32,6 @@ interface Consultant {
   name: string;
   specialty: string;
   image: string;
-  ratings: number;
   education: string;
   experience: string;
   certificates: Certificate[];
@@ -45,6 +44,7 @@ interface Consultant {
     saturday: TimeSlot[];
     sunday: TimeSlot[];
   };
+  price: string;
 }
 
 const Booking = () => {
@@ -65,9 +65,32 @@ const Booking = () => {
     notes: ''
   });
 
+  // Load user data from localStorage when component mounts
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      const user = JSON.parse(userData);
+      setPersonalDetails(prevDetails => ({
+        ...prevDetails,
+        name: user.name || '',
+        phone: user.phone || '',
+        email: user.email || ''
+      }));
+    }
+  }, []);
+
+  // Add state to track if user is logged in
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
+  // Check if user is logged in
+  useEffect(() => {
+    const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    setIsLoggedIn(loggedIn);
+  }, []);
+
   // Available time slots
   const timeSlots = [
-    '08:00', '09:00', '10:00', '11:00',
+    '08:00-9:00', '09:00', '10:00', '11:00',
     '14:00', '15:00', '16:00', '17:00', '18:00'
   ];
 
@@ -138,7 +161,6 @@ const Booking = () => {
       name: 'BS. Nguyễn Văn A', 
       specialty: 'Sức khỏe tình dục',
       image: 'https://randomuser.me/api/portraits/men/1.jpg',
-      ratings: 4.8,
       education: 'Bác sĩ chuyên khoa, Đại học Y Hà Nội',
       experience: 'Hơn 10 năm kinh nghiệm tư vấn sức khỏe tình dục',
       certificates: [
@@ -153,14 +175,14 @@ const Booking = () => {
         friday: [{ start: '09:00', end: '12:00' }, { start: '13:30', end: '17:00' }],
         saturday: [{ start: '09:00', end: '12:00' }],
         sunday: []
-      }
+      },
+      price: '400.000 VNĐ'
     },
     { 
       id: 2, 
       name: 'BS. Trần Thị B', 
       specialty: 'Sức khỏe mãn kinh',
       image: 'https://randomuser.me/api/portraits/women/2.jpg',
-      ratings: 4.9,
       education: 'Tiến sĩ Y khoa, Đại học Y Dược TP.HCM',
       experience: '15 năm kinh nghiệm điều trị và tư vấn thời kỳ mãn kinh',
       certificates: [
@@ -175,14 +197,14 @@ const Booking = () => {
         friday: [{ start: '13:30', end: '17:00' }],
         saturday: [{ start: '08:00', end: '12:00' }],
         sunday: []
-      }
+      },
+      price: '450.000 VNĐ'
     },
     { 
       id: 3, 
       name: 'BS. Lê Văn C', 
       specialty: 'Sức khỏe tình dục',
       image: 'https://randomuser.me/api/portraits/men/3.jpg',
-      ratings: 4.7,
       education: 'Bác sĩ chuyên khoa II, Đại học Y Hà Nội',
       experience: '8 năm kinh nghiệm tư vấn sức khỏe tình dục và sinh sản',
       certificates: [
@@ -197,14 +219,14 @@ const Booking = () => {
         friday: [{ start: '08:00', end: '12:00' }],
         saturday: [],
         sunday: [{ start: '09:00', end: '12:00' }]
-      }
+      },
+      price: '420.000 VNĐ'
     },
     { 
       id: 4, 
       name: 'BS. Phạm Thị D', 
       specialty: 'Sức khỏe mãn kinh',
       image: 'https://randomuser.me/api/portraits/women/4.jpg',
-      ratings: 4.6,
       education: 'Thạc sĩ Y khoa, Đại học Y Dược Huế',
       experience: '12 năm kinh nghiệm chuyên về sức khỏe phụ nữ trung niên',
       certificates: [
@@ -219,14 +241,14 @@ const Booking = () => {
         friday: [{ start: '13:30', end: '17:00' }],
         saturday: [{ start: '08:00', end: '12:00' }],
         sunday: []
-      }
+      },
+      price: '450.000 VNĐ'
     },
     { 
       id: 5, 
       name: 'BS. Hoàng Thị E', 
       specialty: 'Tư vấn kế hoạch hóa gia đình',
       image: 'https://randomuser.me/api/portraits/women/5.jpg',
-      ratings: 4.8,
       education: 'Bác sĩ chuyên khoa I, Đại học Y Dược TP.HCM',
       experience: '9 năm kinh nghiệm tư vấn biện pháp tránh thai và kế hoạch hóa gia đình',
       certificates: [
@@ -241,14 +263,14 @@ const Booking = () => {
         friday: [{ start: '08:00', end: '12:00' }],
         saturday: [{ start: '08:00', end: '12:00' }],
         sunday: []
-      }
+      },
+      price: '450.000 VNĐ'
     },
     { 
       id: 6, 
       name: 'BS. Vũ Văn F', 
       specialty: 'Tư vấn kế hoạch hóa gia đình',
       image: 'https://randomuser.me/api/portraits/men/6.jpg',
-      ratings: 4.7,
       education: 'Bác sĩ chuyên khoa, Đại học Y Hà Nội',
       experience: '7 năm kinh nghiệm tư vấn biện pháp tránh thai và sức khỏe sinh sản',
       certificates: [
@@ -263,14 +285,14 @@ const Booking = () => {
         friday: [{ start: '13:30', end: '17:00' }],
         saturday: [],
         sunday: [{ start: '09:00', end: '12:00' }]
-      }
+      },
+      price: '450.000 VNĐ'
     },
     { 
       id: 7, 
       name: 'BS. Nguyễn Thị G', 
       specialty: 'Sức khỏe tình dục',
       image: 'https://randomuser.me/api/portraits/women/7.jpg',
-      ratings: 4.9,
       education: 'Tiến sĩ Y khoa, Đại học Y Hà Nội',
       experience: '11 năm kinh nghiệm tư vấn sức khỏe tình dục và sinh sản',
       certificates: [
@@ -285,14 +307,14 @@ const Booking = () => {
         friday: [{ start: '13:30', end: '17:00' }],
         saturday: [{ start: '08:00', end: '12:00' }],
         sunday: []
-      }
+      },
+      price: '450.000 VNĐ'
     },
     { 
       id: 8, 
       name: 'BS. Trần Văn H', 
       specialty: 'Sức khỏe mãn kinh',
       image: 'https://randomuser.me/api/portraits/men/8.jpg',
-      ratings: 4.5,
       education: 'Bác sĩ chuyên khoa II, Đại học Y Dược TP.HCM',
       experience: '10 năm kinh nghiệm tư vấn sức khỏe mãn kinh',
       certificates: [
@@ -307,7 +329,8 @@ const Booking = () => {
         friday: [{ start: '08:00', end: '12:00' }],
         saturday: [{ start: '08:00', end: '12:00' }],
         sunday: []
-      }
+      },
+      price: '450.000 VNĐ'
     }
   ];
 
@@ -401,7 +424,6 @@ const Booking = () => {
 
   const handleConsultantSelect = (consultantId: number) => {
     setSelectedConsultant(consultantId);
-    setSelectedDate(''); // Reset date when consultant changes
     setSelectedTime(''); // Reset time when consultant changes
   };
 
@@ -501,6 +523,57 @@ const Booking = () => {
     }
   };
 
+  // Thêm hàm lọc tư vấn viên theo ngày đã chọn
+  const getConsultantsByDate = (): Consultant[] => {
+    if (!selectedService || !selectedDate) return [];
+    
+    const selectedServiceData = services.find(s => s.id === selectedService);
+    if (!selectedServiceData || !selectedServiceData.requiresConsultant) return [];
+    
+    // Lấy tất cả tư vấn viên phù hợp với dịch vụ
+    let filteredConsultants: Consultant[] = [];
+    if (selectedService === 3) { // Tư vấn sức khỏe tình dục
+      filteredConsultants = consultants.filter(c => c.specialty === 'Sức khỏe tình dục');
+    } else if (selectedService === 5) { // Tư vấn biện pháp tránh thai
+      filteredConsultants = consultants.filter(c => c.specialty === 'Tư vấn kế hoạch hóa gia đình');
+    } else if (selectedService === 8) { // Quản lý thời kỳ mãn kinh
+      filteredConsultants = consultants.filter(c => c.specialty === 'Sức khỏe mãn kinh');
+    }
+    
+    // Lọc các tư vấn viên có lịch làm việc trong ngày đã chọn
+    const dayOfWeek = getDayOfWeek(selectedDate);
+    return filteredConsultants.filter(consultant => {
+      const daySchedule = consultant.schedule[dayOfWeek as keyof typeof consultant.schedule];
+      return daySchedule && daySchedule.length > 0;
+    });
+  };
+
+  // Sửa hàm lấy khung giờ làm việc để chia nhỏ thành từng giờ một
+  const getConsultantTimeSlots = (): string[] => {
+    if (!selectedConsultant || !selectedDate) return [];
+    
+    const consultant = consultants.find(c => c.id === selectedConsultant);
+    if (!consultant) return [];
+    
+    const dayOfWeek = getDayOfWeek(selectedDate);
+    const daySchedule = consultant.schedule[dayOfWeek as keyof typeof consultant.schedule];
+    
+    if (!daySchedule || daySchedule.length === 0) return [];
+    
+    // Chia nhỏ khung giờ làm việc thành từng giờ một
+    const availableHours: string[] = [];
+    daySchedule.forEach(slot => {
+      const startHour = parseInt(slot.start.split(':')[0]);
+      const endHour = parseInt(slot.end.split(':')[0]);
+      
+      for (let hour = startHour; hour < endHour; hour++) {
+        availableHours.push(`${hour.toString().padStart(2, '0')}:00`);
+      }
+    });
+    
+    return availableHours;
+  };
+
   return (
     <div className="booking-page">
       <div className="booking-container">
@@ -520,7 +593,7 @@ const Booking = () => {
                     id={service.id}
                     name={service.name}
                     duration={service.duration}
-                    price={service.price}
+                    {...(!service.requiresConsultant && { price: service.price })}
                     isSelected={selectedService === service.id}
                     onSelect={handleServiceSelect}
                   />
@@ -550,40 +623,10 @@ const Booking = () => {
               )}
             </div>
 
-            {selectedService && serviceRequiresConsultant() && (
+            {/* Bước 2: Chọn ngày (hiển thị sau khi chọn dịch vụ) */}
+            {selectedService && (
               <div className="form-section">
-                <h3>Chọn Tư Vấn Viên</h3>
-                <div className="consultants-grid">
-                  {getFilteredConsultants().map(consultant => (
-                    <div 
-                      key={consultant.id} 
-                      className={`consultant-card-compact ${selectedConsultant === consultant.id ? 'selected' : ''}`}
-                      onClick={() => handleConsultantSelect(consultant.id)}
-                    >
-                      <h4 title={consultant.name}>{consultant.name}</h4>
-                      <p className="consultant-specialty">{consultant.specialty}</p>
-                      <div className="consultant-rating">
-                        <span className="star">★</span>
-                        <span>{consultant.ratings.toFixed(1)}</span>
-                      </div>
-                      <button 
-                        className="view-details-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openConsultantModal(consultant);
-                        }}
-                      >
-                        Chi tiết
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {(selectedConsultant || !serviceRequiresConsultant()) && selectedService && (
-              <div className="form-section">
-                <h3>Chọn Ngày & Giờ</h3>
+                <h3>Chọn Ngày</h3>
                 <input
                   type="date"
                   value={selectedDate}
@@ -592,24 +635,50 @@ const Booking = () => {
                   className="date-picker"
                   required
                 />
-                {selectedDate && (
-                  <div className="time-slots">
-                    {serviceRequiresConsultant() ? (
-                      getAvailableTimeSlots().length > 0 ? (
-                        getAvailableTimeSlots().map(time => (
-                          <button
-                            key={time}
-                            className={`time-slot ${selectedTime === time ? 'selected' : ''}`}
-                            onClick={() => setSelectedTime(time)}
-                          >
-                            {time}
-                          </button>
-                        ))
-                      ) : (
-                        <p className="no-slots-message">Không có lịch trống vào ngày này</p>
-                      )
-                    ) : (
-                      timeSlots.map(time => (
+              </div>
+            )}
+
+            {/* Bước 3: Chọn tư vấn viên (chỉ hiển thị cho dịch vụ cần tư vấn viên và sau khi đã chọn ngày) */}
+            {selectedService && serviceRequiresConsultant() && selectedDate && (
+              <div className="form-section">
+                <h3>Chọn Tư Vấn Viên</h3>
+                {getConsultantsByDate().length > 0 ? (
+                  <div className="consultants-grid">
+                    {getConsultantsByDate().map(consultant => (
+                      <div 
+                        key={consultant.id} 
+                        className={`consultant-card-compact ${selectedConsultant === consultant.id ? 'selected' : ''}`}
+                        onClick={() => handleConsultantSelect(consultant.id)}
+                      >
+                        <h4 title={consultant.name}>{consultant.name}</h4>
+                        <p className="consultant-specialty">{consultant.specialty}</p>
+                        <p className="consultant-price" style={{ color: '#4f46e5', fontWeight: 600, margin: 0 }}>{consultant.price}</p>
+                        <button 
+                          className="view-details-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openConsultantModal(consultant);
+                          }}
+                        >
+                          Chi tiết
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="no-slots-message">Không có tư vấn viên làm việc vào ngày này</p>
+                )}
+              </div>
+            )}
+
+            {/* Bước 4: Chọn giờ (hiển thị sau khi đã chọn tư vấn viên hoặc cho dịch vụ không cần tư vấn viên) */}
+            {selectedDate && ((serviceRequiresConsultant() && selectedConsultant) || !serviceRequiresConsultant()) && (
+              <div className="form-section">
+                <h3>Chọn Giờ</h3>
+                <div className="time-slots">
+                  {serviceRequiresConsultant() ? (
+                    getConsultantTimeSlots().length > 0 ? (
+                      getConsultantTimeSlots().map((time) => (
                         <button
                           key={time}
                           className={`time-slot ${selectedTime === time ? 'selected' : ''}`}
@@ -618,9 +687,21 @@ const Booking = () => {
                           {time}
                         </button>
                       ))
-                    )}
-                  </div>
-                )}
+                    ) : (
+                      <p className="no-slots-message">Không có lịch trống vào ngày này</p>
+                    )
+                  ) : (
+                    timeSlots.map(time => (
+                      <button
+                        key={time}
+                        className={`time-slot ${selectedTime === time ? 'selected' : ''}`}
+                        onClick={() => setSelectedTime(time)}
+                      >
+                        {time}
+                      </button>
+                    ))
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -640,6 +721,8 @@ const Booking = () => {
                     placeholder="Nhập họ và tên của bạn"
                     required
                     className="form-input"
+                    readOnly={isLoggedIn}
+                    disabled={isLoggedIn}
                   />
                 </div>
                 <div className="input-group">
@@ -653,6 +736,8 @@ const Booking = () => {
                     placeholder="Nhập số điện thoại của bạn"
                     required
                     className="form-input"
+                    readOnly={isLoggedIn}
+                    disabled={isLoggedIn}
                   />
                 </div>
                 <div className="input-group full-width">
@@ -665,17 +750,8 @@ const Booking = () => {
                     onChange={handlePersonalDetails}
                     placeholder="Nhập email của bạn"
                     className="form-input"
-                  />
-                </div>
-                <div className="input-group full-width">
-                  <label htmlFor="notes">Ghi Chú Thêm</label>
-                  <textarea
-                    id="notes"
-                    name="notes"
-                    value={personalDetails.notes}
-                    onChange={handlePersonalDetails}
-                    placeholder="Bạn có yêu cầu đặc biệt hoặc vấn đề cần lưu ý không?"
-                    className="form-input notes"
+                    readOnly={isLoggedIn}
+                    disabled={isLoggedIn}
                   />
                 </div>
               </div>
@@ -704,6 +780,7 @@ const Booking = () => {
         consultant={modalConsultant} 
         isOpen={isModalOpen} 
         onClose={closeConsultantModal} 
+        servicePrice={selectedService ? services.find(s => s.id === selectedService)?.price : undefined}
       />
     </div>
   );

@@ -4,7 +4,7 @@ interface ServiceProps {
   id: number;
   name: string;
   duration: string;
-  price: string;
+  price?: string;
   isSelected: boolean;
   onSelect: (id: number) => void;
 }
@@ -28,7 +28,7 @@ const ServiceCard: React.FC<ServiceProps> = ({
         <h4 className="service-name">{name}</h4>
         <div className="service-details">
           <span className="duration">{duration}</span>
-          <span className="price">{price}</span>
+          {price && <span className="price">{price}</span>}
         </div>
       </div>
     </div>

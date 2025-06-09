@@ -70,18 +70,6 @@
     margin: 0 0 0.5rem 0;
   }
   
-  .advisor-rating {
-    display: flex;
-    align-items: center;
-    font-size: 0.875rem;
-    color: #4b5563;
-  }
-  
-  .advisor-rating .star {
-    color: #f59e0b;
-    margin-right: 0.25rem;
-  }
-  
   .advisor-modal-body {
     padding: 1.5rem;
   }

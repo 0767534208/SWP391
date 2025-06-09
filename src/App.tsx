@@ -30,6 +30,8 @@ import Consultants from './pages/Admin/Consultant';
 
 import ManagerDashboard from './pages/Manager/ManagerDashboard';
 import ServiceManagement from './pages/Manager/ServiceManagement';
+import BlogManagement from './pages/Manager/BlogManagement';
+import SlotManagement from './pages/Manager/SlotManagement';
 
 // Admin route wrapper component
 import type { ReactNode } from 'react';
@@ -111,6 +113,8 @@ function App() {
         }>
           <Route index element={<ManagerDashboard />} />
           <Route path="services" element={<ServiceManagement />} />
+          <Route path="blogs" element={<BlogManagement />} />
+          <Route path="slots" element={<SlotManagement />} />
         </Route>
 
         {/* Route dành cho admin */}

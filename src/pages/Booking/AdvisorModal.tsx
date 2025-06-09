@@ -18,7 +18,6 @@ interface Consultant {
   name: string;
   specialty: string;
   image?: string;
-  ratings: number;
   education: string;
   experience: string;
   certificates: Certificate[];
@@ -37,9 +36,10 @@ interface AdvisorModalProps {
   consultant: Consultant | null;
   isOpen: boolean;
   onClose: () => void;
+  servicePrice?: string;
 }
 
-const AdvisorModal: React.FC<AdvisorModalProps> = ({ consultant, isOpen, onClose }) => {
+const AdvisorModal: React.FC<AdvisorModalProps> = ({ consultant, isOpen, onClose, servicePrice }) => {
   if (!isOpen || !consultant) return null;
 
   // Close modal when clicking outside of content
@@ -76,10 +76,6 @@ const AdvisorModal: React.FC<AdvisorModalProps> = ({ consultant, isOpen, onClose
         <div className="advisor-modal-header">
           <h2>{consultant.name}</h2>
           <p className="advisor-specialty">{consultant.specialty}</p>
-          <div className="advisor-rating">
-            <span className="star">★</span>
-            <span>{consultant.ratings.toFixed(1)}</span>
-          </div>
         </div>
         
         <div className="advisor-modal-body">
@@ -104,32 +100,11 @@ const AdvisorModal: React.FC<AdvisorModalProps> = ({ consultant, isOpen, onClose
               ))}
             </ul>
           </div>
-          
-          <div className="advisor-detail-section">
-            <h3>Lịch làm việc</h3>
-            <div className="advisor-schedule">
-              {Object.entries(consultant.schedule).map(([day, slots]) => (
-                <div key={day} className="day-schedule">
-                  <h4>{translateDayName(day)}</h4>
-                  {slots.length > 0 ? (
-                    <div className="time-slots-display">
-                      {slots.map((slot, index) => (
-                        <div key={index} className="time-slot-display">
-                          {slot.start} - {slot.end}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="no-schedule">Không làm việc</div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </div>
   );
 };
+
 
 export default AdvisorModal; 

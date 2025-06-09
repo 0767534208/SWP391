@@ -22,7 +22,6 @@ interface Consultant {
   name: string;
   specialty: string;
   image: string;
-  ratings: number;
   education: string;
   experience: string;
   certificates: Certificate[];
@@ -111,10 +110,6 @@ const ConfirmBooking: React.FC = () => {
                     </div>
                     <div className="confirm-item">
                       <span className="value consultant-specialty">{consultant.specialty}</span>
-                    </div>
-                    <div className="confirm-item">
-                      <span className="star">★</span>
-                      <span className="value">{consultant.ratings.toFixed(1)}</span>
                     </div>
                   </div>
                 </div>

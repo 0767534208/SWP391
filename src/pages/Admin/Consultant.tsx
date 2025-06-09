@@ -8,7 +8,6 @@ interface ConsultantType {
   phone: string;
   specialty: string;
   status: string;
-  ratings: number;
   consultations: number;
   image: string;
 }
@@ -45,26 +44,25 @@ const Consultants = () => {
 
   // Mock data
   const [consultants, setConsultants] = useState<ConsultantType[]>([
-    { id: 1, name: 'Dr. John Smith', email: 'johnsmith@example.com', phone: '0901234567', specialty: 'Reproductive Health', status: 'active', ratings: 4.8, consultations: 158, image: 'https://randomuser.me/api/portraits/men/1.jpg' },
-    { id: 2, name: 'Dr. Sarah Johnson', email: 'sarahjohnson@example.com', phone: '0912345678', specialty: 'HIV/AIDS', status: 'active', ratings: 4.9, consultations: 216, image: 'https://randomuser.me/api/portraits/women/2.jpg' },
-    { id: 3, name: 'Dr. Michael Brown', email: 'michaelbrown@example.com', phone: '0923456789', specialty: 'STI Treatment', status: 'inactive', ratings: 4.5, consultations: 94, image: 'https://randomuser.me/api/portraits/men/3.jpg' },
-    { id: 4, name: 'Dr. Emily Davis', email: 'emilydavis@example.com', phone: '0934567890', specialty: 'Reproductive Health', status: 'active', ratings: 4.7, consultations: 172, image: 'https://randomuser.me/api/portraits/women/4.jpg' },
-    { id: 5, name: 'Dr. Robert Wilson', email: 'robertwilson@example.com', phone: '0945678901', specialty: 'HIV/AIDS', status: 'active', ratings: 4.6, consultations: 143, image: 'https://randomuser.me/api/portraits/men/5.jpg' },
-    { id: 6, name: 'Dr. Jessica Miller', email: 'jessicamiller@example.com', phone: '0956789012', specialty: 'STI Treatment', status: 'inactive', ratings: 4.3, consultations: 78, image: 'https://randomuser.me/api/portraits/women/6.jpg' },
-    { id: 7, name: 'Dr. David Garcia', email: 'davidgarcia@example.com', phone: '0967890123', specialty: 'Reproductive Health', status: 'active', ratings: 4.9, consultations: 201, image: 'https://randomuser.me/api/portraits/men/7.jpg' },
-    { id: 8, name: 'Dr. Linda Martinez', email: 'lindamartinez@example.com', phone: '0978901234', specialty: 'HIV/AIDS', status: 'active', ratings: 4.7, consultations: 165, image: 'https://randomuser.me/api/portraits/women/8.jpg' },
-    { id: 9, name: 'Dr. James Taylor', email: 'jamestaylor@example.com', phone: '0989012345', specialty: 'STI Treatment', status: 'active', ratings: 4.5, consultations: 112, image: 'https://randomuser.me/api/portraits/men/9.jpg' },
-    { id: 10, name: 'Dr. Jennifer Anderson', email: 'jenniferanderson@example.com', phone: '0990123456', specialty: 'Reproductive Health', status: 'inactive', ratings: 4.4, consultations: 86, image: 'https://randomuser.me/api/portraits/women/10.jpg' },
-    { id: 11, name: 'Dr. Thomas White', email: 'thomaswhite@example.com', phone: '0901234568', specialty: 'HIV/AIDS', status: 'active', ratings: 4.8, consultations: 197, image: 'https://randomuser.me/api/portraits/men/11.jpg' },
-    { id: 12, name: 'Dr. Mary Clark', email: 'maryclark@example.com', phone: '0912345679', specialty: 'STI Treatment', status: 'active', ratings: 4.6, consultations: 132, image: 'https://randomuser.me/api/portraits/women/12.jpg' },
+    { id: 1, name: 'Dr. John Smith', email: 'johnsmith@example.com', phone: '0901234567', specialty: 'Reproductive Health', status: 'active', consultations: 158, image: 'https://randomuser.me/api/portraits/men/1.jpg' },
+    { id: 2, name: 'Dr. Sarah Johnson', email: 'sarahjohnson@example.com', phone: '0912345678', specialty: 'HIV/AIDS', status: 'active', consultations: 216, image: 'https://randomuser.me/api/portraits/women/2.jpg' },
+    { id: 3, name: 'Dr. Michael Brown', email: 'michaelbrown@example.com', phone: '0923456789', specialty: 'STI Treatment', status: 'inactive', consultations: 94, image: 'https://randomuser.me/api/portraits/men/3.jpg' },
+    { id: 4, name: 'Dr. Emily Davis', email: 'emilydavis@example.com', phone: '0934567890', specialty: 'Reproductive Health', status: 'active', consultations: 172, image: 'https://randomuser.me/api/portraits/women/4.jpg' },
+    { id: 5, name: 'Dr. Robert Wilson', email: 'robertwilson@example.com', phone: '0945678901', specialty: 'HIV/AIDS', status: 'active', consultations: 143, image: 'https://randomuser.me/api/portraits/men/5.jpg' },
+    { id: 6, name: 'Dr. Jessica Miller', email: 'jessicamiller@example.com', phone: '0956789012', specialty: 'STI Treatment', status: 'inactive', consultations: 78, image: 'https://randomuser.me/api/portraits/women/6.jpg' },
+    { id: 7, name: 'Dr. David Garcia', email: 'davidgarcia@example.com', phone: '0967890123', specialty: 'Reproductive Health', status: 'active', consultations: 201, image: 'https://randomuser.me/api/portraits/men/7.jpg' },
+    { id: 8, name: 'Dr. Linda Martinez', email: 'lindamartinez@example.com', phone: '0978901234', specialty: 'HIV/AIDS', status: 'active', consultations: 165, image: 'https://randomuser.me/api/portraits/women/8.jpg' },
+    { id: 9, name: 'Dr. James Taylor', email: 'jamestaylor@example.com', phone: '0989012345', specialty: 'STI Treatment', status: 'active', consultations: 112, image: 'https://randomuser.me/api/portraits/men/9.jpg' },
+    { id: 10, name: 'Dr. Jennifer Anderson', email: 'jenniferanderson@example.com', phone: '0990123456', specialty: 'Reproductive Health', status: 'inactive', consultations: 86, image: 'https://randomuser.me/api/portraits/women/10.jpg' },
+    { id: 11, name: 'Dr. Thomas White', email: 'thomaswhite@example.com', phone: '0901234568', specialty: 'HIV/AIDS', status: 'active', consultations: 197, image: 'https://randomuser.me/api/portraits/men/11.jpg' },
+    { id: 12, name: 'Dr. Mary Clark', email: 'maryclark@example.com', phone: '0912345679', specialty: 'STI Treatment', status: 'active', consultations: 132, image: 'https://randomuser.me/api/portraits/women/12.jpg' },
   ]);
 
   // Statistics
   const stats = {
     totalConsultants: consultants.length,
     activeConsultants: consultants.filter(consultant => consultant.status === 'active').length,
-    totalConsultations: consultants.reduce((sum, consultant) => sum + consultant.consultations, 0),
-    avgRating: (consultants.reduce((sum, consultant) => sum + consultant.ratings, 0) / consultants.length).toFixed(1)
+    totalConsultations: consultants.reduce((sum, consultant) => sum + consultant.consultations, 0)
   };
 
   // Filter consultants
@@ -172,7 +170,6 @@ const Consultants = () => {
       phone: formData.phone,
       specialty: formData.specialty,
       status: formData.status,
-      ratings: 0,
       consultations: 0,
       image: formData.image
     };
@@ -288,18 +285,6 @@ const Consultants = () => {
             <div className="stats-item-value">{stats.totalConsultations}</div>
           </div>
         </div>
-
-        <div className="stats-item">
-          <div className="stats-item-icon icon-bg-warning">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
-          </div>
-          <div className="stats-item-info">
-            <div className="stats-item-title">Đánh Giá Trung Bình</div>
-            <div className="stats-item-value">{stats.avgRating}</div>
-          </div>
-        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -391,10 +376,6 @@ const Consultants = () => {
                 </div>
               </div>
               <div className="consultant-stats">
-                <div className="consultant-stat">
-                  <div className="consultant-stat-value">{consultant.ratings}</div>
-                  <div className="consultant-stat-label">Đánh Giá</div>
-                </div>
                 <div className="consultant-stat">
                   <div className="consultant-stat-value">{consultant.consultations}</div>
                   <div className="consultant-stat-label">Buổi Tư Vấn</div>
