@@ -345,7 +345,10 @@ const ServiceManagement: React.FC = () => {
         </div>
         
         <button className="add-service-btn" onClick={handleAddService}>
-          <i className="fas fa-plus"></i> Thêm dịch vụ mới
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="28" height="28">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          Thêm dịch vụ mới
         </button>
       </div>
       
@@ -377,7 +380,7 @@ const ServiceManagement: React.FC = () => {
                 </td>
                 <td className="actions">
                   <button 
-                    className="view-btn" 
+                    className="view-details-button" 
                     onClick={() => {
                       setCurrentService(service);
                       setIsEditing(false);
@@ -385,28 +388,43 @@ const ServiceManagement: React.FC = () => {
                     }}
                     title="Xem chi tiết"
                   >
-                    <i className="fas fa-eye"></i>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
                   </button>
                   <button 
                     className="edit-btn" 
                     onClick={() => handleEditService(service)}
                     title="Chỉnh sửa"
                   >
-                    <i className="fas fa-edit"></i>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
                   </button>
                   <button 
-                    className="toggle-btn" 
+                    className="status-btn" 
                     onClick={() => handleToggleActive(service.id)}
                     title={service.isActive ? "Vô hiệu hóa" : "Kích hoạt"}
                   >
-                    <i className={`fas ${service.isActive ? 'fa-toggle-on' : 'fa-toggle-off'}`}></i>
+                    {service.isActive ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
                   </button>
                   <button 
-                    className="delete-btn" 
+                    className="delete-button" 
                     onClick={() => handleDeleteService(service.id)}
                     title="Xóa"
                   >
-                    <i className="fas fa-trash-alt"></i>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
                   </button>
                 </td>
               </tr>
@@ -428,7 +446,11 @@ const ServiceManagement: React.FC = () => {
           <div className="service-modal">
             <div className="modal-header">
               <h2>{isEditing ? 'Chỉnh sửa dịch vụ' : (currentService.name ? 'Chi tiết dịch vụ' : 'Thêm dịch vụ mới')}</h2>
-              <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
+              <button className="close-btn" onClick={() => setShowModal(false)}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
             </div>
             
             <form onSubmit={handleSaveService} className="service-form">
