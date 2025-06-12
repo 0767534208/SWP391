@@ -299,13 +299,14 @@ const TestResultConsultant: React.FC = () => {
                   <td>{result.notes || '-'}</td>
                   <td>
                     <div className="action-buttons">
-                      <button
+                      <Link
+                        to={`/consultant/test-results/${result.id}`}
                         className="action-btn view"
-                        onClick={() => viewResultDetails(result)}
-                        title="View Details"
+                        title="Xem chi tiết"
+                        onClick={() => markAsViewed(result.id)}
                       >
                         <FaEye />
-                      </button>
+                      </Link>
                       <button className="action-btn download" title="Download PDF">
                         <FaDownload />
                       </button>

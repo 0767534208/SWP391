@@ -504,22 +504,53 @@
   color: #dc2626;
 }
 
+.status-completed {
+  background-color: #dbeafe;
+  color: #2563eb;
+}
+
+.status-awaiting_results {
+  background-color: #e0e7ff;
+  color: #4f46e5;
+}
+
 .appointment-actions {
   display: flex;
   gap: 0.5rem;
 }
 
-.approve-button {
+.approve-button, .complete-button, .awaiting-button {
   padding: 0.375rem 0.75rem;
   font-size: 0.75rem;
   border-radius: 0.25rem;
+  transition: all 0.15s ease;
+}
+
+.approve-button {
   background-color: #d1fae5;
   color: #059669;
-  transition: all 0.15s ease;
 }
 
 .approve-button:hover {
   background-color: #a7f3d0;
+}
+
+.complete-button {
+  background-color: #dbeafe;
+  color: #2563eb;
+}
+
+.complete-button:hover {
+  background-color: #bfdbfe;
+}
+
+.awaiting-button {
+  background-color: #e0e7ff;
+  color: #4f46e5;
+}
+
+.awaiting-button:hover {
+  background-color: #c7d2fe;
 }
 
 /* Test Results Section */

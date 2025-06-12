@@ -45,6 +45,7 @@
 
 .header-left {
   flex: 1;
+  color: black;
 }
 
 .header-center {
@@ -73,7 +74,8 @@
   gap: 10px;
 }
 
-.back-button {
+.back-button { 
+  color: black;
   display: inline-flex;
   align-items: center;
   gap: 8px;

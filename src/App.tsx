@@ -18,6 +18,7 @@ import Profile from './pages/User/Profile';
 import ConsultantProfile from './pages/Consultant/ConsultantProfile';
 import TestResults from './pages/User/TestResultUser';
 import TestResultConsultant from './pages/Consultant/TestResultConsultant';
+import TestResultConsultantDetail from './pages/Consultant/TestResultConsultantDetail';
 import Services from './pages/Services/Services';
 import QnA from './pages/QnA/QnA';
 import Payment from './pages/Payment/Payment';
@@ -103,6 +104,7 @@ function App() {
           <Route index element={<ConsultantProfile />} />
           <Route path="profile" element={<ConsultantProfile />} />
           <Route path="test-results" element={<TestResultConsultant />} />
+          <Route path="test-results/:id" element={<TestResultConsultantDetail />} />
         </Route>
 
         {/* Route dành cho manager */}

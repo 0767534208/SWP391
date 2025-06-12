@@ -60,8 +60,9 @@ const ConsultantProfile = () => {
     { id: 1, patientName: 'Nguyễn Văn B', patientId: 'P-1001', service: 'Tư vấn bệnh lây qua đường tình dục', date: '2023-06-28', time: '10:00', status: 'confirmed' },
     { id: 2, patientName: 'Trần Thị C', patientId: 'P-1042', service: 'Xét nghiệm HIV', date: '2023-06-28', time: '14:00', status: 'confirmed' },
     { id: 3, patientName: 'Lê Văn D', patientId: 'P-1089', service: 'Tư vấn sức khỏe sinh sản', date: '2023-06-29', time: '09:30', status: 'pending' },
-    { id: 4, patientName: 'Phạm Thị E', patientId: 'P-1112', service: 'Xét nghiệm STI tổng quát', date: '2023-06-29', time: '15:30', status: 'confirmed' },
-    { id: 5, patientName: 'Đặng Văn F', patientId: 'P-1156', service: 'Tư vấn sức khỏe sinh sản', date: '2023-06-30', time: '11:00', status: 'pending' }
+    { id: 4, patientName: 'Phạm Thị E', patientId: 'P-1112', service: 'Xét nghiệm STI tổng quát', date: '2023-06-29', time: '15:30', status: 'awaiting_results' },
+    { id: 5, patientName: 'Đặng Văn F', patientId: 'P-1156', service: 'Tư vấn sức khỏe sinh sản', date: '2023-06-30', time: '11:00', status: 'pending' },
+    { id: 6, patientName: 'Hoàng Thị G', patientId: 'P-1187', service: 'Xét nghiệm HPV', date: '2023-06-27', time: '11:30', status: 'completed' }
   ]);
 
   // Add new state for certificate upload
@@ -131,6 +132,8 @@ const ConsultantProfile = () => {
       )
     );
   };
+  
+
 
   // Open upload modal for certificate or experience
   const openUploadModal = (type: 'certificate' | 'experience') => {
@@ -204,7 +207,9 @@ const ConsultantProfile = () => {
     const statusTranslations: Record<string, string> = {
       'confirmed': 'Đã Xác Nhận',
       'pending': 'Đang Chờ',
-      'cancelled': 'Đã Hủy'
+      'cancelled': 'Đã Hủy',
+      'completed': 'Đã Hoàn Thành',
+      'awaiting_results': 'Đợi Kết Quả'
     };
     return statusTranslations[status] || capitalizeFirstLetter(status);
   };
