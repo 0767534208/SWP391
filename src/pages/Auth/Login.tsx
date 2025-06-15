@@ -18,8 +18,34 @@ const Login = () => {
       // Admin login success
       localStorage.setItem('isLoggedIn', 'true');
       localStorage.setItem('userRole', 'admin');
-      localStorage.setItem('user', JSON.stringify({ email, role: 'admin' }));
+      localStorage.setItem('user', JSON.stringify({ 
+        email, 
+        role: 'admin',
+        name: 'Quản trị viên'
+      }));
       navigate('/admin'); // Redirect to admin dashboard
+    } else if (email === 'manager@example.com' && password === 'manager123') {
+      // Manager login success
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userRole', 'manager');
+      localStorage.setItem('user', JSON.stringify({ 
+        email, 
+        role: 'manager',
+        name: 'Quản lý dịch vụ'
+      }));
+      navigate('/manager'); // Redirect to manager dashboard
+    } else if (email === 'consultant@example.com' && password === 'consultant123') {
+      // Consultant login success
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userRole', 'consultant');
+      localStorage.setItem('user', JSON.stringify({ 
+        email, 
+        role: 'consultant',
+        name: 'BS. Nguyễn Văn A',
+        title: 'Chuyên gia sức khỏe sinh sản',
+        phone: '(+84) 901-234-567',
+      }));
+      navigate('/consultant/profile'); // Redirect to consultant profile
     } else if (email === 'user@example.com' && password === 'user123') {
       // User login success
       localStorage.setItem('isLoggedIn', 'true');
@@ -27,7 +53,7 @@ const Login = () => {
       localStorage.setItem('user', JSON.stringify({ 
         email, 
         role: 'user',
-        name: 'User Demo',
+        name: 'Nguyễn Văn B',
         phone: '0123 456 789',
         dob: '01/01/2000',
         address: 'Hà Nội'
@@ -42,16 +68,21 @@ const Login = () => {
       localStorage.setItem('user', JSON.stringify({ email, role: 'user' }));
       navigate('/'); // Redirect to home page
     } else {
-      setError('Invalid login credentials');
+      setError('Thông tin đăng nhập không hợp lệ');
     }
   };
 
   return (
-    <div className="login-page">
+    <div className="login-page" style={{
+      backgroundImage: 'url("/istockphoto.jpg")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat'
+    }}>
       <div className="login-container">
         <div className="login-header">
-          <h2>Login</h2>
-          <p>Please login to continue</p>
+          <h2>Đăng nhập</h2>
+          <p>Vui lòng đăng nhập để tiếp tục</p>
         </div>
         
         <form className="login-form" onSubmit={handleSubmit}>
@@ -63,7 +94,7 @@ const Login = () => {
               id="login-email"
               type="email" 
               className="login-input"
-              placeholder="Enter your email" 
+              placeholder="Nhập email của bạn" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -71,12 +102,12 @@ const Login = () => {
           </div>
 
           <div className="login-form-group">
-            <label htmlFor="login-password">Password</label>
+            <label htmlFor="login-password">Mật khẩu</label>
             <input 
               id="login-password"
               type="password" 
               className="login-input"
-              placeholder="Enter your password" 
+              placeholder="Nhập mật khẩu của bạn" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -86,20 +117,20 @@ const Login = () => {
           <div className="login-options">
             <label className="login-remember">
               <input type="checkbox" />
-              <span>Remember me</span>
+              <span>Ghi nhớ đăng nhập</span>
             </label>
-            <a href="#" className="login-forgot">Forgot password?</a>
+            <a href="#" className="login-forgot">Quên mật khẩu?</a>
           </div>
 
           <button type="submit" className="login-submit">
-            Login
+            Đăng nhập
           </button>
 
           <div className="login-footer">
             <p>
-              Don't have an account?{' '}
+              Bạn chưa có tài khoản?{' '}
               <Link to="/auth/register" className="login-link">
-                Create account
+                Đăng ký ngay
               </Link>
             </p>
           </div>
@@ -108,8 +139,14 @@ const Login = () => {
 
       <div className="login-note">
         <p>
-          Use <strong>role@example.com</strong> / <strong>rolerole123</strong> to access each role privileges
+          Sử dụng các tài khoản sau để đăng nhập:
         </p>
+        <ul className="login-accounts">
+          <li><strong>Quản trị viên:</strong> admin@example.com / admin123</li>
+          <li><strong>Quản lý:</strong> manager@example.com / manager123</li>
+          <li><strong>Tư vấn viên:</strong> consultant@example.com / consultant123</li>
+          <li><strong>Người dùng:</strong> user@example.com / user123</li>
+        </ul>
       </div>
     </div>
   );

@@ -7,8 +7,8 @@ const Register = () => {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
-    password: '',
-    confirmPassword: ''
+    confirmEmail: '',
+    password: ''
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -21,28 +21,38 @@ const Register = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Add validation logic here
-    console.log('Form submitted:', formData);
-    navigate('/auth/login');
+    // Validate if email matches confirmEmail
+    if (formData.email !== formData.confirmEmail) {
+      alert('Email và xác nhận email không khớp!');
+      return;
+    }
+    // Store registration data and proceed to OTP verification
+    localStorage.setItem('pendingRegistration', JSON.stringify(formData));
+    navigate('/auth/verify-otp');
   };
 
   return (
-    <div className="register-page">
+    <div className="register-page" style={{
+      backgroundImage: 'url("/png.jpg")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat'
+    }}>
       <div className="register-container">
         <div className="register-header">
-          <h2>Create Account</h2>
-          <p>Join us today</p>
+          <h2>Tạo tài khoản</h2>
+          <p>Hãy tham gia với chúng tôi</p>
         </div>
         
         <form className="register-form" onSubmit={handleSubmit}>
           <div className="register-form-group">
-            <label htmlFor="fullName">Full Name</label>
+            <label htmlFor="fullName">Họ và tên</label>
             <input
               type="text"
               id="fullName"
               name="fullName"
               className="register-input"
-              placeholder="Enter your full name"
+              placeholder="Nhập họ và tên của bạn"
               value={formData.fullName}
               onChange={handleChange}
               required
@@ -56,7 +66,7 @@ const Register = () => {
               id="email"
               name="email"
               className="register-input"
-              placeholder="Enter your email"
+              placeholder="Nhập địa chỉ email của bạn"
               value={formData.email}
               onChange={handleChange}
               required
@@ -64,43 +74,43 @@ const Register = () => {
           </div>
 
           <div className="register-form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="confirmEmail">Xác nhận email</label>
             <input
-              type="password"
-              id="password"
-              name="password"
+              type="email"
+              id="confirmEmail"
+              name="confirmEmail"
               className="register-input"
-              placeholder="Create password"
-              value={formData.password}
+              placeholder="Xác nhận địa chỉ email của bạn"
+              value={formData.confirmEmail}
               onChange={handleChange}
               required
             />
           </div>
 
           <div className="register-form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
+            <label htmlFor="password">Mật khẩu</label>
             <input
               type="password"
-              id="confirmPassword"
-              name="confirmPassword"
+              id="password"
+              name="password"
               className="register-input"
-              placeholder="Confirm your password"
-              value={formData.confirmPassword}
+              placeholder="Tạo mật khẩu"
+              value={formData.password}
               onChange={handleChange}
               required
             />
           </div>
 
           <button type="submit" className="register-submit">
-            Create Account
+            Tiếp tục
           </button>
         </form>
 
         <div className="register-footer">
           <p>
-            Already have an account?{' '}
+            Bạn đã có tài khoản?{' '}
             <Link to="/auth/login" className="register-link">
-              Login
+              Đăng nhập
             </Link>
           </p>
         </div>
