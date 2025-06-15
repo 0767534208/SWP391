@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import './ConsultantProfile.css';
-import { Link } from 'react-router-dom';
 
 // Định nghĩa kiểu dữ liệu cho lịch làm việc
 type TimeSlot = {
@@ -55,16 +54,6 @@ const ConsultantProfile = () => {
     } as ScheduleType
   });
 
-  // Mock appointment data
-  const [appointments, setAppointments] = useState([
-    { id: 1, patientName: 'Nguyễn Văn B', patientId: 'P-1001', service: 'Tư vấn bệnh lây qua đường tình dục', date: '2023-06-28', time: '10:00', status: 'confirmed' },
-    { id: 2, patientName: 'Trần Thị C', patientId: 'P-1042', service: 'Xét nghiệm HIV', date: '2023-06-28', time: '14:00', status: 'confirmed' },
-    { id: 3, patientName: 'Lê Văn D', patientId: 'P-1089', service: 'Tư vấn sức khỏe sinh sản', date: '2023-06-29', time: '09:30', status: 'pending' },
-    { id: 4, patientName: 'Phạm Thị E', patientId: 'P-1112', service: 'Xét nghiệm STI tổng quát', date: '2023-06-29', time: '15:30', status: 'awaiting_results' },
-    { id: 5, patientName: 'Đặng Văn F', patientId: 'P-1156', service: 'Tư vấn sức khỏe sinh sản', date: '2023-06-30', time: '11:00', status: 'pending' },
-    { id: 6, patientName: 'Hoàng Thị G', patientId: 'P-1187', service: 'Xét nghiệm HPV', date: '2023-06-27', time: '11:30', status: 'completed' }
-  ]);
-
   // Add new state for certificate upload
   const [newCertificate, setNewCertificate] = useState({
     name: '',
@@ -110,30 +99,6 @@ const ConsultantProfile = () => {
   const handleUpdateSchedule = () => {
     setScheduleEditMode(false);
   };
-
-  // Approve appointment
-  const handleApproveAppointment = (id: number) => {
-    setAppointments(
-      appointments.map(appointment => 
-        appointment.id === id 
-          ? { ...appointment, status: 'confirmed' }
-          : appointment
-      )
-    );
-  };
-
-  // Cancel appointment
-  const handleCancelAppointment = (id: number) => {
-    setAppointments(
-      appointments.map(appointment => 
-        appointment.id === id 
-          ? { ...appointment, status: 'cancelled' }
-          : appointment
-      )
-    );
-  };
-  
-
 
   // Open upload modal for certificate or experience
   const openUploadModal = (type: 'certificate' | 'experience') => {
@@ -200,18 +165,6 @@ const ConsultantProfile = () => {
       'sunday': 'Chủ Nhật'
     };
     return dayTranslations[day] || capitalizeFirstLetter(day);
-  };
-
-  // Translate appointment status from English to Vietnamese
-  const translateStatus = (status: string): string => {
-    const statusTranslations: Record<string, string> = {
-      'confirmed': 'Đã Xác Nhận',
-      'pending': 'Đang Chờ',
-      'cancelled': 'Đã Hủy',
-      'completed': 'Đã Hoàn Thành',
-      'awaiting_results': 'Đợi Kết Quả'
-    };
-    return statusTranslations[status] || capitalizeFirstLetter(status);
   };
 
   // Render the right content based on active tab
@@ -465,82 +418,64 @@ const ConsultantProfile = () => {
           </div>
         );
         
-      case 'certificates':
+      case 'qualifications':
         return (
-          <div className="certificates-section">
+          <div className="qualifications-section">
             <div className="section-header">
-              <h2>Chứng Chỉ & Bằng Cấp</h2>
-              <button 
-                className="add-button"
-                onClick={() => openUploadModal('certificate')}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                </svg>
-                Thêm Chứng Chỉ
-              </button>
+              <h2>Kinh Nghiệm & Chứng Chỉ</h2>
+              <div className="action-buttons">
+                <button 
+                  className="add-button"
+                  onClick={() => openUploadModal('experience')}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                  </svg>
+                  Thêm Kinh Nghiệm
+                </button>
+                <button 
+                  className="add-button"
+                  onClick={() => openUploadModal('certificate')}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                  </svg>
+                  Thêm Chứng Chỉ
+                </button>
+              </div>
             </div>
             
-            <div className="certificates-grid">
-              {profile.certificates.map((cert) => (
-                <div key={cert.id} className="certificate-card">
-                  <div className="certificate-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
-                    </svg>
+            <div className="qualifications-content">
+              <div className="experiences-section">
+                <h3 className="qualifications-subtitle">Kinh Nghiệm Làm Việc</h3>
+                
+                {profile.experiences.map(experience => (
+                  <div className="experience-card" key={experience.id}>
+                    <div className="experience-title">{experience.title}</div>
+                    <div className="experience-org">{experience.organization}</div>
+                    <div className="experience-period">{formatYearMonth(experience.startDate)} - {experience.endDate ? formatYearMonth(experience.endDate) : 'Hiện tại'}</div>
+                    <div className="experience-location">{experience.location}</div>
+                    <div className="experience-description">{experience.description}</div>
                   </div>
-                  
-                  <div className="certificate-info">
-                    <h3>{cert.name}</h3>
-                    <p className="certificate-issuer">{cert.issuer}</p>
-                    <p className="certificate-year">Issued: {cert.year}</p>
-                  </div>
-                  
-                  <a href={`#${cert.file}`} className="view-certificate">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                      <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-                    </svg>
-                    Xem
-                  </a>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-
-      case 'experience':
-        return (
-          <div className="experience-section">
-            <div className="section-header">
-              <h2>Kinh Nghiệm Làm Việc</h2>
-              <button 
-                className="add-button"
-                onClick={() => openUploadModal('experience')}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                </svg>
-                Thêm Kinh Nghiệm
-              </button>
-            </div>
-            
-            <div className="experience-timeline">
-              {profile.experiences.map((exp) => (
-                <div key={exp.id} className="experience-item">
-                  <div className="experience-date">
-                    <span>{formatYearMonth(exp.startDate)} - {exp.endDate ? formatYearMonth(exp.endDate) : 'Present'}</span>
-                  </div>
-                  
-                  <div className="experience-content">
-                    <h3>{exp.title}</h3>
-                    <div className="experience-organization">
-                      {exp.organization}, {exp.location}
+                ))}
+              </div>
+              
+              <div className="certificates-section">
+                <h3 className="qualifications-subtitle">Chứng Chỉ Chuyên Môn</h3>
+                
+                {profile.certificates.map(certificate => (
+                  <div className="certificate-card" key={certificate.id}>
+                    <div className="certificate-title">{certificate.name}</div>
+                    <div className="certificate-issuer">Cấp bởi: {certificate.issuer}</div>
+                    <div className="certificate-year">Năm: {certificate.year}</div>
+                    <div className="certificate-actions">
+                      {certificate.file && (
+                        <button className="view-button">Xem Chứng Chỉ</button>
+                      )}
                     </div>
-                    <p className="experience-description">{exp.description}</p>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         );
@@ -661,105 +596,8 @@ const ConsultantProfile = () => {
           </div>
         );
 
-      case 'appointments':
-        return (
-          <div className="appointments-section">
-            <div className="section-header">
-              <h2>Lịch Hẹn Sắp Tới</h2>
-              <Link to="/consultant/appointments" className="view-all-link">
-                Xem Tất Cả Lịch Hẹn
-              </Link>
-            </div>
-            
-            <div className="appointments-table-container">
-              <table className="appointments-table">
-                <thead>
-                  <tr>
-                    <th>Bệnh Nhân</th>
-                    <th>Dịch Vụ</th>
-                    <th>Ngày & Giờ</th>
-                    <th>Trạng Thái</th>
-                    <th>Thao Tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {appointments.map((appointment) => (
-                    <tr key={appointment.id}>
-                      <td>
-                        <div className="patient-info">
-                          <div className="patient-name">{appointment.patientName}</div>
-                          <div className="patient-id">{appointment.patientId}</div>
-                        </div>
-                      </td>
-                      <td>{appointment.service}</td>
-                      <td>
-                        <div className="appointment-datetime">
-                          <div className="appointment-date">{appointment.date}</div>
-                          <div className="appointment-time">{appointment.time}</div>
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`status-badge status-${appointment.status}`}>
-                          {translateStatus(appointment.status)}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="appointment-actions">
-                          {appointment.status === 'pending' && (
-                            <>
-                              <button 
-                                className="approve-button"
-                                onClick={() => handleApproveAppointment(appointment.id)}
-                              >
-                                Chấp Nhận
-                              </button>
-                              <button 
-                                className="cancel-button"
-                                onClick={() => handleCancelAppointment(appointment.id)}
-                              >
-                                Từ Chối
-                              </button>
-                            </>
-                          )}
-                          {appointment.status === 'confirmed' && (
-                            <button 
-                              className="cancel-button"
-                              onClick={() => handleCancelAppointment(appointment.id)}
-                            >
-                              Hủy
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
-
-      case 'test-results':
-        return (
-          <div className="test-results-section">
-            <div className="section-header">
-              <h2>Quản Lý Kết Quả Xét Nghiệm</h2>
-              <Link to="/consultant/test-results" className="view-all-link">
-                Xem Tất Cả Kết Quả
-              </Link>
-            </div>
-            
-            <div className="test-results-placeholder">
-              <p>Bạn có thể xem và quản lý kết quả xét nghiệm của bệnh nhân tại đây. Nhấn vào nút bên dưới để chuyển đến giao diện quản lý xét nghiệm đầy đủ.</p>
-              <Link to="/consultant/test-results" className="go-to-tests-button">
-                Đi Đến Kết Quả Xét Nghiệm
-              </Link>
-            </div>
-          </div>
-        );
-
       default:
-        return null;
+        return <div>Vui lòng chọn tab để xem thông tin</div>;
     }
   };
 
@@ -987,25 +825,13 @@ const ConsultantProfile = () => {
           </button>
           
           <button 
-            className={`profile-nav-item ${activeTab === 'certificates' ? 'active' : ''}`}
-            onClick={() => setActiveTab('certificates')}
+            className={`profile-nav-item ${activeTab === 'qualifications' ? 'active' : ''}`}
+            onClick={() => setActiveTab('qualifications')}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838l-2.727 1.17 1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3z" />
-              <path d="M3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zm9.3 7.176A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+              <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zm9.3 7.176A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
             </svg>
-            Chứng Chỉ
-          </button>
-          
-          <button 
-            className={`profile-nav-item ${activeTab === 'experience' ? 'active' : ''}`}
-            onClick={() => setActiveTab('experience')}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clipRule="evenodd" />
-              <path d="M2 13.692V16a2 2 0 002 2h12a2 2 0 002-2v-2.308A24.974 24.974 0 0110 15c-2.796 0-5.487-.46-8-1.308z" />
-            </svg>
-            Kinh Nghiệm
+            Kinh Nghiệm & Chứng Chỉ
           </button>
           
           <button 
@@ -1016,26 +842,6 @@ const ConsultantProfile = () => {
               <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
             </svg>
             Lịch Làm Việc
-          </button>
-          
-          <button 
-            className={`profile-nav-item ${activeTab === 'appointments' ? 'active' : ''}`}
-            onClick={() => setActiveTab('appointments')}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-            </svg>
-            Cuộc Hẹn
-          </button>
-          
-          <button 
-            className={`profile-nav-item ${activeTab === 'test-results' ? 'active' : ''}`}
-            onClick={() => setActiveTab('test-results')}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm2 10a1 1 0 10-2 0v3a1 1 0 102 0v-3zm4-1a1 1 0 011 1v3a1 1 0 11-2 0v-3a1 1 0 011-1zm-2-7a1 1 0 00-1 1v3a1 1 0 102 0V5a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-            Kết Quả Xét Nghiệm
           </button>
         </div>
       </div>
