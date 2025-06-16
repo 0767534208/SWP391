@@ -5,7 +5,8 @@ import './App.css';
 import UserLayout from './components/layout/UserLayout';
 import AdminLayout from './components/layout/AdminLayout';
 import ManagerLayout from './components/layout/ManagerLayout';
-import ScrollToTop from './components/ScrollToTop';
+import ConsultantLayout from './components/layout/ConsultantLayout';
+import ScrollToTop from './components/layout/ScrollToTop';
 import Home from './pages/Home/Home';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
@@ -14,10 +15,13 @@ import Booking from './pages/Booking/Booking';
 import UserBlog from './pages/Blog/UserBlog';
 import BlogDetail from './pages/Blog/BlogDetail';
 import CycleTracker from './pages/CycleTracker/CycleTracker';
-import Profile from './pages/Profile/Profile';
-import ConsultantProfile from './pages/Profile/ConsultantProfile';
-import TestResults from './pages/TestResults/TestResultUser';
-import TestResultConsultant from './pages/TestResults/TestResultConsultant';
+import Profile from './pages/User/Profile';
+import ConsultantProfile from './pages/Consultant/ConsultantProfile';
+import ConsultantDashboard from './pages/Consultant/ConsultantDashboard';
+import TestResults from './pages/User/TestResultUser';
+import TestResultConsultant from './pages/Consultant/TestResultConsultant';
+import TestResultConsultantDetail from './pages/Consultant/TestResultConsultantDetail';
+import ConsultantAppointments from './pages/Appointments/ConsultantAppointments';
 import Services from './pages/Services/Services';
 import QnA from './pages/QnA/QnA';
 import Payment from './pages/Payment/Payment';
@@ -97,12 +101,15 @@ function App() {
         {/* Route dành cho consultant */}
         <Route path="/consultant" element={
           <ConsultantRoute>
-            <UserLayout />
+            <ConsultantLayout />
           </ConsultantRoute>
         }>
-          <Route index element={<ConsultantProfile />} />
+          <Route index element={<ConsultantDashboard />} />
+          <Route path="dashboard" element={<ConsultantDashboard />} />
           <Route path="profile" element={<ConsultantProfile />} />
+          <Route path="appointments" element={<ConsultantAppointments />} />
           <Route path="test-results" element={<TestResultConsultant />} />
+          <Route path="test-results/:id" element={<TestResultConsultantDetail />} />
         </Route>
 
         {/* Route dành cho manager */}

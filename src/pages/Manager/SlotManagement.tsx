@@ -330,7 +330,7 @@ const SlotManagement = () => {
           <div className="modal-header">
             <h2>Chi Tiết Yêu Cầu Lịch Làm Việc</h2>
             <button className="close-button" onClick={closeDetailModal}>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="28" height="28">
                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
             </button>
@@ -359,14 +359,22 @@ const SlotManagement = () => {
                   <button 
                     className="approve-all-button"
                     onClick={() => approveAllSlots(currentRequest.id)}
+                    title="Duyệt tất cả"
                   >
-                    Duyệt Tất Cả
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Duyệt Tất Cả</span>
                   </button>
                   <button 
                     className="reject-all-button"
                     onClick={() => rejectAllSlots(currentRequest.id)}
+                    title="Từ chối tất cả"
                   >
-                    Từ Chối Tất Cả
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <span>Từ Chối Tất Cả</span>
                   </button>
                 </div>
               </div>
@@ -384,14 +392,20 @@ const SlotManagement = () => {
                           <button 
                             className="approve-button"
                             onClick={() => approveSlot(currentRequest.id, slot.id)}
+                            title="Duyệt"
                           >
-                            Duyệt
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+                            </svg>
                           </button>
                           <button 
                             className="reject-button"
                             onClick={() => rejectSlot(currentRequest.id, slot.id)}
+                            title="Từ chối"
                           >
-                            Từ Chối
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                           </button>
                         </>
                       )}
@@ -399,16 +413,22 @@ const SlotManagement = () => {
                         <button 
                           className="reject-button"
                           onClick={() => rejectSlot(currentRequest.id, slot.id)}
+                          title="Hủy duyệt"
                         >
-                          Hủy Duyệt
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
                         </button>
                       )}
                       {slot.status === 'rejected' && (
                         <button 
                           className="approve-button"
                           onClick={() => approveSlot(currentRequest.id, slot.id)}
+                          title="Duyệt"
                         >
-                          Duyệt
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+                          </svg>
                         </button>
                       )}
                     </div>
@@ -458,7 +478,7 @@ const SlotManagement = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="search-input"
           />
-          <svg xmlns="http://www.w3.org/2000/svg" className="search-icon" viewBox="0 0 20 20" fill="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="search-icon" viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
             <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
           </svg>
         </div>
@@ -510,25 +530,44 @@ const SlotManagement = () => {
                     <button 
                       className="view-details-button"
                       onClick={() => openDetailModal(request)}
+                      title="Xem chi tiết"
                     >
-                      Xem Chi Tiết
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
                     </button>
                     {request.status === 'pending' && (
                       <>
                         <button 
                           className="approve-button"
                           onClick={() => approveAllSlots(request.id)}
+                          title="Duyệt tất cả"
                         >
-                          Duyệt
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+                          </svg>
                         </button>
                         <button 
                           className="reject-button"
                           onClick={() => rejectAllSlots(request.id)}
+                          title="Từ chối tất cả"
                         >
-                          Từ Chối
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
                         </button>
                       </>
                     )}
+                    <button 
+                      className="delete-button"
+                      onClick={() => window.confirm('Bạn có chắc chắn muốn xóa yêu cầu này?') && setSlotRequests(prevRequests => prevRequests.filter(r => r.id !== request.id))}
+                      title="Xóa"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   </div>
                 </td>
               </tr>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './ConsultantAppointments.css';
-import { Link } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import { Toaster } from 'react-hot-toast';
 
 interface Appointment {
   id: number;
@@ -9,8 +10,15 @@ interface Appointment {
   service: string;
   date: string;
   time: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  status: 'pending' | 'confirmed' | 'awaiting_results' | 'completed' | 'cancelled';
   notes?: string;
+  phone?: string;
+  email?: string;
+  dob?: string;
+  gender?: string;
+  reason?: string;
+  history?: string;
+  testResults?: string[];
 }
 
 const ConsultantAppointments: React.FC = () => {
@@ -24,18 +32,134 @@ const ConsultantAppointments: React.FC = () => {
     startDate: '',
     endDate: ''
   });
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState<boolean>(false);
 
   // Mock data
-  const appointments: Appointment[] = [
-    { id: 1, patientName: 'Nguyễn Văn B', patientId: 'P-1001', service: 'Tư vấn bệnh lây qua đường tình dục', date: '2023-06-28', time: '10:00', status: 'confirmed' },
-    { id: 2, patientName: 'Trần Thị C', patientId: 'P-1042', service: 'Xét nghiệm HIV', date: '2023-06-28', time: '14:00', status: 'confirmed' },
-    { id: 3, patientName: 'Lê Văn D', patientId: 'P-1089', service: 'Tư vấn sức khỏe sinh sản', date: '2023-06-29', time: '09:30', status: 'pending' },
-    { id: 4, patientName: 'Phạm Thị E', patientId: 'P-1112', service: 'Xét nghiệm STI tổng quát', date: '2023-06-29', time: '15:30', status: 'confirmed' },
-    { id: 5, patientName: 'Đặng Văn F', patientId: 'P-1156', service: 'Tư vấn sức khỏe sinh sản', date: '2023-06-30', time: '11:00', status: 'pending' },
-    { id: 6, patientName: 'Hoàng Thị G', patientId: 'P-1187', service: 'Xét nghiệm HPV', date: '2023-07-01', time: '13:30', status: 'cancelled' },
-    { id: 7, patientName: 'Vũ Minh H', patientId: 'P-1201', service: 'Tư vấn kế hoạch hóa gia đình', date: '2023-07-02', time: '09:00', status: 'confirmed' },
-    { id: 8, patientName: 'Ngô Thanh I', patientId: 'P-1234', service: 'Xét nghiệm HIV', date: '2023-07-03', time: '16:00', status: 'completed' }
-  ];
+  const [appointments, setAppointments] = useState<Appointment[]>([
+    { 
+      id: 1, 
+      patientName: 'Nguyễn Văn B', 
+      patientId: 'P-1001', 
+      service: 'Tư vấn bệnh lây qua đường tình dục', 
+      date: '2023-06-28', 
+      time: '10:00', 
+      status: 'confirmed',
+      phone: '0912345678',
+      email: 'nguyenvanb@example.com',
+      dob: '15/05/1992',
+      gender: 'Nam',
+      reason: 'Tư vấn về các biện pháp phòng tránh STDs',
+      history: 'Đã từng xét nghiệm HIV âm tính vào tháng trước'
+    },
+    { 
+      id: 2, 
+      patientName: 'Trần Thị C', 
+      patientId: 'P-1042', 
+      service: 'Xét nghiệm HIV', 
+      date: '2023-06-28', 
+      time: '14:00', 
+      status: 'confirmed',
+      phone: '0987654321',
+      email: 'tranthic@example.com',
+      dob: '22/08/1990',
+      gender: 'Nữ',
+      reason: 'Xét nghiệm định kỳ',
+      history: 'Không có tiền sử bệnh lý'
+    },
+    { 
+      id: 3, 
+      patientName: 'Lê Văn D', 
+      patientId: 'P-1089', 
+      service: 'Tư vấn sức khỏe sinh sản', 
+      date: '2023-06-29', 
+      time: '09:30', 
+      status: 'pending',
+      phone: '0909123456',
+      email: 'levand@example.com',
+      dob: '10/11/1988',
+      gender: 'Nam',
+      reason: 'Tư vấn về kế hoạch hóa gia đình',
+      history: 'Đã có 2 con'
+    },
+    { 
+      id: 4, 
+      patientName: 'Phạm Thị E', 
+      patientId: 'P-1112', 
+      service: 'Xét nghiệm STI tổng quát', 
+      date: '2023-06-29', 
+      time: '15:30', 
+      status: 'awaiting_results',
+      phone: '0912876543',
+      email: 'phamthie@example.com',
+      dob: '05/03/1995',
+      gender: 'Nữ',
+      reason: 'Nghi ngờ nhiễm HPV',
+      history: 'Từng điều trị viêm nhiễm phụ khoa',
+      testResults: ['Đang chờ kết quả xét nghiệm HPV', 'Đang chờ kết quả xét nghiệm Chlamydia']
+    },
+    { 
+      id: 5, 
+      patientName: 'Đặng Văn F', 
+      patientId: 'P-1156', 
+      service: 'Tư vấn sức khỏe sinh sản', 
+      date: '2023-06-30', 
+      time: '11:00', 
+      status: 'pending',
+      phone: '0978123456',
+      email: 'dangvanf@example.com',
+      dob: '18/07/1985',
+      gender: 'Nam',
+      reason: 'Tư vấn về vấn đề vô sinh',
+      history: 'Đã kết hôn 5 năm, chưa có con'
+    },
+    { 
+      id: 6, 
+      patientName: 'Hoàng Thị G', 
+      patientId: 'P-1187', 
+      service: 'Xét nghiệm HPV', 
+      date: '2023-07-01', 
+      time: '13:30', 
+      status: 'cancelled',
+      phone: '0918765432',
+      email: 'hoangthig@example.com',
+      dob: '30/12/1993',
+      gender: 'Nữ',
+      reason: 'Xét nghiệm định kỳ',
+      history: 'Không có tiền sử bệnh lý'
+    },
+    { 
+      id: 7, 
+      patientName: 'Vũ Minh H', 
+      patientId: 'P-1201', 
+      service: 'Tư vấn kế hoạch hóa gia đình', 
+      date: '2023-07-02', 
+      time: '09:00', 
+      status: 'confirmed',
+      phone: '0923456789',
+      email: 'vuminhh@example.com',
+      dob: '25/04/1991',
+      gender: 'Nam',
+      reason: 'Tư vấn về các biện pháp tránh thai',
+      history: 'Đã có 1 con'
+    },
+    { 
+      id: 8, 
+      patientName: 'Ngô Thanh I', 
+      patientId: 'P-1234', 
+      service: 'Xét nghiệm HIV', 
+      date: '2023-07-03', 
+      time: '16:00', 
+      status: 'completed',
+      phone: '0934567890',
+      email: 'ngothanhi@example.com',
+      dob: '12/09/1987',
+      gender: 'Nam',
+      reason: 'Xét nghiệm định kỳ',
+      history: 'Không có tiền sử bệnh lý',
+      testResults: ['HIV: Âm tính', 'Syphilis: Âm tính']
+    }
+  ]);
 
   // Filter appointments
   const filteredAppointments = appointments.filter(appointment => {
@@ -60,18 +184,57 @@ const ConsultantAppointments: React.FC = () => {
 
   // Handle actions
   const handleApproveAppointment = (id: number) => {
-    console.log('Approve appointment', id);
-    // Implementation for approve
+    setAppointments(prevAppointments => 
+      prevAppointments.map(appointment => 
+        appointment.id === id 
+          ? { ...appointment, status: 'confirmed' } 
+          : appointment
+      )
+    );
+    toast.success('Đã xác nhận lịch hẹn thành công');
   };
 
   const handleCancelAppointment = (id: number) => {
-    console.log('Cancel appointment', id);
-    // Implementation for cancel
+    setAppointments(
+      appointments.map(appointment => 
+        appointment.id === id 
+          ? { ...appointment, status: 'cancelled' as const }
+          : appointment
+      )
+    );
+    toast.success('Đã hủy lịch hẹn');
   };
 
-  const handleCompleteAppointment = (id: number) => {
-    console.log('Complete appointment', id);
-    // Implementation for complete
+  const handlePatientArrived = (id: number) => {
+    setAppointments(
+      appointments.map(appointment => 
+        appointment.id === id 
+          ? { ...appointment, status: 'awaiting_results' as const }
+          : appointment
+      )
+    );
+    toast.success('Đã cập nhật trạng thái thành chờ kết quả');
+  };
+
+  const handleTestResultReady = (id: number) => {
+    setAppointments(
+      appointments.map(appointment => 
+        appointment.id === id 
+          ? { ...appointment, status: 'completed' as const }
+          : appointment
+      )
+    );
+    toast.success('Đã xác nhận kết quả đã sẵn sàng');
+  };
+
+  const handleViewDetails = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setShowDetailModal(true);
+  };
+
+  const closeDetailModal = () => {
+    setSelectedAppointment(null);
+    setShowDetailModal(false);
   };
 
   // Status badge color mapping
@@ -81,8 +244,10 @@ const ConsultantAppointments: React.FC = () => {
         return 'status-badge status-badge-success';
       case 'confirmed':
         return 'status-badge status-badge-info';
-      case 'pending':
+      case 'awaiting_results':
         return 'status-badge status-badge-warning';
+      case 'pending':
+        return 'status-badge status-badge-secondary';
       case 'cancelled':
         return 'status-badge status-badge-danger';
       default:
@@ -94,9 +259,11 @@ const ConsultantAppointments: React.FC = () => {
   const translateStatus = (status: string): string => {
     switch (status) {
       case 'completed':
-        return 'Hoàn thành';
-      case 'confirmed':
         return 'Đã xác nhận';
+      case 'confirmed':
+        return 'Đã xác nhận lịch hẹn';
+      case 'awaiting_results':
+        return 'Chờ kết quả';
       case 'pending':
         return 'Đang chờ';
       case 'cancelled':
@@ -167,8 +334,9 @@ const ConsultantAppointments: React.FC = () => {
           >
             <option value="all">Tất Cả Trạng Thái</option>
             <option value="pending">Đang Chờ</option>
-            <option value="confirmed">Đã Xác Nhận</option>
-            <option value="completed">Hoàn Thành</option>
+            <option value="confirmed">Đã Xác Nhận Lịch Hẹn</option>
+            <option value="awaiting_results">Chờ Kết Quả</option>
+            <option value="completed">Đã Xác Nhận</option>
             <option value="cancelled">Đã Hủy</option>
           </select>
           
@@ -240,36 +408,58 @@ const ConsultantAppointments: React.FC = () => {
                           <button 
                             className="approve-button"
                             onClick={() => handleApproveAppointment(appointment.id)}
+                            title="Xác nhận lịch hẹn với bệnh nhân"
                           >
-                            Chấp Nhận
+                            Xác nhận
                           </button>
                           <button 
                             className="cancel-button"
                             onClick={() => handleCancelAppointment(appointment.id)}
                           >
-                            Từ Chối
+                            Từ chối
                           </button>
                         </>
                       )}
                       {appointment.status === 'confirmed' && (
                         <>
                           <button 
-                            className="complete-button"
-                            onClick={() => handleCompleteAppointment(appointment.id)}
+                            className="check-in-button"
+                            onClick={() => handlePatientArrived(appointment.id)}
+                            title="Bệnh nhân đã đến trung tâm"
                           >
-                            Hoàn Thành
+                            Đã đến trung tâm
                           </button>
                           <button 
                             className="cancel-button"
                             onClick={() => handleCancelAppointment(appointment.id)}
                           >
-                            Hủy
+                            Hủy lịch hẹn
                           </button>
                         </>
                       )}
+                      {appointment.status === 'awaiting_results' && (
+                                                  <button 
+                            className="complete-button"
+                            onClick={() => handleTestResultReady(appointment.id)}
+                            title="Xác nhận kết quả xét nghiệm đã có"
+                          >
+                            Xác nhận kết quả
+                          </button>
+                      )}
                       {(appointment.status === 'completed' || appointment.status === 'cancelled') && (
-                        <button className="view-button">
-                          Xem Chi Tiết
+                        <button 
+                          className="view-details-button"
+                          onClick={() => handleViewDetails(appointment)}
+                        >
+                          Xem chi tiết
+                        </button>
+                      )}
+                      {(appointment.status !== 'completed' && appointment.status !== 'cancelled') && (
+                        <button 
+                          className="view-details-button secondary"
+                          onClick={() => handleViewDetails(appointment)}
+                        >
+                          Chi tiết
                         </button>
                       )}
                     </div>
@@ -294,6 +484,171 @@ const ConsultantAppointments: React.FC = () => {
           <p>Chức năng xem lịch đang được phát triển.</p>
         </div>
       )}
+
+      {/* Appointment Detail Modal */}
+      {showDetailModal && selectedAppointment && (
+        <div className="appointment-detail-modal-overlay">
+          <div className="appointment-detail-modal">
+            <div className="modal-header">
+              <h2>Chi tiết cuộc hẹn</h2>
+              <button className="close-button" onClick={closeDetailModal}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="modal-content">
+              <div className="detail-section">
+                <h3>Thông tin cuộc hẹn</h3>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <span className="detail-label">Mã cuộc hẹn:</span>
+                    <span className="detail-value">APT-{selectedAppointment.id}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Dịch vụ:</span>
+                    <span className="detail-value">{selectedAppointment.service}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Ngày hẹn:</span>
+                    <span className="detail-value">{selectedAppointment.date}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Giờ hẹn:</span>
+                    <span className="detail-value">{selectedAppointment.time}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Trạng thái:</span>
+                    <span className={`detail-value status ${selectedAppointment.status}`}>
+                      {translateStatus(selectedAppointment.status)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="detail-section">
+                <h3>Thông tin bệnh nhân</h3>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <span className="detail-label">Họ tên:</span>
+                    <span className="detail-value">{selectedAppointment.patientName}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Mã bệnh nhân:</span>
+                    <span className="detail-value">{selectedAppointment.patientId}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Ngày sinh:</span>
+                    <span className="detail-value">{selectedAppointment.dob || 'N/A'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Giới tính:</span>
+                    <span className="detail-value">{selectedAppointment.gender || 'N/A'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Số điện thoại:</span>
+                    <span className="detail-value">{selectedAppointment.phone || 'N/A'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Email:</span>
+                    <span className="detail-value">{selectedAppointment.email || 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="detail-section">
+                <h3>Lý do khám</h3>
+                <p className="detail-text">{selectedAppointment.reason || 'Không có thông tin'}</p>
+              </div>
+              
+              <div className="detail-section">
+                <h3>Tiền sử bệnh</h3>
+                <p className="detail-text">{selectedAppointment.history || 'Không có thông tin'}</p>
+              </div>
+              
+              {selectedAppointment.testResults && selectedAppointment.testResults.length > 0 && (
+                <div className="detail-section">
+                  <h3>Kết quả xét nghiệm</h3>
+                  <ul className="test-results-list">
+                    {selectedAppointment.testResults.map((result, index) => (
+                      <li key={index}>{result}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+            
+            <div className="modal-footer">
+              <button className="close-button-secondary" onClick={closeDetailModal}>
+                Đóng
+              </button>
+              {selectedAppointment.status !== 'cancelled' && (
+                <div className="action-buttons">
+                  {selectedAppointment.status === 'pending' && (
+                    <>
+                      <button 
+                        className="approve-button"
+                        onClick={() => {
+                          handleApproveAppointment(selectedAppointment.id);
+                          closeDetailModal();
+                        }}
+                      >
+                        Xác nhận
+                      </button>
+                      <button 
+                        className="cancel-button"
+                        onClick={() => {
+                          handleCancelAppointment(selectedAppointment.id);
+                          closeDetailModal();
+                        }}
+                      >
+                        Từ chối
+                      </button>
+                    </>
+                  )}
+                  {selectedAppointment.status === 'confirmed' && (
+                    <>
+                      <button 
+                        className="check-in-button"
+                        onClick={() => {
+                          handlePatientArrived(selectedAppointment.id);
+                          closeDetailModal();
+                        }}
+                      >
+                        Đã đến trung tâm
+                      </button>
+                      <button 
+                        className="cancel-button"
+                        onClick={() => {
+                          handleCancelAppointment(selectedAppointment.id);
+                          closeDetailModal();
+                        }}
+                      >
+                        Hủy lịch hẹn
+                      </button>
+                    </>
+                  )}
+                  {selectedAppointment.status === 'awaiting_results' && (
+                    <button 
+                      className="complete-button"
+                      onClick={() => {
+                        handleTestResultReady(selectedAppointment.id);
+                        closeDetailModal();
+                      }}
+                    >
+                      Xác nhận kết quả
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Thêm Toaster component */}
+      <Toaster position="top-right" />
     </div>
   );
 };
