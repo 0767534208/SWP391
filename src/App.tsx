@@ -6,6 +6,7 @@ import UserLayout from './components/layout/UserLayout';
 import AdminLayout from './components/layout/AdminLayout';
 import ManagerLayout from './components/layout/ManagerLayout';
 import ConsultantLayout from './components/layout/ConsultantLayout';
+import StaffLayout from './components/layout/StaffLayout';
 import ScrollToTop from './components/layout/ScrollToTop';
 import Home from './pages/Home/Home';
 import Login from './pages/Auth/Login';
@@ -36,6 +37,11 @@ import ManagerDashboard from './pages/Manager/ManagerDashboard';
 import ServiceManagement from './pages/Manager/ServiceManagement';
 import BlogManagement from './pages/Manager/BlogManagement';
 import SlotManagement from './pages/Manager/SlotManagement';
+
+import StaffDashboard from './pages/Staff/StaffDashboard';
+import StaffAppointments from './pages/Staff/StaffAppointments';
+import TestResultView from './pages/Staff/TestResultView';
+import TestResultInput from './pages/Staff/TestResultInput';
 
 // Admin route wrapper component
 import type { ReactNode } from 'react';
@@ -70,6 +76,16 @@ type ManagerRouteProps = {
 const ManagerRoute = ({ children }: ManagerRouteProps) => {
   const isManager = localStorage.getItem('userRole') === 'manager';
   return isManager ? <>{children}</> : <Navigate to="/auth/login" replace />;
+};
+
+// Staff route wrapper component
+type StaffRouteProps = {
+  children: ReactNode;
+};
+
+const StaffRoute = ({ children }: StaffRouteProps) => {
+  const isStaff = localStorage.getItem('userRole') === 'staff';
+  return isStaff ? <>{children}</> : <Navigate to="/auth/login" replace />;
 };
 
 function App() {
@@ -122,6 +138,19 @@ function App() {
           <Route path="services" element={<ServiceManagement />} />
           <Route path="blogs" element={<BlogManagement />} />
           <Route path="slots" element={<SlotManagement />} />
+        </Route>
+
+        {/* Route dành cho staff */}
+        <Route path="/staff" element={
+          <StaffRoute>
+            <StaffLayout />
+          </StaffRoute>
+        }>
+          <Route index element={<StaffDashboard />} />
+          <Route path="dashboard" element={<StaffDashboard />} />
+          <Route path="appointments" element={<StaffAppointments />} />
+          <Route path="test-results/:id" element={<TestResultView />} />
+          <Route path="test-result-input/:appointmentId" element={<TestResultInput />} />
         </Route>
 
         {/* Route dành cho admin */}

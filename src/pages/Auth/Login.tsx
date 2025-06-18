@@ -34,6 +34,18 @@ const Login = () => {
         name: 'Quản lý dịch vụ'
       }));
       navigate('/manager'); // Redirect to manager dashboard
+    } else if (email === 'staff@example.com' && password === 'staff123') {
+      // Staff login success
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userRole', 'staff');
+      localStorage.setItem('user', JSON.stringify({ 
+        email, 
+        role: 'staff',
+        name: 'Nguyễn Văn Staff',
+        position: 'Nhân viên xét nghiệm',
+        phone: '(+84) 912-345-678',
+      }));
+      navigate('/staff'); // Redirect to staff dashboard
     } else if (email === 'consultant@example.com' && password === 'consultant123') {
       // Consultant login success
       localStorage.setItem('isLoggedIn', 'true');
@@ -144,6 +156,7 @@ const Login = () => {
         <ul className="login-accounts">
           <li><strong>Quản trị viên:</strong> admin@example.com / admin123</li>
           <li><strong>Quản lý:</strong> manager@example.com / manager123</li>
+          <li><strong>Nhân viên:</strong> staff@example.com / staff123</li>
           <li><strong>Tư vấn viên:</strong> consultant@example.com / consultant123</li>
           <li><strong>Người dùng:</strong> user@example.com / user123</li>
         </ul>
