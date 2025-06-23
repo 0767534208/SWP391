@@ -11,6 +11,11 @@ const ManagerLayout = () => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
   
+  // Check if we're on the dashboard (home) page
+  const isHomePage = () => {
+    return location.pathname === '/manager' || location.pathname === '/manager/';
+  };
+  
   // Handle logout
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
@@ -29,7 +34,7 @@ const ManagerLayout = () => {
         
         <nav className="manager-nav py-2">
           <div className="manager-nav-container px-2 space-y-1">
-            <Link to="/manager" className={`manager-nav-link flex items-center px-2 py-1.5 rounded-lg transition-colors ${isActive('/manager') && !isActive('/manager/services') && !isActive('/manager/blogs') && !isActive('/manager/slots') && !isActive('/manager/create-slots') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800'}`}>
+            <Link to="/manager" className={`manager-nav-link flex items-center px-2 py-1.5 rounded-lg transition-colors ${isHomePage() ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800'}`}>
               <svg xmlns="http://www.w3.org/2000/svg" className="manager-sidebar-icon" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
               </svg>
@@ -50,11 +55,11 @@ const ManagerLayout = () => {
               <span className="manager-nav-text text-xs font-medium">Quản lý bài viết</span>
             </Link>
             
-            <Link to="/manager/create-slots" className={`manager-nav-link flex items-center px-2 py-1.5 rounded-lg transition-colors ${isActive('/manager/create-slots') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800'}`}>
+            <Link to="/manager/slot-calendar" className={`manager-nav-link flex items-center px-2 py-1.5 rounded-lg transition-colors ${isActive('/manager/slot-calendar') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800'}`}>
               <svg xmlns="http://www.w3.org/2000/svg" className="manager-sidebar-icon" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
               </svg>
-              <span className="manager-nav-text text-xs font-medium">Tạo khung giờ</span>
+              <span className="manager-nav-text text-xs font-medium">Lịch khung giờ</span>
             </Link>
             
             <Link to="/manager/slots" className={`manager-nav-link flex items-center px-2 py-1.5 rounded-lg transition-colors ${isActive('/manager/slots') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800'}`}>

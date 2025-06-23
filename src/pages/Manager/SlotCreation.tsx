@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import './SlotCreation.css';
 
 // Types
@@ -189,29 +190,219 @@ interface NotificationItem {
   message: string;
 }
 
+// Confirmation Dialog component
+interface ConfirmDialogProps {
+  onConfirm: () => void;
+  onCancel: () => void;
+  isOpen: boolean;
+  title: string;
+  message: string;
+}
+
+const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ onConfirm, onCancel, isOpen, title, message }) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="confirm-dialog-overlay">
+      <div className="confirm-dialog">
+        <h3 className="confirm-dialog-title">{title}</h3>
+        <p className="confirm-dialog-message">{message}</p>
+        <div className="confirm-dialog-buttons">
+          <button 
+            className="confirm-dialog-button confirm"
+            onClick={onConfirm}
+          >
+            Đồng ý
+          </button>
+          <button 
+            className="confirm-dialog-button cancel"
+            onClick={onCancel}
+          >
+            Hủy
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Mock data cứng cho slot (tuần 23-29/06/2025)
+const mockSlots: SlotDay[] = [
+  {
+    day: 'monday',
+    date: '2025-06-23',
+    slots: [
+      { id: 1, start: '08:00', end: '09:00' },
+      { id: 2, start: '09:30', end: '10:30' }
+    ]
+  },
+  {
+    day: 'tuesday',
+    date: '2025-06-24',
+    slots: [
+      { id: 3, start: '13:00', end: '14:00' }
+    ]
+  },
+  {
+    day: 'wednesday',
+    date: '2025-06-25',
+    slots: [
+      { id: 4, start: '15:00', end: '16:00' }
+    ]
+  },
+  {
+    day: 'thursday',
+    date: '2025-06-26',
+    slots: [
+      { id: 5, start: '10:00', end: '11:00' }
+    ]
+  },
+  {
+    day: 'friday',
+    date: '2025-06-27',
+    slots: [
+      { id: 6, start: '14:00', end: '15:00' }
+    ]
+  }
+];
+
 const SlotCreation = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Get date from query parameters if available
+  const getDateFromQueryParams = (): string => {
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.get('date') || '';
+  };
+  
+  // Get day of week from date string
+  const getDayFromDate = (dateString: string): string => {
+    if (!dateString) return '';
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayIndex = new Date(dateString).getDay();
+    return dayNames[dayIndex];
+  };
+  
   // State
-  const [selectedDate, setSelectedDate] = useState<string>('');
-  const [selectedDay, setSelectedDay] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<string>(getDateFromQueryParams());
+  const [selectedDay, setSelectedDay] = useState<string>(getDayFromDate(getDateFromQueryParams()));
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [startTime, setStartTime] = useState<string>('');
   const [endTime, setEndTime] = useState<string>('');
-  const [createdSlots, setCreatedSlots] = useState<SlotDay[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
 
   // Working hours constraints
   const minWorkingHour = "08:00";
   const maxWorkingHour = "20:00";
 
-  // Handle date change
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const date = e.target.value;
-    setSelectedDate(date);
-    
-    // Calculate day of week
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const dayIndex = new Date(date).getDay();
-    setSelectedDay(dayNames[dayIndex]);
+  // Lấy slot mock data từ localStorage
+  const getMockSlots = (): SlotDay[] => {
+    const saved = localStorage.getItem('managedSlots');
+    if (!saved) return [];
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return [];
+    }
+  };
+
+  // getExistingSlotsForDate chỉ lấy từ mockSlots
+  const getExistingSlotsForDate = (): TimeSlot[] => {
+    const existingSlotDay = mockSlots.find(slot => slot.date === selectedDate);
+    return existingSlotDay ? [...existingSlotDay.slots].sort((a, b) => a.start.localeCompare(b.start)) : [];
+  };
+
+  // Check for overlap with all slots (new and existing)
+  const checkForOverlap = (start: string, end: string): boolean => {
+    // Check against new slots being added
+    const newSlotsOverlap = timeSlots.some(slot => {
+      return (start < slot.end && end > slot.start);
+    });
+    // Check against existing slots in mock data
+    const existingSlotsOverlap = getExistingSlotsForDate().some(slot => {
+      return (start < slot.end && end > slot.start);
+    });
+    return newSlotsOverlap || existingSlotsOverlap;
+  };
+
+  // Add time slot
+  const addTimeSlot = () => {
+    if (!startTime || !endTime) {
+      showNotification('error', 'Vui lòng chọn thời gian bắt đầu và kết thúc');
+      return;
+    }
+    if (startTime >= endTime) {
+      showNotification('error', 'Thời gian kết thúc phải sau thời gian bắt đầu');
+      return;
+    }
+    if (startTime < minWorkingHour || endTime > maxWorkingHour) {
+      showNotification('error', `Thời gian phải trong khung giờ làm việc (${minWorkingHour} - ${maxWorkingHour})`);
+      return;
+    }
+    if (checkForOverlap(startTime, endTime)) {
+      showNotification('error', 'Khoảng thời gian này trùng với một khoảng thời gian khác');
+      return;
+    }
+    const newSlot: TimeSlot = {
+      id: Date.now(),
+      start: startTime,
+      end: endTime
+    };
+    setTimeSlots([...timeSlots, newSlot]);
+    setStartTime('');
+    setEndTime('');
+    showNotification('success', 'Đã thêm khoảng thời gian thành công');
+  };
+
+  // Remove time slot
+  const removeTimeSlot = (id: number) => {
+    setTimeSlots(timeSlots.filter(slot => slot.id !== id));
+  };
+
+  // Confirm slot creation
+  const confirmCreateSlots = () => {
+    setShowConfirmDialog(true);
+  };
+
+  // Handle confirmation dialog result
+  const handleConfirmCreateSlots = () => {
+    setShowConfirmDialog(false);
+    createSlots();
+    // Navigate back to calendar view after successful creation
+    navigate('/manager/slot-calendar?slotCreated=true');
+  };
+
+  // Create slots: cập nhật localStorage
+  const createSlots = () => {
+    if (!selectedDate) {
+      showNotification('error', 'Vui lòng chọn ngày');
+      return;
+    }
+    if (timeSlots.length === 0) {
+      showNotification('error', 'Vui lòng thêm ít nhất một khoảng thời gian');
+      return;
+    }
+    const allSlots = getMockSlots();
+    const existingSlotDayIdx = allSlots.findIndex(slot => slot.date === selectedDate);
+    if (existingSlotDayIdx !== -1) {
+      // Gộp slot mới vào slot cũ (đã kiểm tra trùng nên không lo trùng)
+      allSlots[existingSlotDayIdx].slots = [...allSlots[existingSlotDayIdx].slots, ...timeSlots].sort((a, b) => a.start.localeCompare(b.start));
+    } else {
+      const newSlotDay: SlotDay = {
+        id: Date.now(),
+        day: selectedDay,
+        date: selectedDate,
+        slots: [...timeSlots].sort((a, b) => a.start.localeCompare(b.start))
+      };
+      allSlots.push(newSlotDay);
+    }
+    localStorage.setItem('managedSlots', JSON.stringify(allSlots));
+    showNotification('success', 'Đã tạo khung giờ làm việc thành công!');
+    setSelectedDate('');
+    setSelectedDay('');
+    setTimeSlots([]);
   };
 
   // Show notification
@@ -223,129 +414,6 @@ const SlotCreation = () => {
   // Remove notification
   const removeNotification = (id: number) => {
     setNotifications(prev => prev.filter(notification => notification.id !== id));
-  };
-
-  // Add time slot
-  const addTimeSlot = () => {
-    if (!startTime || !endTime) {
-      showNotification('error', 'Vui lòng chọn thời gian bắt đầu và kết thúc');
-      return;
-    }
-
-    // Validate time - compare as strings to avoid issues with time comparison
-    if (startTime >= endTime) {
-      showNotification('error', 'Thời gian kết thúc phải sau thời gian bắt đầu');
-      return;
-    }
-
-    // Validate working hours
-    if (startTime < minWorkingHour || endTime > maxWorkingHour) {
-      showNotification('error', `Thời gian phải trong khung giờ làm việc (${minWorkingHour} - ${maxWorkingHour})`);
-      return;
-    }
-
-    // Check for overlaps
-    const hasOverlap = timeSlots.some(slot => {
-      return (startTime < slot.end && endTime > slot.start);
-    });
-
-    if (hasOverlap) {
-      showNotification('error', 'Khoảng thời gian này trùng với một khoảng thời gian khác');
-      return;
-    }
-
-    const newSlot: TimeSlot = {
-      id: Date.now(),
-      start: startTime,
-      end: endTime
-    };
-
-    setTimeSlots([...timeSlots, newSlot]);
-    
-    // Clear time inputs after adding a slot
-    setStartTime('');
-    setEndTime('');
-    
-    // Show success message
-    showNotification('success', 'Đã thêm khoảng thời gian thành công');
-  };
-
-  // Remove time slot
-  const removeTimeSlot = (id: number) => {
-    setTimeSlots(timeSlots.filter(slot => slot.id !== id));
-  };
-
-  // We've removed the editing functionality
-  
-  // Delete a specific time slot
-  const deleteTimeSlotFromDay = (slotDayId: number, slotId: number) => {
-    setCreatedSlots(prevSlots => 
-      prevSlots.map(day => {
-        if (day.id === slotDayId) {
-          const updatedSlots = day.slots.filter(slot => slot.id !== slotId);
-          return { ...day, slots: updatedSlots };
-        }
-        return day;
-      }).filter(day => day.slots.length > 0) // Remove days with no slots
-    );
-    
-    showNotification('success', 'Đã xóa khung giờ');
-  };
-
-    // Create slots
-  const createSlots = () => {
-    if (!selectedDate) {
-      showNotification('error', 'Vui lòng chọn ngày');
-      return;
-    }
-
-    if (timeSlots.length === 0) {
-      showNotification('error', 'Vui lòng thêm ít nhất một khoảng thời gian');
-      return;
-    }
-
-    // Check if slots already exist for this date
-    const existingSlotDay = createdSlots.find(slot => slot.date === selectedDate);
-    
-    if (existingSlotDay) {
-      // Update existing slots
-      setCreatedSlots(prevSlots => 
-        prevSlots.map(slot => 
-          slot.date === selectedDate 
-            ? { 
-                ...slot, 
-                // Combine and sort slots by start time
-                slots: [...slot.slots, ...timeSlots].sort((a, b) => 
-                  a.start.localeCompare(b.start)
-                ) 
-              } 
-            : slot
-        )
-      );
-    } else {
-      // Add new slots (already sorted by time)
-      const newSlotDay: SlotDay = {
-        id: Date.now(),
-        day: selectedDay,
-        date: selectedDate,
-        slots: [...timeSlots].sort((a, b) => a.start.localeCompare(b.start))
-      };
-      
-      setCreatedSlots([...createdSlots, newSlotDay]);
-    }
-    
-    showNotification('success', 'Đã tạo khung giờ làm việc thành công!');
-    
-    // Reset form
-    setSelectedDate('');
-    setSelectedDay('');
-    setTimeSlots([]);
-  };
-
-  // Delete created slot day
-  const deleteSlotDay = (slotDayId: number) => {
-    setCreatedSlots(createdSlots.filter(slot => slot.id !== slotDayId));
-    showNotification('success', 'Đã xóa ngày làm việc');
   };
 
   // Helper function to translate day name to Vietnamese
@@ -388,6 +456,11 @@ const SlotCreation = () => {
 
       <div className="slot-creation-form bg-white p-6 rounded-lg shadow-sm mb-6">
         <h2 className="text-xl font-semibold mb-4 text-gray-700">Tạo khung giờ mới</h2>
+        {selectedDate && (
+          <div className="text-md text-gray-600 mb-4">
+            Ngày: {new Date(selectedDate).toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </div>
+        )}
         
         <div className="form-group mb-4">
           <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">Chọn ngày:</label>
@@ -397,14 +470,19 @@ const SlotCreation = () => {
               id="date" 
               className="form-input w-full p-2 border border-gray-300 rounded-md date-input cursor-pointer" 
               value={selectedDate}
-              onChange={handleDateChange}
-              min={new Date().toISOString().split('T')[0]}
+              onChange={(e) => {
+                const date = e.target.value;
+                setSelectedDate(date);
+                setSelectedDay(getDayFromDate(date));
+              }}
+              min={new Date().toISOString().split('T')[0]} // Today or later
               placeholder="dd/mm/yyyy"
               onClick={(e) => {
                 // Force the date picker to open when clicking anywhere on the input
                 const input = e.target as HTMLInputElement;
                 input.showPicker && input.showPicker();
               }}
+              required
             />
             <div 
               className="calendar-icon-wrapper"
@@ -471,80 +549,48 @@ const SlotCreation = () => {
           </div>
         </div>
 
-        {/* Time slots list */}
-        {timeSlots.length > 0 && (
-          <div className="time-slots-preview mb-4">
-            <h3 className="text-md font-medium text-gray-700 mb-2">Danh sách khung giờ:</h3>
-            <div className="time-slots-list">
-              {timeSlots.map((slot) => (
-                <div key={slot.id} className="time-slot-item flex justify-between items-center p-2 border border-gray-200 rounded-md mb-2">
-                  <span className="time-range font-medium">
-                    {slot.start} - {slot.end}
-                  </span>
-                  <button 
-                    className="remove-slot-button text-red-500 hover:text-red-700"
-                    onClick={() => removeTimeSlot(slot.id)}
-                  >
-                    <span className="text-lg font-medium">×</span>
-                  </button>
+        {/* Display existing slots for the selected date */}
+        {selectedDate && (
+          <div className="existing-slots-section mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+            {getExistingSlotsForDate().length > 0 ? (
+              <>
+                <div className="existing-slots-list">
+                  {getExistingSlotsForDate().map((slot, index) => (
+                    <div key={index} className="existing-slot-item flex justify-between items-center p-2 border border-gray-200 bg-white rounded-md mb-2">
+                      <span className="time-range font-medium">
+                        {slot.start} - {slot.end}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+                <div className="text-xs text-gray-500 mt-2">
+                  Lưu ý: Không thể tạo khung giờ trùng với các khung giờ hiện có
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-gray-600 p-2">
+                Chưa có khung giờ nào cho ngày này
+              </div>
+            )}
           </div>
         )}
 
         <button 
           className="create-slots-button bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors w-full"
-          onClick={createSlots}
+          onClick={confirmCreateSlots}
         >
           Tạo khung giờ làm việc
         </button>
+        
+        {/* Confirmation Dialog */}
+        <ConfirmDialog
+          isOpen={showConfirmDialog}
+          title="Xác nhận tạo khung giờ"
+          message={`Bạn có chắc chắn muốn tạo ${timeSlots.length} khung giờ làm việc cho ngày ${new Date(selectedDate).toLocaleDateString('vi-VN')}?`}
+          onConfirm={handleConfirmCreateSlots}
+          onCancel={() => setShowConfirmDialog(false)}
+        />
       </div>
-
-      {/* Created slots list */}
-      {createdSlots.length > 0 && (
-        <div className="created-slots bg-white p-6 rounded-lg shadow-sm">
-          <h2 className="text-xl font-semibold mb-4 text-gray-700">Khung giờ đã tạo</h2>
-          
-          <div className="created-slots-list">
-            {createdSlots.map((slotDay) => (
-              <div key={slotDay.date} className="slot-day-item border border-gray-200 rounded-md p-4 mb-4">
-                <div className="slot-day-header flex justify-between items-center mb-3">
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-800">
-                      {translateDayName(slotDay.day)} - {formatDate(slotDay.date)}
-                    </h3>
-                    <p className="text-sm text-gray-500">{slotDay.slots.length} khung giờ</p>
-                  </div>
-                  <button 
-                    className="delete-slot-day text-red-500 hover:text-red-700 text-xl font-bold"
-                    onClick={() => deleteSlotDay(slotDay.id || Date.now())}
-                  >
-                    ×
-                  </button>
-                </div>
-                
-                <div className="slot-day-slots grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {slotDay.slots.map((slot) => (
-                    <div key={slot.id} className="slot-time bg-indigo-50 p-2 rounded-md">
-                      <div className="text-center font-medium">{slot.start} - {slot.end}</div>
-                      <div className="flex justify-end mt-2">
-                        <button 
-                          className="delete-button text-red-600 hover:text-red-800 p-1"
-                          onClick={() => deleteTimeSlotFromDay(slotDay.id || Date.now(), slot.id)}
-                          title="Xóa khung giờ"
-                        >
-                          <span className="text-lg font-medium">×</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

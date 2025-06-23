@@ -38,6 +38,7 @@ import ServiceManagement from './pages/Manager/ServiceManagement';
 import BlogManagement from './pages/Manager/BlogManagement';
 import SlotManagement from './pages/Manager/SlotManagement';
 import SlotCreation from './pages/Manager/SlotCreation';
+import WeeklyCalendar from './pages/Manager/WeeklyCalendar';
 
 import StaffDashboard from './pages/Staff/StaffDashboard';
 import StaffAppointments from './pages/Staff/StaffAppointments';
@@ -139,7 +140,8 @@ function App() {
           <Route path="services" element={<ServiceManagement />} />
           <Route path="blogs" element={<BlogManagement />} />
           <Route path="slots" element={<SlotManagement />} />
-          <Route path="create-slots" element={<SlotCreation />} />
+          <Route path="slot-calendar" element={<WeeklyCalendar />} />
+          <Route path="slot-creation" element={<SlotCreation />} />
         </Route>
 
         {/* Route dành cho staff */}
