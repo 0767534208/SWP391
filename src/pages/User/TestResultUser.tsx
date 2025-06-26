@@ -278,13 +278,6 @@ const TestResults: React.FC = () => {
             ))}
           </div>
 
-          {report.notes && (
-            <div className="test-notes">
-              <h2>Ghi chú</h2>
-              <p>{report.notes}</p>
-            </div>
-          )}
-
           <div className="test-footer">
             <div className="doctor-signature">
               <p className="signature-date">Ngày {report.reportDate.split('/')[0]} tháng {report.reportDate.split('/')[1]} năm {report.reportDate.split('/')[2]}</p>

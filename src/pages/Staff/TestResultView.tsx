@@ -221,7 +221,7 @@ const TestResultView = () => {
   }, [id]);
 
   const handleBack = () => {
-    navigate('/staff/appointments');
+    navigate('/staff/test-results');
   };
 
   const handlePrint = () => {
@@ -398,11 +398,6 @@ const TestResultView = () => {
               </div>
             </div>
           ))}
-
-          <div className="result-notes">
-            <h3>Ghi chú</h3>
-            <p>Kết quả xét nghiệm chỉ có giá trị tại thời điểm lấy mẫu.</p>
-          </div>
 
           <div className="result-footer">
             <div className="result-date">

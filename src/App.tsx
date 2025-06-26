@@ -39,11 +39,12 @@ import BlogManagement from './pages/Manager/BlogManagement';
 import SlotManagement from './pages/Manager/SlotManagement';
 import SlotCreation from './pages/Manager/SlotCreation';
 import WeeklyCalendar from './pages/Manager/WeeklyCalendar';
-
-import StaffDashboard from './pages/Staff/StaffDashboard';
-import StaffAppointments from './pages/Staff/StaffAppointments';
-import TestResultView from './pages/Staff/TestResultView';
-import TestResultInput from './pages/Staff/TestResultInput';
+import StaffDashboard from './pages/staff/StaffDashboard';
+import StaffAppointments from './pages/staff/StaffAppointments';
+import TestResultView from './pages/staff/TestResultView';
+import TestResultInput from './pages/staff/TestResultInput';
+import TestResultManagementStaff from './pages/staff/TestResultManagementStaff';
+import TestResultEdit from './pages/staff/TestResultEdit';
 
 // Admin route wrapper component
 import type { ReactNode } from 'react';
@@ -153,7 +154,9 @@ function App() {
           <Route index element={<StaffDashboard />} />
           <Route path="dashboard" element={<StaffDashboard />} />
           <Route path="appointments" element={<StaffAppointments />} />
+          <Route path="test-results" element={<TestResultManagementStaff />} />
           <Route path="test-results/:id" element={<TestResultView />} />
+          <Route path="test-results/edit/:id" element={<TestResultEdit />} />
           <Route path="test-result-input/:appointmentId" element={<TestResultInput />} />
         </Route>
 
