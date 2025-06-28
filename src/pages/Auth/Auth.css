@@ -98,6 +98,12 @@
   background-color: var(--selected-color);
 }
 
+.register-submit:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .register-footer {
   margin-top: 1.5rem;
   text-align: center;
@@ -239,6 +245,12 @@
   background-color: var(--selected-color);
 }
 
+.login-submit:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .login-footer {
   margin-top: 1.5rem;
   text-align: center;
@@ -266,6 +278,18 @@
   border-radius: 6px;
   font-size: 0.875rem;
   margin-bottom: 1rem;
+}
+
+.field-error {
+  color: #b91c1c;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  text-align: left;
+}
+
+.input-error {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2;
 }
 
 .login-note {
@@ -298,6 +322,21 @@
 
 .login-accounts li:last-child {
   border-bottom: none;
+}
+
+.demo-account-btn {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  padding: 0;
+  font-size: 0.875rem;
+  cursor: pointer;
+  text-decoration: underline;
+  font-family: inherit;
+}
+
+.demo-account-btn:hover {
+  color: var(--selected-color);
 }
 
 /* OTP Form Styles */

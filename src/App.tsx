@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import './index.css';
 import './App.css';
 
@@ -51,13 +52,44 @@ import type { ReactNode } from 'react';
 import ConfirmBooking from './pages/Booking/ConfirmBooking';
 import Contact from './pages/Contact/Contact';
 
+// Component to redirect based on user role
+const RoleBasedRedirect = () => {
+  useEffect(() => {
+    const userRole = localStorage.getItem('userRole')?.toLowerCase();
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    
+    if (isLoggedIn && userRole) {
+      switch (userRole) {
+        case 'admin':
+          window.location.href = '/admin';
+          break;
+        case 'manager':
+          window.location.href = '/manager';
+          break;
+        case 'staff':
+          window.location.href = '/staff';
+          break;
+        case 'consultant':
+          window.location.href = '/consultant/profile';
+          break;
+        default:
+          // For regular users, stay on the homepage
+          break;
+      }
+    }
+  }, []);
+  
+  return null;
+};
+
 // Admin route wrapper component
 type AdminRouteProps = {
   children: ReactNode;
 };
 
 const AdminRoute = ({ children }: AdminRouteProps) => {
-  const isAdmin = localStorage.getItem('userRole') === 'admin';
+  const userRole = localStorage.getItem('userRole')?.toLowerCase();
+  const isAdmin = userRole === 'admin';
   return isAdmin ? <>{children}</> : <Navigate to="/auth/login" replace />;
 };
 
@@ -67,7 +99,8 @@ type ConsultantRouteProps = {
 };
 
 const ConsultantRoute = ({ children }: ConsultantRouteProps) => {
-  const isConsultant = localStorage.getItem('userRole') === 'consultant';
+  const userRole = localStorage.getItem('userRole')?.toLowerCase();
+  const isConsultant = userRole === 'consultant';
   return isConsultant ? <>{children}</> : <Navigate to="/auth/login" replace />;
 };
 
@@ -77,7 +110,8 @@ type ManagerRouteProps = {
 };
 
 const ManagerRoute = ({ children }: ManagerRouteProps) => {
-  const isManager = localStorage.getItem('userRole') === 'manager';
+  const userRole = localStorage.getItem('userRole')?.toLowerCase();
+  const isManager = userRole === 'manager';
   return isManager ? <>{children}</> : <Navigate to="/auth/login" replace />;
 };
 
@@ -87,7 +121,8 @@ type StaffRouteProps = {
 };
 
 const StaffRoute = ({ children }: StaffRouteProps) => {
-  const isStaff = localStorage.getItem('userRole') === 'staff';
+  const userRole = localStorage.getItem('userRole')?.toLowerCase();
+  const isStaff = userRole === 'staff';
   return isStaff ? <>{children}</> : <Navigate to="/auth/login" replace />;
 };
 
@@ -98,7 +133,7 @@ function App() {
       <Routes>
         {/* Route dành cho người dùng */}
         <Route path="/" element={<UserLayout />}>
-          <Route index element={<Home />} />
+          <Route index element={<><RoleBasedRedirect /><Home /></>} />
           <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
           <Route path="auth/login" element={<Login />} />
           <Route path="auth/register" element={<Register />} />
