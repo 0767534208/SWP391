@@ -11,6 +11,7 @@ import './Auth.css';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
+  
   // State quản lý dữ liệu form
   const [formData, setFormData] = useState({
     username: '',
@@ -171,8 +172,8 @@ const Register: React.FC = () => {
       // Format ngày tháng cho API
       const formattedDateOfBirth = new Date(formData.dateOfBirth).toISOString();
       
-      // Gọi API đăng ký
-      const response = await authService.register({
+      // Log dữ liệu gửi đi để debug
+      const requestData = {
         username: formData.username,
         name: formData.name,
         email: formData.email,
@@ -180,7 +181,14 @@ const Register: React.FC = () => {
         phone: formData.phone,
         password: formData.password,
         dateOfBirth: formattedDateOfBirth
-      });
+      };
+      
+      console.log('Sending registration data:', requestData);
+      
+      // Gọi API đăng ký
+      const response = await authService.register(requestData);
+      
+      console.log('Registration response:', response);
       
       if (response && response.statusCode === 200) {
         // Lưu thông tin đăng ký và chuyển đến trang xác thực OTP
@@ -191,11 +199,39 @@ const Register: React.FC = () => {
         }));
         navigate(ROUTES.AUTH.VERIFY_OTP);
       } else {
-        setError('Đăng ký không thành công. Vui lòng thử lại.');
+        const errorMsg = response?.message || 'Đăng ký không thành công. Vui lòng thử lại.';
+        console.error('Registration failed with response:', response);
+        setError(errorMsg);
       }
     } catch (err: unknown) {
-      console.error('Registration error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Đăng ký không thành công. Vui lòng thử lại sau.';
+      console.error('Registration error details:', err);
+      
+      // Parse lỗi chi tiết từ API response
+      let errorMessage = 'Đăng ký không thành công. Vui lòng thử lại sau.';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+        
+        // Kiểm tra nếu là lỗi network
+        if (err.message.includes('fetch')) {
+          errorMessage = 'Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.';
+        }
+        // Kiểm tra nếu là lỗi CORS
+        else if (err.message.includes('CORS')) {
+          errorMessage = 'Lỗi CORS. Vui lòng liên hệ quản trị viên.';
+        }
+        // Kiểm tra các lỗi API cụ thể
+        else if (err.message.includes('400')) {
+          errorMessage = 'Dữ liệu gửi không hợp lệ. Vui lòng kiểm tra lại thông tin.';
+        }
+        else if (err.message.includes('409')) {
+          errorMessage = 'Tên đăng nhập hoặc email đã được sử dụng.';
+        }
+        else if (err.message.includes('500')) {
+          errorMessage = 'Lỗi server. Vui lòng thử lại sau.';
+        }
+      }
+      
       setError(errorMessage);
     } finally {
       setIsLoading(false);

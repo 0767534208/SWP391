@@ -89,7 +89,12 @@ const VerifyOTP: React.FC = () => {
     setIsLoading(true);
 
     try {
+      console.log('Verifying OTP for email:', email, 'OTP:', otpValue);
+      console.log('API endpoint will be:', `/account/confirmation/${encodeURIComponent(email)}/${otpValue}`);
+      
       const response = await authService.verifyOTP(email, otpValue);
+      
+      console.log('OTP verification response:', response);
       
       if (response.statusCode === 200) {
         localStorage.removeItem(STORAGE_KEYS.PENDING_REGISTRATION);
@@ -99,7 +104,21 @@ const VerifyOTP: React.FC = () => {
       }
     } catch (err: unknown) {
       console.error('OTP verification error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Đã xảy ra lỗi không xác định';
+      let errorMessage = 'Đã xảy ra lỗi không xác định';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+        
+        // Kiểm tra các lỗi cụ thể
+        if (err.message.includes('405')) {
+          errorMessage = 'Phương thức không được hỗ trợ. Vui lòng liên hệ quản trị viên.';
+        } else if (err.message.includes('404')) {
+          errorMessage = 'Mã OTP không tồn tại hoặc đã hết hạn.';
+        } else if (err.message.includes('400')) {
+          errorMessage = 'Mã OTP không hợp lệ.';
+        }
+      }
+      
       setError('Lỗi: ' + errorMessage);
     } finally {
       setIsLoading(false);
