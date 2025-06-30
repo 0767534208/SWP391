@@ -1,34 +1,62 @@
+/**
+ * Register Component
+ * 
+ * Component xử lý đăng ký người dùng mới và điều hướng đến xác thực OTP
+ */
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { authAPI } from '../../utils/api';
+import { authService } from '../../services';
+import { ROUTES } from '../../config/constants';
 import './Auth.css';
 
-const Register = () => {
+const Register: React.FC = () => {
   const navigate = useNavigate();
+  // State quản lý dữ liệu form
   const [formData, setFormData] = useState({
-    fullName: '',
     username: '',
+    name: '',
     email: '',
-    password: ''
+    address: '',
+    phone: '',
+    password: '',
+    dateOfBirth: ''
   });
+  
+  // State quản lý lỗi validation
   const [errors, setErrors] = useState({
-    fullName: '',
     username: '',
+    name: '',
     email: '',
-    password: ''
+    address: '',
+    phone: '',
+    password: '',
+    dateOfBirth: ''
   });
+  
+  // State theo dõi các trường đã được tương tác
   const [touched, setTouched] = useState({
-    fullName: false,
     username: false,
+    name: false,
     email: false,
-    password: false
+    address: false,
+    phone: false,
+    password: false,
+    dateOfBirth: false
   });
+  
+  // State quản lý thông báo lỗi chung và trạng thái loading
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  /**
+   * Validate từng trường trong form
+   * @param field - Tên trường cần validate
+   * @param value - Giá trị của trường
+   * @returns Thông báo lỗi nếu có, chuỗi rỗng nếu hợp lệ
+   */
   const validateField = (field: string, value: string) => {
     switch (field) {
-      case 'fullName':
+      case 'name':
         if (!value.trim()) return 'Họ và tên không được để trống';
         if (value.length < 2) return 'Họ và tên phải có ít nhất 2 ký tự';
         return '';
@@ -42,15 +70,28 @@ const Register = () => {
         if (!value.trim()) return 'Email không được để trống';
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Email không hợp lệ';
         return '';
+      case 'address':
+        if (!value.trim()) return 'Địa chỉ không được để trống';
+        return '';
+      case 'phone':
+        if (!value.trim()) return 'Số điện thoại không được để trống';
+        if (!/^\d+$/.test(value)) return 'Số điện thoại chỉ được chứa số';
+        return '';
       case 'password':
         if (!value) return 'Mật khẩu không được để trống';
         if (value.length < 6) return 'Mật khẩu phải có ít nhất 6 ký tự';
+        return '';
+      case 'dateOfBirth':
+        if (!value) return 'Ngày sinh không được để trống';
         return '';
       default:
         return '';
     }
   };
 
+  /**
+   * Xử lý thay đổi giá trị trong form
+   */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -66,6 +107,9 @@ const Register = () => {
     }
   };
 
+  /**
+   * Xử lý khi người dùng rời khỏi trường nhập liệu
+   */
   const handleBlur = (field: keyof typeof touched) => {
     setTouched(prev => ({
       ...prev,
@@ -78,31 +122,43 @@ const Register = () => {
     }));
   };
 
+  /**
+   * Kiểm tra form có hợp lệ không
+   */
   const isFormValid = () => {
     return !Object.values(errors).some(error => error) && 
            Object.keys(formData).every(key => formData[key as keyof typeof formData]);
   };
 
+  /**
+   * Xử lý đăng ký
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
-    // Validate all fields
+    // Validate tất cả các trường
     const newErrors = {
-      fullName: validateField('fullName', formData.fullName),
       username: validateField('username', formData.username),
+      name: validateField('name', formData.name),
       email: validateField('email', formData.email),
-      password: validateField('password', formData.password)
+      address: validateField('address', formData.address),
+      phone: validateField('phone', formData.phone),
+      password: validateField('password', formData.password),
+      dateOfBirth: validateField('dateOfBirth', formData.dateOfBirth),
     };
     
     setErrors(newErrors);
     
-    // Mark all fields as touched
+    // Đánh dấu tất cả các trường đã được tương tác
     setTouched({
-      fullName: true,
       username: true,
+      name: true,
       email: true,
-      password: true
+      address: true,
+      phone: true,
+      password: true,
+      dateOfBirth: true
     });
     
     if (Object.values(newErrors).some(error => error)) {
@@ -112,28 +168,35 @@ const Register = () => {
     setIsLoading(true);
     
     try {
-      // Call the API to register the user
-      const response = await authAPI.register({
-        name: formData.fullName,
+      // Format ngày tháng cho API
+      const formattedDateOfBirth = new Date(formData.dateOfBirth).toISOString();
+      
+      // Gọi API đăng ký
+      const response = await authService.register({
         username: formData.username,
+        name: formData.name,
         email: formData.email,
-        password: formData.password
+        address: formData.address,
+        phone: formData.phone,
+        password: formData.password,
+        dateOfBirth: formattedDateOfBirth
       });
       
-      if (response.data && response.data.success) {
-        // Store registration data and proceed to OTP verification
+      if (response && response.statusCode === 200) {
+        // Lưu thông tin đăng ký và chuyển đến trang xác thực OTP
         localStorage.setItem('pendingRegistration', JSON.stringify({
           email: formData.email,
           username: formData.username,
-          name: formData.fullName
+          name: formData.name
         }));
-        navigate('/auth/verify-otp');
+        navigate(ROUTES.AUTH.VERIFY_OTP);
       } else {
         setError('Đăng ký không thành công. Vui lòng thử lại.');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Registration error:', err);
-      setError(err.response?.data?.message || 'Đăng ký không thành công. Vui lòng thử lại sau.');
+      const errorMessage = err instanceof Error ? err.message : 'Đăng ký không thành công. Vui lòng thử lại sau.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -156,25 +219,6 @@ const Register = () => {
           {error && <div className="login-error">{error}</div>}
           
           <div className="register-form-group">
-            <label htmlFor="fullName">Họ và tên</label>
-            <input
-              type="text"
-              id="fullName"
-              name="fullName"
-              className={`register-input ${touched.fullName && errors.fullName ? 'input-error' : ''}`}
-              placeholder="Nhập họ và tên của bạn"
-              value={formData.fullName}
-              onChange={handleChange}
-              onBlur={() => handleBlur('fullName')}
-              required
-              disabled={isLoading}
-            />
-            {touched.fullName && errors.fullName && (
-              <div className="field-error">{errors.fullName}</div>
-            )}
-          </div>
-
-          <div className="register-form-group">
             <label htmlFor="username">Tên đăng nhập</label>
             <input
               type="text"
@@ -194,6 +238,25 @@ const Register = () => {
           </div>
 
           <div className="register-form-group">
+            <label htmlFor="name">Họ và tên</label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              className={`register-input ${touched.name && errors.name ? 'input-error' : ''}`}
+              placeholder="Nhập họ tên đầy đủ của bạn"
+              value={formData.name}
+              onChange={handleChange}
+              onBlur={() => handleBlur('name')}
+              required
+              disabled={isLoading}
+            />
+            {touched.name && errors.name && (
+              <div className="field-error">{errors.name}</div>
+            )}
+          </div>
+
+          <div className="register-form-group">
             <label htmlFor="email">Email</label>
             <input
               type="email"
@@ -209,6 +272,62 @@ const Register = () => {
             />
             {touched.email && errors.email && (
               <div className="field-error">{errors.email}</div>
+            )}
+          </div>
+
+          <div className="register-form-group">
+            <label htmlFor="address">Địa chỉ</label>
+            <input
+              type="text"
+              id="address"
+              name="address"
+              className={`register-input ${touched.address && errors.address ? 'input-error' : ''}`}
+              placeholder="Nhập địa chỉ của bạn"
+              value={formData.address}
+              onChange={handleChange}
+              onBlur={() => handleBlur('address')}
+              required
+              disabled={isLoading}
+            />
+            {touched.address && errors.address && (
+              <div className="field-error">{errors.address}</div>
+            )}
+          </div>
+
+          <div className="register-form-group">
+            <label htmlFor="phone">Số điện thoại</label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              className={`register-input ${touched.phone && errors.phone ? 'input-error' : ''}`}
+              placeholder="Nhập số điện thoại của bạn"
+              value={formData.phone}
+              onChange={handleChange}
+              onBlur={() => handleBlur('phone')}
+              required
+              disabled={isLoading}
+            />
+            {touched.phone && errors.phone && (
+              <div className="field-error">{errors.phone}</div>
+            )}
+          </div>
+
+          <div className="register-form-group">
+            <label htmlFor="dateOfBirth">Ngày sinh</label>
+            <input
+              type="date"
+              id="dateOfBirth"
+              name="dateOfBirth"
+              className={`register-input ${touched.dateOfBirth && errors.dateOfBirth ? 'input-error' : ''}`}
+              value={formData.dateOfBirth}
+              onChange={handleChange}
+              onBlur={() => handleBlur('dateOfBirth')}
+              required
+              disabled={isLoading}
+            />
+            {touched.dateOfBirth && errors.dateOfBirth && (
+              <div className="field-error">{errors.dateOfBirth}</div>
             )}
           </div>
 
@@ -236,14 +355,14 @@ const Register = () => {
             className="register-submit" 
             disabled={isLoading || !isFormValid()}
           >
-            {isLoading ? 'Đang xử lý...' : 'Tiếp tục'}
+            {isLoading ? 'Đang xử lý...' : 'Đăng ký'}
           </button>
         </form>
 
         <div className="register-footer">
           <p>
             Bạn đã có tài khoản?{' '}
-            <Link to="/auth/login" className="register-link">
+            <Link to={ROUTES.AUTH.LOGIN} className="register-link">
               Đăng nhập
             </Link>
           </p>
