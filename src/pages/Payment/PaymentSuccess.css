@@ -90,33 +90,54 @@
 }
 
 .appointment-info {
-  padding: 1.5rem;
+  padding: 1.75rem;
   text-align: left;
 }
 
-.info-item {
+/* Reuse booking info grid styles from Payment.css */
+.booking-info-grid {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.booking-info-item {
+  display: flex;
+  align-items: flex-start;
   padding: 0.75rem 0;
   border-bottom: 1px solid var(--border-color);
 }
 
-.info-item:last-child {
+.booking-info-item:last-child {
   border-bottom: none;
 }
 
-.info-label {
-  font-weight: 500;
+.booking-info-label {
+  min-width: 180px;
+  display: flex;
+  align-items: center;
   color: var(--text-light);
+  font-weight: 500;
+  font-size: 1.05rem;
+  padding-right: 1rem;
 }
 
-.info-value {
+.booking-info-label .info-icon {
+  color: var(--primary-color);
+  width: 16px;
+  margin-right: 10px;
+}
+
+.booking-info-value {
+  flex: 1;
   font-weight: 600;
   color: var(--text-color);
+  font-size: 1.05rem;
 }
 
-.info-value.price {
+.booking-info-value.price {
   color: var(--primary-color);
+  font-weight: 700;
 }
 
 .banking-info {

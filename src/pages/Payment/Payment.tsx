@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './Payment.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faFileMedical, 
+  faCalendarCheck, 
+  faCreditCard, 
+  faUniversity, 
+  faMoneyBillWave, 
+  faSpinner, 
+  faLock,
+  faUser,
+  faClock,
+  faPhone,
+  faEnvelope
+} from '@fortawesome/free-solid-svg-icons';
 
 interface PaymentProps {}
 
@@ -133,38 +147,67 @@ const Payment: React.FC<PaymentProps> = () => {
             <div className="booking-summary">
               <h3>Thông Tin Đặt Lịch</h3>
               <div className="summary-card">
-                <div className="summary-item">
-                  <span className="label">Dịch vụ:</span>
-                  <span className="value">{bookingData.service.name}</span>
-                </div>
-                {bookingData.consultant && (
-                  <div className="summary-item">
-                    <span className="label">Bác sĩ tư vấn:</span>
-                    <span className="value">{bookingData.consultant.name}</span>
+                <div className="booking-info-grid">
+                  <div className="booking-info-item">
+                    <div className="booking-info-label">
+                      <FontAwesomeIcon icon={faFileMedical} className="info-icon" />
+                      <span>Dịch vụ:</span>
+                    </div>
+                    <div className="booking-info-value">{bookingData.service.name}</div>
                   </div>
-                )}
-                <div className="summary-item">
-                  <span className="label">Ngày khám:</span>
-                  <span className="value">{formatDate(bookingData.date)}</span>
-                </div>
-                <div className="summary-item">
-                  <span className="label">Giờ khám:</span>
-                  <span className="value">{bookingData.time}</span>
-                </div>
-                <div className="summary-item">
-                  <span className="label">Họ tên:</span>
-                  <span className="value">{bookingData.personal.name}</span>
-                </div>
-                <div className="summary-item">
-                  <span className="label">Số điện thoại:</span>
-                  <span className="value">{bookingData.personal.phone}</span>
-                </div>
-                {bookingData.personal.email && (
-                  <div className="summary-item">
-                    <span className="label">Email:</span>
-                    <span className="value">{bookingData.personal.email}</span>
+                  
+                  {bookingData.consultant && (
+                    <div className="booking-info-item">
+                      <div className="booking-info-label">
+                        <FontAwesomeIcon icon={faUser} className="info-icon" />
+                        <span>Bác sĩ tư vấn:</span>
+                      </div>
+                      <div className="booking-info-value">{bookingData.consultant.name}</div>
+                    </div>
+                  )}
+                  
+                  <div className="booking-info-item">
+                    <div className="booking-info-label">
+                      <FontAwesomeIcon icon={faCalendarCheck} className="info-icon" />
+                      <span>Ngày khám:</span>
+                    </div>
+                    <div className="booking-info-value">{formatDate(bookingData.date)}</div>
                   </div>
-                )}
+                  
+                  <div className="booking-info-item">
+                    <div className="booking-info-label">
+                      <FontAwesomeIcon icon={faClock} className="info-icon" />
+                      <span>Giờ khám:</span>
+                    </div>
+                    <div className="booking-info-value">{bookingData.time}</div>
+                  </div>
+                  
+                  <div className="booking-info-item">
+                    <div className="booking-info-label">
+                      <FontAwesomeIcon icon={faUser} className="info-icon" />
+                      <span>Họ tên:</span>
+                    </div>
+                    <div className="booking-info-value">{bookingData.personal.name}</div>
+                  </div>
+                  
+                  <div className="booking-info-item">
+                    <div className="booking-info-label">
+                      <FontAwesomeIcon icon={faPhone} className="info-icon" />
+                      <span>Số điện thoại:</span>
+                    </div>
+                    <div className="booking-info-value">{bookingData.personal.phone}</div>
+                  </div>
+                  
+                  {bookingData.personal.email && (
+                    <div className="booking-info-item">
+                      <div className="booking-info-label">
+                        <FontAwesomeIcon icon={faEnvelope} className="info-icon" />
+                        <span>Email:</span>
+                      </div>
+                      <div className="booking-info-value">{bookingData.personal.email}</div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -229,16 +272,21 @@ const Payment: React.FC<PaymentProps> = () => {
             <h3>Tổng Thanh Toán</h3>
             <div className="summary-card payment-card">
               <div className="price-item">
-                <span>Phí dịch vụ</span>
-                <span>{bookingData.service.price}</span>
+                <span className="price-label">
+                  <FontAwesomeIcon icon={faFileMedical} /> Phí dịch vụ
+                </span>
+                <span className="price-value">{bookingData.service.price}</span>
               </div>
               <div className="price-item">
-                <span>Phí đặt lịch</span>
-                <span>0 VNĐ</span>
+                <span className="price-label">
+                  <FontAwesomeIcon icon={faCalendarCheck} /> Phí đặt lịch
+                </span>
+                <span className="price-value">0 VNĐ</span>
               </div>
+              <div className="divider"></div>
               <div className="price-total">
-                <span>Tổng cộng</span>
-                <span>{bookingData.service.price}</span>
+                <span className="total-label">Tổng cộng</span>
+                <span className="total-value">{bookingData.service.price}</span>
               </div>
 
               <button 
@@ -246,11 +294,17 @@ const Payment: React.FC<PaymentProps> = () => {
                 onClick={handlePayment}
                 disabled={isLoading}
               >
-                {getButtonText()}
+                {isLoading ? (
+                  <><FontAwesomeIcon icon={faSpinner} spin /> {getButtonText()}</>
+                ) : (
+                  <>{paymentMethod === 'vnpay' ? <FontAwesomeIcon icon={faCreditCard} /> : 
+                     paymentMethod === 'banking' ? <FontAwesomeIcon icon={faUniversity} /> : 
+                     <FontAwesomeIcon icon={faMoneyBillWave} />} {getButtonText()}</>
+                )}
               </button>
-
+              
               <div className="secure-note">
-                <span className="secure-icon">🔒</span>
+                <FontAwesomeIcon icon={faLock} className="secure-icon" />
                 <span>{getSecureNoteText()}</span>
               </div>
             </div>

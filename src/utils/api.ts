@@ -19,6 +19,66 @@ interface UserData {
   refreshToken: string;
 }
 
+// Appointment interface
+interface AppointmentData {
+  appointmentID: number;
+  customerID: string;
+  customer: {
+    name: string;
+    address: string;
+    phone: string;
+    status: boolean;
+    dateOfBirth: string;
+  };
+  consultantID: string;
+  consultant: {
+    name: string;
+    address: string;
+    phone: string;
+    status: boolean;
+    dateOfBirth: string;
+  };
+  treatmentID: number | null;
+  treatmentOutcome: string | null;
+  slotID: number;
+  slot: {
+    slotID: number;
+    maxConsultant: number;
+    startTime: string;
+    endTime: string;
+  };
+  createAt: string;
+  appointmentDate: string;
+  updateAt: string;
+  totalAmount: number;
+  status: number;
+  appointmentType: number;
+  paymentStatus: number;
+}
+
+// Service interface
+interface ServiceData {
+  servicesID: number;
+  categoryID: number;
+  category: string | null;
+  servicesName: string;
+  description: string;
+  createAt: string;
+  updateAt: string;
+  servicesPrice: number;
+  status: boolean;
+  imageServices: string[];
+}
+
+// Category interface
+interface CategoryData {
+  categoryID: number;
+  name: string;
+  createAt: string;
+  updateAt: string;
+  status: boolean;
+}
+
 // Base API URL
 const API_BASE_URL = 'https://ghsmsystemdemopublish.azurewebsites.net/api';
 
@@ -111,6 +171,57 @@ export const userAPI = {
     return apiRequest<UserData>('/user/profile', 'PUT', userData);
   },
 };
+
+// Appointment API endpoints
+export const appointmentAPI = {
+  getAppointmentsByCustomerId: async (customerId: string): Promise<ApiResponse<AppointmentData[]>> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/appointment/GetAppointmentByCustomerID/${customerId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        mode: 'cors'
+      });
+      
+      const responseData = await response.json();
+      console.log("Raw API response:", responseData);
+      
+      // Return the response in the expected format
+      return responseData;
+    } catch (error) {
+      console.error("Error in getAppointmentsByCustomerId:", error);
+      throw error;
+    }
+  },
+};
+
+// Service API endpoints
+export const serviceAPI = {
+  getServices: (): Promise<ApiResponse<ServiceData[]>> => {
+    return apiRequest<ServiceData[]>('/Service/GetService', 'GET');
+  },
+};
+
+// Category API endpoints
+export const categoryAPI = {
+  getCategories: (): Promise<ApiResponse<CategoryData[]>> => {
+    return apiRequest<CategoryData[]>('/category/GetCategory', 'GET');
+  },
+};
+
+// Consultant Slot API endpoints
+export const consultantSlotAPI = {
+  getAllConsultants: (): Promise<ApiResponse<any[]>> => {
+    return apiRequest<any[]>('/consultantSlot/GetAll', 'GET');
+  },
+  getSlotsByConsultantId: (consultantId: string): Promise<ApiResponse<any[]>> => {
+    return apiRequest<any[]>(`/consultantSlot?consultantId=${consultantId}`, 'GET');
+  },
+};
+
+export type { ApiResponse, UserData, AppointmentData, ServiceData, CategoryData };
 
 export default {
   get: <T>(endpoint: string): Promise<ApiResponse<T>> => 

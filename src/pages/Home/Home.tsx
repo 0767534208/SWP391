@@ -1,13 +1,87 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Home.css';
+import { serviceAPI, categoryAPI } from '../../utils/api';
+
+interface ServiceData {
+  servicesID: number;
+  categoryID: number;
+  category: string | null;
+  servicesName: string;
+  description: string;
+  createAt: string;
+  updateAt: string;
+  servicesPrice: number;
+  status: boolean;
+  imageServices: string[];
+}
+
+interface CategoryData {
+  categoryID: number;
+  name: string;
+  createAt: string;
+  updateAt: string;
+  status: boolean;
+}
 
 const Home = () => {
   const navigate = useNavigate();
+  const [services, setServices] = useState<ServiceData[]>([]);
+  const [categories, setCategories] = useState<CategoryData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch services and categories from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch services
+        const serviceResponse = await serviceAPI.getServices();
+        
+        // Fetch categories
+        const categoryResponse = await categoryAPI.getCategories();
+        
+        if (serviceResponse.statusCode === 200 && serviceResponse.data) {
+          setServices(serviceResponse.data);
+        } else {
+          setError('Failed to fetch services');
+        }
+        
+        if (categoryResponse.statusCode === 200 && categoryResponse.data) {
+          setCategories(categoryResponse.data);
+        }
+      } catch (err) {
+        setError('Error fetching data');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Get category name by ID
+  const getCategoryName = (categoryId: number): string => {
+    const category = categories.find(cat => cat.categoryID === categoryId);
+    return category ? category.name : '';
+  };
+
+  // Format price to VND
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
+      .format(price)
+      .replace('₫', 'VNĐ');
+  };
 
   const handleBookService = (serviceId: number) => {
     navigate('/booking', { state: { serviceId } });
   };
+
+  // Get featured services (limit to 4)
+  const featuredServices = services.slice(0, 4);
 
   return (
     <main className="home-main">
@@ -26,46 +100,72 @@ const Home = () => {
         <div className="service-intro">
           <p>Chúng tôi cung cấp các dịch vụ chăm sóc sức khỏe sinh sản toàn diện với đội ngũ y bác sĩ chuyên nghiệp và trang thiết bị hiện đại.</p>
         </div>
-        <div className="features-grid">
-          <div className="feature-card service-card">
-            <img src="/blog-3.png" alt="Xét nghiệm STI" className="service-card-image" />
-            <h3>Xét nghiệm STI</h3>
-            <p>Dịch vụ xét nghiệm toàn diện cho các bệnh lây truyền qua đường tình dục</p>
-            <div className="service-details">
-              <span className="duration">45 phút</span>
-              <span className="price">1.200.000 VND</span>
-            </div>
-            <button className="service-link" onClick={() => handleBookService(2)}>Đặt lịch ngay</button>
+        
+        {loading && (
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Đang tải dịch vụ...</p>
           </div>
-          <div className="feature-card service-card">
-            <img src="/tu van suc khoe.png" alt="Tư vấn sức khỏe" className="service-card-image" />
-            <h3>Tư vấn sức khỏe</h3>
-            <p>Tư vấn trực tiếp với bác sĩ chuyên khoa về các vấn đề sức khỏe sinh sản</p>
-            <div className="service-details">
-              <span className="duration">60 phút</span>
-              <span className="price">800.000 VND</span>
-            </div>
-            <button className="service-link" onClick={() => handleBookService(3)}>Đặt lịch ngay</button>
+        )}
+        
+        {error && (
+          <div className="error-container">
+            <p>Có lỗi xảy ra khi tải dịch vụ. Vui lòng thử lại sau.</p>
           </div>
-          <div className="feature-card service-card">
-            <img src="/blog-2.png" alt="Sức khỏe sinh sản" className="service-card-image" />
-            <h3>Sức khỏe sinh sản</h3>
-            <p>Khám và tư vấn toàn diện về sức khỏe sinh sản và kế hoạch hóa gia đình</p>
-            <div className="service-details">
-              <span className="duration">60 phút</span>
-              <span className="price">900.000 VND</span>
+        )}
+        
+        {!loading && !error && (
+          <div className="features-grid">
+            {featuredServices.length > 0 ? (
+              featuredServices.map((service) => (
+                <div key={service.servicesID} className="feature-card service-card">
+                  <img 
+                    src={service.imageServices && service.imageServices.length > 0 
+                      ? service.imageServices[0] 
+                      : "/blog-3.png"} 
+                    alt={service.servicesName} 
+                    className="service-card-image" 
+                  />
+                  <h3>{service.servicesName}</h3>
+                  <p>{service.description}</p>
+                  <div className="service-category">{getCategoryName(service.categoryID)}</div>
+                  <div className="service-details">
+                    <span className="price">{formatPrice(service.servicesPrice)}</span>
+                  </div>
+                  <button 
+                    className="service-link" 
+                    onClick={() => handleBookService(service.servicesID)}
+                  >
+                    Đặt lịch ngay
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div className="no-services-found">
+                <p>Không có dịch vụ nào.</p>
+                <Link to="/services" className="view-all-services">
+                  Xem tất cả dịch vụ
+                </Link>
+              </div>
+            )}
+            
+            {/* Always show the cycle tracker card */}
+            <div className="feature-card service-card">
+              <img src="/bang_tinh_chu_ky_kinh_nguyet_va_thoi_diem_rung_trung.jpg" alt="Theo dõi chu kỳ" className="service-card-image" />
+              <h3>Theo dõi chu kỳ</h3>
+              <p>Công cụ theo dõi chu kỳ kinh nguyệt và dự đoán thời kỳ rụng trứng</p>
+              <div className="service-details">
+                <span className="price">Miễn phí</span>
+              </div>
+              <Link to="/cycletracker" className="service-link">Sử dụng ngay</Link>
             </div>
-            <button className="service-link" onClick={() => handleBookService(4)}>Đặt lịch ngay</button>
           </div>
-          <div className="feature-card service-card">
-            <img src="/bang_tinh_chu_ky_kinh_nguyet_va_thoi_diem_rung_trung.jpg" alt="Theo dõi chu kỳ" className="service-card-image" />
-            <h3>Theo dõi chu kỳ</h3>
-            <p>Công cụ theo dõi chu kỳ kinh nguyệt và dự đoán thời kỳ rụng trứng</p>
-            <div className="service-details">
-              <span className="price">Miễn phí</span>
-            </div>
-            <Link to="/cycletracker" className="service-link">Sử dụng ngay</Link>
-          </div>
+        )}
+        
+        <div className="view-all-container">
+          <Link to="/services" className="view-all-button">
+            Xem tất cả dịch vụ
+          </Link>
         </div>
       </section>
 
