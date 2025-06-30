@@ -1,18 +1,42 @@
+/**
+ * VerifyOTP Component
+ * 
+ * Component xử lý xác thực OTP sau khi đăng ký
+ */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../../services';
+import { STORAGE_KEYS, ROUTES } from '../../config/constants';
 import './Auth.css';
 
-const VerifyOTP = () => {
+const VerifyOTP: React.FC = () => {
   const navigate = useNavigate();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timer, setTimer] = useState(60);
   const [isResendDisabled, setIsResendDisabled] = useState(true);
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     // Check if there's pending registration
-    const pendingRegistration = localStorage.getItem('pendingRegistration');
+    const pendingRegistration = localStorage.getItem(STORAGE_KEYS.PENDING_REGISTRATION);
     if (!pendingRegistration) {
-      navigate('/auth/register');
+      navigate(ROUTES.AUTH.REGISTER);
+      return;
+    }
+
+    try {
+      const registrationData = JSON.parse(pendingRegistration);
+      if (registrationData && registrationData.email) {
+        setEmail(registrationData.email);
+      } else {
+        navigate(ROUTES.AUTH.REGISTER);
+        return;
+      }
+    } catch (_) {
+      // Nếu có lỗi khi parse JSON, điều hướng về trang đăng ký
+      navigate(ROUTES.AUTH.REGISTER);
       return;
     }
 
@@ -53,27 +77,69 @@ const VerifyOTP = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const otpValue = otp.join('');
     if (otpValue.length !== 6) {
-      alert('Vui lòng nhập đầy đủ mã OTP!');
+      setError('Vui lòng nhập đầy đủ mã OTP!');
       return;
     }
 
-    // Here you would typically verify the OTP with your backend
-    console.log('Verifying OTP:', otpValue);
-    
-    // For demo purposes, we'll just proceed to login
-    localStorage.removeItem('pendingRegistration');
-    navigate('/auth/login');
+    setError('');
+    setIsLoading(true);
+
+    try {
+      console.log('Verifying OTP for email:', email, 'OTP:', otpValue);
+      console.log('API endpoint will be:', `/account/confirmation/${encodeURIComponent(email)}/${otpValue}`);
+      
+      const response = await authService.verifyOTP(email, otpValue);
+      
+      console.log('OTP verification response:', response);
+      
+      if (response.statusCode === 200) {
+        localStorage.removeItem(STORAGE_KEYS.PENDING_REGISTRATION);
+        navigate(ROUTES.AUTH.LOGIN, { state: { verified: true } });
+      } else {
+        setError('Mã OTP không hợp lệ hoặc đã hết hạn.');
+      }
+    } catch (err: unknown) {
+      console.error('OTP verification error:', err);
+      let errorMessage = 'Đã xảy ra lỗi không xác định';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+        
+        // Kiểm tra các lỗi cụ thể
+        if (err.message.includes('405')) {
+          errorMessage = 'Phương thức không được hỗ trợ. Vui lòng liên hệ quản trị viên.';
+        } else if (err.message.includes('404')) {
+          errorMessage = 'Mã OTP không tồn tại hoặc đã hết hạn.';
+        } else if (err.message.includes('400')) {
+          errorMessage = 'Mã OTP không hợp lệ.';
+        }
+      }
+      
+      setError('Lỗi: ' + errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleResendOTP = () => {
+  const handleResendOTP = async () => {
     setTimer(60);
     setIsResendDisabled(true);
-    // Here you would typically call your backend to resend OTP
-    console.log('Resending OTP...');
+    setError('');
+    
+    try {
+      // Trong thực tế, bạn cần gọi API để gửi lại OTP
+      // Đây là nơi bạn sẽ gọi API resendOTP của bạn
+      // await authService.resendOTP(email);
+      console.log('Resending OTP to:', email);
+    } catch (err: unknown) {
+      console.error('Resend OTP error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Đã xảy ra lỗi không xác định';
+      setError('Không thể gửi lại mã: ' + errorMessage);
+    }
   };
 
   return (
@@ -87,9 +153,12 @@ const VerifyOTP = () => {
         <div className="register-header">
           <h2>Xác thực Email</h2>
           <p>Nhập mã OTP đã được gửi đến email của bạn</p>
+          {email && <p className="email-info">{email}</p>}
         </div>
 
         <form className="otp-form" onSubmit={handleSubmit}>
+          {error && <div className="login-error">{error}</div>}
+          
           <div className="otp-inputs">
             {otp.map((digit, index) => (
               <input
@@ -102,6 +171,7 @@ const VerifyOTP = () => {
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 className="otp-input"
                 required
+                disabled={isLoading}
               />
             ))}
           </div>
@@ -121,8 +191,12 @@ const VerifyOTP = () => {
             )}
           </div>
 
-          <button type="submit" className="register-submit">
-            Xác nhận
+          <button 
+            type="submit" 
+            className="register-submit"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Đang xử lý...' : 'Xác nhận'}
           </button>
         </form>
       </div>

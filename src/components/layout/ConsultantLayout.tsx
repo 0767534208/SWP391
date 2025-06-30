@@ -1,13 +1,22 @@
 import React from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import './ConsultantLayout.css';
 
 const ConsultantLayout = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Check current path to highlight active menu item
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('user');
+    navigate('/auth/login');
   };
 
   return (
@@ -51,7 +60,14 @@ const ConsultantLayout = () => {
         </nav>
 
         <div className="consultant-sidebar-footer mt-auto px-2 py-2 border-t border-indigo-800">
-          <Link to="/" className="consultant-nav-link flex items-center px-2 py-1.5 rounded-lg text-indigo-100 hover:bg-indigo-800 transition-colors">
+          <Link 
+            to="/auth/login" 
+            onClick={(e) => {
+              e.preventDefault();
+              handleLogout();
+            }}
+            className="consultant-nav-link flex items-center px-2 py-1.5 rounded-lg text-indigo-100 hover:bg-indigo-800 transition-colors"
+          >
             <svg xmlns="http://www.w3.org/2000/svg" className="consultant-sidebar-icon" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
             </svg>
