@@ -3,10 +3,12 @@ import React from 'react';
 interface ServiceProps {
   id: number;
   name: string;
-  duration: string;
+  duration?: string;
   price?: string;
   isSelected: boolean;
   onSelect: (id: number) => void;
+  imageUrl?: string;
+  description?: string;
 }
 
 const ServiceCard: React.FC<ServiceProps> = ({
@@ -15,7 +17,9 @@ const ServiceCard: React.FC<ServiceProps> = ({
   duration,
   price,
   isSelected,
-  onSelect
+  onSelect,
+  imageUrl,
+  description
 }) => {
   return (
     <div
@@ -24,10 +28,16 @@ const ServiceCard: React.FC<ServiceProps> = ({
       role="button"
       tabIndex={0}
     >
+      {imageUrl && (
+        <div className="service-image">
+          <img src={imageUrl} alt={name} />
+        </div>
+      )}
       <div className="service-info">
         <h4 className="service-name">{name}</h4>
+        {description && <p className="service-description">{description}</p>}
         <div className="service-details">
-          <span className="duration">{duration}</span>
+          {duration && <span className="duration">{duration}</span>}
           {price && <span className="price">{price}</span>}
         </div>
       </div>

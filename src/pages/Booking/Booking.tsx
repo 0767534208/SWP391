@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import './Booking.css';
 import AdvisorModal from '../Booking/AdvisorModal';
 import ServiceCard from './ServiceCard';
+import { serviceAPI, categoryAPI, consultantSlotAPI } from '../../utils/api';
 
 interface PersonalDetails {
   name: string;
@@ -47,6 +48,39 @@ interface Consultant {
   price: string;
 }
 
+// Interface for API service data
+interface ServiceData {
+  servicesID: number;
+  categoryID: number;
+  category: string | null;
+  servicesName: string;
+  description: string;
+  createAt: string;
+  updateAt: string;
+  servicesPrice: number;
+  status: boolean;
+  imageServices: string[];
+}
+
+// Interface for UI service display
+interface ServiceUI {
+  id: number;
+  name: string;
+  price: string;
+  requiresConsultant: boolean;
+  description?: string;
+  imageUrl?: string;
+}
+
+// Interface for API category data
+interface CategoryData {
+  categoryID: number;
+  name: string;
+  createAt: string;
+  updateAt: string;
+  status: boolean;
+}
+
 const Booking = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -64,6 +98,15 @@ const Booking = () => {
     email: '',
     notes: ''
   });
+  const [services, setServices] = useState<ServiceUI[]>([]);
+  const [categories, setCategories] = useState<CategoryData[]>([]);
+  const [consultantCategoryId, setConsultantCategoryId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [consultants, setConsultants] = useState<any[]>([]);
+  const [consultantSlots, setConsultantSlots] = useState<any[]>([]);
+  const [consultantLoading, setConsultantLoading] = useState(false);
+  const [slotLoading, setSlotLoading] = useState(false);
 
   // Load user data from localStorage when component mounts
   useEffect(() => {
@@ -78,6 +121,66 @@ const Booking = () => {
       }));
     }
   }, []);
+
+  // Fetch services and categories from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch services
+        const serviceResponse = await serviceAPI.getServices();
+        
+        // Fetch categories
+        const categoryResponse = await categoryAPI.getCategories();
+        
+        if (serviceResponse.statusCode === 200 && serviceResponse.data && categoryResponse.statusCode === 200 && categoryResponse.data) {
+          // Store categories
+          setCategories(categoryResponse.data);
+          
+          // Find the consultant category (assuming there's a category for consultant services)
+          // For now, let's assume it's a category with a specific name like "consultation"
+          const consultantCategory = categoryResponse.data.find(
+            category => category.name.toLowerCase().includes('consult')
+          );
+          
+          if (consultantCategory) {
+            setConsultantCategoryId(consultantCategory.categoryID);
+          }
+          
+          // Map API data to UI format
+          const mappedServices: ServiceUI[] = serviceResponse.data.map(service => ({
+            id: service.servicesID,
+            name: service.servicesName,
+            price: formatPrice(service.servicesPrice),
+            // A service requires consultant if it belongs to the consultant category
+            requiresConsultant: consultantCategory ? service.categoryID === consultantCategory.categoryID : false,
+            description: service.description,
+            imageUrl: service.imageServices && service.imageServices.length > 0 
+              ? service.imageServices[0] 
+              : undefined
+          }));
+          setServices(mappedServices);
+        } else {
+          setError('Failed to fetch data');
+        }
+      } catch (err) {
+        setError('Error fetching data');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Format price to VND
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
+      .format(price)
+      .replace('₫', 'VNĐ');
+  };
 
   // Add state to track if user is logged in
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -94,245 +197,48 @@ const Booking = () => {
     '14:00', '15:00', '16:00', '17:00', '18:00'
   ];
 
-  // Services data
-  const services = [
-    {
-      id: 1,
-      name: 'Xét nghiệm & Tư vấn HIV',
-      duration: '30-45 phút',
-      price: '300.000 VNĐ',
-      requiresConsultant: false
-    },
-    {
-      id: 2,
-      name: 'Kiểm tra STI toàn diện',
-      duration: '1 giờ',
-      price: '850.000 VNĐ',
-      requiresConsultant: false
-    },
-    {
-      id: 3,
-      name: 'Tư vấn sức khỏe tình dục',
-      duration: '45-60 phút',
-      price: '400.000 VNĐ',
-      requiresConsultant: true
-    },
-    {
-      id: 4,
-      name: 'Gói khám sức khỏe sinh sản',
-      duration: '1.5 giờ',
-      price: '1.200.000 VNĐ',
-      requiresConsultant: false
-    },
-    {
-      id: 5,
-      name: 'Tư vấn biện pháp tránh thai',
-      duration: '30-45 phút',
-      price: '350.000 VNĐ',
-      requiresConsultant: true
-    },
-    {
-      id: 6,
-      name: 'Tiêm vắc-xin HPV',
-      duration: '15-20 phút',
-      price: '1.500.000 VNĐ',
-      requiresConsultant: false
-    },
-    {
-      id: 7,
-      name: 'Gói chăm sóc thai sản',
-      duration: '2 giờ (lần khám đầu)',
-      price: '2.500.000 VNĐ',
-      requiresConsultant: false
-    },
-    {
-      id: 8,
-      name: 'Quản lý thời kỳ mãn kinh',
-      duration: '45-60 phút',
-      price: '500.000 VNĐ',
-      requiresConsultant: true
+  // Check if a service ID was passed from another page
+  useEffect(() => {
+    if (location.state && location.state.serviceId) {
+      setSelectedService(location.state.serviceId);
     }
-  ];
+  }, [location.state]);
 
-  // Consultants data
-  const consultants: Consultant[] = [
-    { 
-      id: 1, 
-      name: 'BS. Nguyễn Văn A', 
-      specialty: 'Sức khỏe tình dục',
-      image: 'https://randomuser.me/api/portraits/men/1.jpg',
-      education: 'Bác sĩ chuyên khoa, Đại học Y Hà Nội',
-      experience: 'Hơn 10 năm kinh nghiệm tư vấn sức khỏe tình dục',
-      certificates: [
-        { id: 1, name: 'Chứng chỉ chuyên khoa Sức khỏe sinh sản', issuer: 'Bộ Y tế Việt Nam', year: 2015 },
-        { id: 2, name: 'Chứng chỉ Sức khỏe tình dục nâng cao', issuer: 'Hội Y học Việt Nam', year: 2018 }
-      ],
-      schedule: {
-        monday: [{ start: '09:00', end: '12:00' }, { start: '13:30', end: '17:00' }],
-        tuesday: [{ start: '09:00', end: '12:00' }, { start: '13:30', end: '17:00' }],
-        wednesday: [{ start: '09:00', end: '12:00' }],
-        thursday: [{ start: '09:00', end: '12:00' }, { start: '13:30', end: '17:00' }],
-        friday: [{ start: '09:00', end: '12:00' }, { start: '13:30', end: '17:00' }],
-        saturday: [{ start: '09:00', end: '12:00' }],
-        sunday: []
-      },
-      price: '400.000 VNĐ'
-    },
-    { 
-      id: 2, 
-      name: 'BS. Trần Thị B', 
-      specialty: 'Sức khỏe mãn kinh',
-      image: 'https://randomuser.me/api/portraits/women/2.jpg',
-      education: 'Tiến sĩ Y khoa, Đại học Y Dược TP.HCM',
-      experience: '15 năm kinh nghiệm điều trị và tư vấn thời kỳ mãn kinh',
-      certificates: [
-        { id: 1, name: 'Chứng chỉ chuyên khoa Nội tiết học', issuer: 'Đại học Y Dược TP.HCM', year: 2010 },
-        { id: 2, name: 'Chứng nhận đào tạo về Quản lý thời kỳ mãn kinh', issuer: 'Hiệp hội Mãn kinh Quốc tế', year: 2016 }
-      ],
-      schedule: {
-        monday: [{ start: '08:00', end: '12:00' }],
-        tuesday: [{ start: '13:30', end: '17:00' }],
-        wednesday: [{ start: '08:00', end: '12:00' }, { start: '13:30', end: '17:00' }],
-        thursday: [{ start: '08:00', end: '12:00' }],
-        friday: [{ start: '13:30', end: '17:00' }],
-        saturday: [{ start: '08:00', end: '12:00' }],
-        sunday: []
-      },
-      price: '450.000 VNĐ'
-    },
-    { 
-      id: 3, 
-      name: 'BS. Lê Văn C', 
-      specialty: 'Sức khỏe tình dục',
-      image: 'https://randomuser.me/api/portraits/men/3.jpg',
-      education: 'Bác sĩ chuyên khoa II, Đại học Y Hà Nội',
-      experience: '8 năm kinh nghiệm tư vấn sức khỏe tình dục và sinh sản',
-      certificates: [
-        { id: 1, name: 'Chứng chỉ Tư vấn Sức khỏe tình dục', issuer: 'Tổ chức Y tế Thế giới (WHO)', year: 2017 },
-        { id: 2, name: 'Chứng nhận đào tạo về Giáo dục giới tính', issuer: 'Bộ Y tế', year: 2019 }
-      ],
-      schedule: {
-        monday: [{ start: '13:30', end: '17:00' }],
-        tuesday: [{ start: '08:00', end: '12:00' }, { start: '13:30', end: '17:00' }],
-        wednesday: [{ start: '13:30', end: '17:00' }],
-        thursday: [{ start: '08:00', end: '12:00' }, { start: '13:30', end: '17:00' }],
-        friday: [{ start: '08:00', end: '12:00' }],
-        saturday: [],
-        sunday: [{ start: '09:00', end: '12:00' }]
-      },
-      price: '420.000 VNĐ'
-    },
-    { 
-      id: 4, 
-      name: 'BS. Phạm Thị D', 
-      specialty: 'Sức khỏe mãn kinh',
-      image: 'https://randomuser.me/api/portraits/women/4.jpg',
-      education: 'Thạc sĩ Y khoa, Đại học Y Dược Huế',
-      experience: '12 năm kinh nghiệm chuyên về sức khỏe phụ nữ trung niên',
-      certificates: [
-        { id: 1, name: 'Chứng chỉ chuyên khoa Sản phụ khoa', issuer: 'Đại học Y Dược Huế', year: 2012 },
-        { id: 2, name: 'Chứng nhận đào tạo về Liệu pháp hormone', issuer: 'Hiệp hội Nội tiết Việt Nam', year: 2018 }
-      ],
-      schedule: {
-        monday: [{ start: '08:00', end: '12:00' }, { start: '13:30', end: '17:00' }],
-        tuesday: [{ start: '08:00', end: '12:00' }],
-        wednesday: [{ start: '13:30', end: '17:00' }],
-        thursday: [{ start: '08:00', end: '12:00' }],
-        friday: [{ start: '13:30', end: '17:00' }],
-        saturday: [{ start: '08:00', end: '12:00' }],
-        sunday: []
-      },
-      price: '450.000 VNĐ'
-    },
-    { 
-      id: 5, 
-      name: 'BS. Hoàng Thị E', 
-      specialty: 'Tư vấn kế hoạch hóa gia đình',
-      image: 'https://randomuser.me/api/portraits/women/5.jpg',
-      education: 'Bác sĩ chuyên khoa I, Đại học Y Dược TP.HCM',
-      experience: '9 năm kinh nghiệm tư vấn biện pháp tránh thai và kế hoạch hóa gia đình',
-      certificates: [
-        { id: 1, name: 'Chứng chỉ chuyên khoa Sản phụ khoa', issuer: 'Đại học Y Dược TP.HCM', year: 2014 },
-        { id: 2, name: 'Chứng nhận đào tạo về Kế hoạch hóa gia đình', issuer: 'Bộ Y tế', year: 2016 }
-      ],
-      schedule: {
-        monday: [{ start: '08:00', end: '12:00' }],
-        tuesday: [{ start: '13:30', end: '17:00' }],
-        wednesday: [{ start: '08:00', end: '12:00' }, { start: '13:30', end: '17:00' }],
-        thursday: [{ start: '13:30', end: '17:00' }],
-        friday: [{ start: '08:00', end: '12:00' }],
-        saturday: [{ start: '08:00', end: '12:00' }],
-        sunday: []
-      },
-      price: '450.000 VNĐ'
-    },
-    { 
-      id: 6, 
-      name: 'BS. Vũ Văn F', 
-      specialty: 'Tư vấn kế hoạch hóa gia đình',
-      image: 'https://randomuser.me/api/portraits/men/6.jpg',
-      education: 'Bác sĩ chuyên khoa, Đại học Y Hà Nội',
-      experience: '7 năm kinh nghiệm tư vấn biện pháp tránh thai và sức khỏe sinh sản',
-      certificates: [
-        { id: 1, name: 'Chứng chỉ chuyên khoa Sản khoa', issuer: 'Đại học Y Hà Nội', year: 2016 },
-        { id: 2, name: 'Chứng nhận đào tạo về Tư vấn sức khỏe sinh sản', issuer: 'Tổ chức Y tế Thế giới (WHO)', year: 2018 }
-      ],
-      schedule: {
-        monday: [{ start: '13:30', end: '17:00' }],
-        tuesday: [{ start: '08:00', end: '12:00' }, { start: '13:30', end: '17:00' }],
-        wednesday: [{ start: '08:00', end: '12:00' }],
-        thursday: [{ start: '08:00', end: '12:00' }, { start: '13:30', end: '17:00' }],
-        friday: [{ start: '13:30', end: '17:00' }],
-        saturday: [],
-        sunday: [{ start: '09:00', end: '12:00' }]
-      },
-      price: '450.000 VNĐ'
-    },
-    { 
-      id: 7, 
-      name: 'BS. Nguyễn Thị G', 
-      specialty: 'Sức khỏe tình dục',
-      image: 'https://randomuser.me/api/portraits/women/7.jpg',
-      education: 'Tiến sĩ Y khoa, Đại học Y Hà Nội',
-      experience: '11 năm kinh nghiệm tư vấn sức khỏe tình dục và sinh sản',
-      certificates: [
-        { id: 1, name: 'Chứng chỉ chuyên khoa Sản phụ khoa', issuer: 'Đại học Y Hà Nội', year: 2013 },
-        { id: 2, name: 'Chứng nhận đào tạo về Sức khỏe tình dục', issuer: 'Tổ chức Y tế Thế giới (WHO)', year: 2017 }
-      ],
-      schedule: {
-        monday: [{ start: '08:00', end: '12:00' }],
-        tuesday: [{ start: '13:30', end: '17:00' }],
-        wednesday: [{ start: '08:00', end: '12:00' }, { start: '13:30', end: '17:00' }],
-        thursday: [{ start: '08:00', end: '12:00' }],
-        friday: [{ start: '13:30', end: '17:00' }],
-        saturday: [{ start: '08:00', end: '12:00' }],
-        sunday: []
-      },
-      price: '450.000 VNĐ'
-    },
-    { 
-      id: 8, 
-      name: 'BS. Trần Văn H', 
-      specialty: 'Sức khỏe mãn kinh',
-      image: 'https://randomuser.me/api/portraits/men/8.jpg',
-      education: 'Bác sĩ chuyên khoa II, Đại học Y Dược TP.HCM',
-      experience: '10 năm kinh nghiệm tư vấn sức khỏe mãn kinh',
-      certificates: [
-        { id: 1, name: 'Chứng chỉ chuyên khoa Nội tiết', issuer: 'Đại học Y Dược TP.HCM', year: 2015 },
-        { id: 2, name: 'Chứng nhận đào tạo về Liệu pháp hormone', issuer: 'Hiệp hội Nội tiết Việt Nam', year: 2019 }
-      ],
-      schedule: {
-        monday: [{ start: '13:30', end: '17:00' }],
-        tuesday: [{ start: '08:00', end: '12:00' }, { start: '13:30', end: '17:00' }],
-        wednesday: [{ start: '08:00', end: '12:00' }],
-        thursday: [{ start: '13:30', end: '17:00' }],
-        friday: [{ start: '08:00', end: '12:00' }],
-        saturday: [{ start: '08:00', end: '12:00' }],
-        sunday: []
-      },
-      price: '450.000 VNĐ'
+  // Fetch consultants from API when needed
+  useEffect(() => {
+    if (serviceRequiresConsultant()) {
+      setConsultantLoading(true);
+      consultantSlotAPI.getAllConsultants()
+        .then(res => {
+          if (res.statusCode === 200 && res.data) {
+            setConsultants(res.data);
+          } else {
+            setConsultants([]);
+          }
+        })
+        .catch(() => setConsultants([]))
+        .finally(() => setConsultantLoading(false));
     }
-  ];
+  }, [selectedService]);
+
+  // Fetch slots when consultant is selected
+  useEffect(() => {
+    if (selectedConsultant) {
+      setSlotLoading(true);
+      consultantSlotAPI.getSlotsByConsultantId(String(selectedConsultant))
+        .then(res => {
+          if (res.statusCode === 200 && res.data) {
+            setConsultantSlots(res.data);
+          } else {
+            setConsultantSlots([]);
+          }
+        })
+        .catch(() => setConsultantSlots([]))
+        .finally(() => setSlotLoading(false));
+    } else {
+      setConsultantSlots([]);
+    }
+  }, [selectedConsultant]);
 
   // Get day of week from date string
   const getDayOfWeek = (dateString: string): string => {
@@ -403,9 +309,8 @@ const Booking = () => {
   // Check if selected service requires consultant
   const serviceRequiresConsultant = (): boolean => {
     if (!selectedService) return false;
-    
-    const selectedServiceData = services.find(s => s.id === selectedService);
-    return selectedServiceData?.requiresConsultant || false;
+    const service = services.find(s => s.id === selectedService);
+    return service ? service.requiresConsultant : false;
   };
 
   const handlePersonalDetails = (
@@ -523,55 +428,19 @@ const Booking = () => {
     }
   };
 
-  // Thêm hàm lọc tư vấn viên theo ngày đã chọn
-  const getConsultantsByDate = (): Consultant[] => {
+  // Update getConsultantsByDate to use API data
+  const getConsultantsByDate = (): any[] => {
     if (!selectedService || !selectedDate) return [];
-    
-    const selectedServiceData = services.find(s => s.id === selectedService);
-    if (!selectedServiceData || !selectedServiceData.requiresConsultant) return [];
-    
-    // Lấy tất cả tư vấn viên phù hợp với dịch vụ
-    let filteredConsultants: Consultant[] = [];
-    if (selectedService === 3) { // Tư vấn sức khỏe tình dục
-      filteredConsultants = consultants.filter(c => c.specialty === 'Sức khỏe tình dục');
-    } else if (selectedService === 5) { // Tư vấn biện pháp tránh thai
-      filteredConsultants = consultants.filter(c => c.specialty === 'Tư vấn kế hoạch hóa gia đình');
-    } else if (selectedService === 8) { // Quản lý thời kỳ mãn kinh
-      filteredConsultants = consultants.filter(c => c.specialty === 'Sức khỏe mãn kinh');
-    }
-    
-    // Lọc các tư vấn viên có lịch làm việc trong ngày đã chọn
-    const dayOfWeek = getDayOfWeek(selectedDate);
-    return filteredConsultants.filter(consultant => {
-      const daySchedule = consultant.schedule[dayOfWeek as keyof typeof consultant.schedule];
-      return daySchedule && daySchedule.length > 0;
-    });
+    // Filter consultants by date if needed, or just return all for now
+    return consultants;
   };
 
-  // Sửa hàm lấy khung giờ làm việc để chia nhỏ thành từng giờ một
+  // Update getConsultantTimeSlots to use API slot data
   const getConsultantTimeSlots = (): string[] => {
     if (!selectedConsultant || !selectedDate) return [];
-    
-    const consultant = consultants.find(c => c.id === selectedConsultant);
-    if (!consultant) return [];
-    
-    const dayOfWeek = getDayOfWeek(selectedDate);
-    const daySchedule = consultant.schedule[dayOfWeek as keyof typeof consultant.schedule];
-    
-    if (!daySchedule || daySchedule.length === 0) return [];
-    
-    // Chia nhỏ khung giờ làm việc thành từng giờ một
-    const availableHours: string[] = [];
-    daySchedule.forEach(slot => {
-      const startHour = parseInt(slot.start.split(':')[0]);
-      const endHour = parseInt(slot.end.split(':')[0]);
-      
-      for (let hour = startHour; hour < endHour; hour++) {
-        availableHours.push(`${hour.toString().padStart(2, '0')}:00`);
-      }
-    });
-    
-    return availableHours;
+    // Filter slots by selectedDate
+    const slots = consultantSlots.filter((slot: any) => slot.date === selectedDate);
+    return slots.map((slot: any) => `${slot.startTime} - ${slot.endTime}`);
   };
 
   return (
@@ -585,41 +454,60 @@ const Booking = () => {
         <div className="booking-grid">
           <div className="booking-sidebar">
             <div className="form-section">
-              <h3>Chọn Dịch Vụ</h3>
-              <div className="services-grid">
-                {getVisibleServices().map(service => (
-                  <ServiceCard
-                    key={service.id}
-                    id={service.id}
-                    name={service.name}
-                    duration={service.duration}
-                    {...(!service.requiresConsultant && { price: service.price })}
-                    isSelected={selectedService === service.id}
-                    onSelect={handleServiceSelect}
-                  />
-                ))}
-              </div>
+              <h3>1. Chọn dịch vụ</h3>
               
-              {totalServicePages > 1 && (
-                <div className="pagination-controls">
-                  <button 
-                    className="pagination-button" 
-                    onClick={prevServicePage}
-                    disabled={currentServicePage === 0}
-                  >
-                    Trang trước
-                  </button>
-                  <span className="pagination-info">
-                    {currentServicePage + 1}/{totalServicePages}
-                  </span>
-                  <button 
-                    className="pagination-button" 
-                    onClick={nextServicePage}
-                    disabled={currentServicePage === totalServicePages - 1}
-                  >
-                    Trang sau
-                  </button>
+              {loading ? (
+                <div className="loading-container">
+                  <div className="loading-spinner"></div>
+                  <p>Đang tải dịch vụ...</p>
                 </div>
+              ) : error ? (
+                <div className="error-container">
+                  <p>{error}</p>
+                </div>
+              ) : (
+                <>
+                  <div className="services-grid">
+                    {getVisibleServices().map((service) => (
+                      <ServiceCard
+                        key={service.id}
+                        id={service.id}
+                        name={service.name}
+                        price={service.price}
+                        isSelected={selectedService === service.id}
+                        onSelect={handleServiceSelect}
+                        imageUrl={service.imageUrl}
+                        description={service.description}
+                      />
+                    ))}
+                  </div>
+                  
+                  {services.length > 4 && (
+                    <div className="pagination-controls">
+                      <button
+                        className="pagination-button"
+                        onClick={prevServicePage}
+                        disabled={currentServicePage === 0}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+                      <span className="pagination-info">
+                        {currentServicePage + 1} / {Math.ceil(services.length / 4)}
+                      </span>
+                      <button
+                        className="pagination-button"
+                        onClick={nextServicePage}
+                        disabled={currentServicePage >= Math.ceil(services.length / 4) - 1}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import './index.css';
 import './App.css';
 
@@ -6,6 +7,7 @@ import UserLayout from './components/layout/UserLayout';
 import AdminLayout from './components/layout/AdminLayout';
 import ManagerLayout from './components/layout/ManagerLayout';
 import ConsultantLayout from './components/layout/ConsultantLayout';
+import StaffLayout from './components/layout/StaffLayout';
 import ScrollToTop from './components/layout/ScrollToTop';
 import Home from './pages/Home/Home';
 import Login from './pages/Auth/Login';
@@ -36,11 +38,49 @@ import ManagerDashboard from './pages/Manager/ManagerDashboard';
 import ServiceManagement from './pages/Manager/ServiceManagement';
 import BlogManagement from './pages/Manager/BlogManagement';
 import SlotManagement from './pages/Manager/SlotManagement';
+import SlotCreation from './pages/Manager/SlotCreation';
+import WeeklyCalendar from './pages/Manager/WeeklyCalendar';
+import StaffDashboard from './pages/staff/StaffDashboard';
+import StaffAppointments from './pages/staff/StaffAppointments';
+import TestResultView from './pages/staff/TestResultView';
+import TestResultInput from './pages/staff/TestResultInput';
+import TestResultManagementStaff from './pages/staff/TestResultManagementStaff';
+import TestResultEdit from './pages/staff/TestResultEdit';
 
 // Admin route wrapper component
 import type { ReactNode } from 'react';
 import ConfirmBooking from './pages/Booking/ConfirmBooking';
 import Contact from './pages/Contact/Contact';
+
+// Component to redirect based on user role
+const RoleBasedRedirect = () => {
+  useEffect(() => {
+    const userRole = localStorage.getItem('userRole')?.toLowerCase();
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    
+    if (isLoggedIn && userRole) {
+      switch (userRole) {
+        case 'admin':
+          window.location.href = '/admin';
+          break;
+        case 'manager':
+          window.location.href = '/manager';
+          break;
+        case 'staff':
+          window.location.href = '/staff';
+          break;
+        case 'consultant':
+          window.location.href = '/consultant/profile';
+          break;
+        default:
+          // For regular users, stay on the homepage
+          break;
+      }
+    }
+  }, []);
+  
+  return null;
+};
 
 // Admin route wrapper component
 type AdminRouteProps = {
@@ -48,7 +88,8 @@ type AdminRouteProps = {
 };
 
 const AdminRoute = ({ children }: AdminRouteProps) => {
-  const isAdmin = localStorage.getItem('userRole') === 'admin';
+  const userRole = localStorage.getItem('userRole')?.toLowerCase();
+  const isAdmin = userRole === 'admin';
   return isAdmin ? <>{children}</> : <Navigate to="/auth/login" replace />;
 };
 
@@ -58,7 +99,8 @@ type ConsultantRouteProps = {
 };
 
 const ConsultantRoute = ({ children }: ConsultantRouteProps) => {
-  const isConsultant = localStorage.getItem('userRole') === 'consultant';
+  const userRole = localStorage.getItem('userRole')?.toLowerCase();
+  const isConsultant = userRole === 'consultant';
   return isConsultant ? <>{children}</> : <Navigate to="/auth/login" replace />;
 };
 
@@ -68,8 +110,20 @@ type ManagerRouteProps = {
 };
 
 const ManagerRoute = ({ children }: ManagerRouteProps) => {
-  const isManager = localStorage.getItem('userRole') === 'manager';
+  const userRole = localStorage.getItem('userRole')?.toLowerCase();
+  const isManager = userRole === 'manager';
   return isManager ? <>{children}</> : <Navigate to="/auth/login" replace />;
+};
+
+// Staff route wrapper component
+type StaffRouteProps = {
+  children: ReactNode;
+};
+
+const StaffRoute = ({ children }: StaffRouteProps) => {
+  const userRole = localStorage.getItem('userRole')?.toLowerCase();
+  const isStaff = userRole === 'staff';
+  return isStaff ? <>{children}</> : <Navigate to="/auth/login" replace />;
 };
 
 function App() {
@@ -79,7 +133,7 @@ function App() {
       <Routes>
         {/* Route dành cho người dùng */}
         <Route path="/" element={<UserLayout />}>
-          <Route index element={<Home />} />
+          <Route index element={<><RoleBasedRedirect /><Home /></>} />
           <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
           <Route path="auth/login" element={<Login />} />
           <Route path="auth/register" element={<Register />} />
@@ -122,6 +176,23 @@ function App() {
           <Route path="services" element={<ServiceManagement />} />
           <Route path="blogs" element={<BlogManagement />} />
           <Route path="slots" element={<SlotManagement />} />
+          <Route path="slot-calendar" element={<WeeklyCalendar />} />
+          <Route path="slot-creation" element={<SlotCreation />} />
+        </Route>
+
+        {/* Route dành cho staff */}
+        <Route path="/staff" element={
+          <StaffRoute>
+            <StaffLayout />
+          </StaffRoute>
+        }>
+          <Route index element={<StaffDashboard />} />
+          <Route path="dashboard" element={<StaffDashboard />} />
+          <Route path="appointments" element={<StaffAppointments />} />
+          <Route path="test-results" element={<TestResultManagementStaff />} />
+          <Route path="test-results/:id" element={<TestResultView />} />
+          <Route path="test-results/edit/:id" element={<TestResultEdit />} />
+          <Route path="test-result-input/:appointmentId" element={<TestResultInput />} />
         </Route>
 
         {/* Route dành cho admin */}
