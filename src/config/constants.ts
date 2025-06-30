@@ -6,13 +6,13 @@
  * Các URL API
  */
 export const API = {
-  BASE_URL: 'https://ghsmsystemdemopublish.azurewebsites.net/api',
+  BASE_URL: '/api', // Sử dụng proxy để tránh CORS
   
   // Auth endpoints
   AUTH: {
     LOGIN: '/account/login',
     REGISTER: '/account/register-Customer',
-    VERIFY_OTP: '/account/verify-otp',
+    VERIFY_OTP: (email: string, code: string) => `/account/confirmation/${encodeURIComponent(email)}/${code}`,
     REFRESH_TOKEN: '/account/refresh-token',
     FORGOT_PASSWORD: '/account/forgot-password',
     RESET_PASSWORD: '/account/reset-password',
