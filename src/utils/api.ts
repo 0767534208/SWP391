@@ -202,7 +202,9 @@ export const authAPI = {
    * @param otp - Mã OTP
    */
   verifyOTP: (email: string, otp: string): Promise<ApiResponse<void>> => {
-    return apiRequest<void>(API.AUTH.VERIFY_OTP, 'POST', { email, otp });
+    const endpoint = API.AUTH.VERIFY_OTP(email, otp);
+    console.log('OTP verification endpoint:', endpoint);
+    return apiRequest<void>(endpoint, 'POST');
   },
   
   /**
