@@ -13,14 +13,14 @@ interface ContactMessage {
 
 const contactService = {
   /**
-   * Submit a contact form
+   * Send a contact message
    */
-  submitContactForm: async (contactData: ContactRequest): Promise<ApiResponse<void>> => {
-    return api.post<void>('/contact', contactData);
+  sendContactMessage: async (data: ContactRequest): Promise<ApiResponse<void>> => {
+    return api.post<void>('/contact', data);
   },
   
   /**
-   * Get all contact messages (admin/manager only)
+   * Get all contact messages (admin only)
    */
   getAllContactMessages: async (params?: PaginationParams): Promise<ApiResponse<PaginatedResponse<ContactMessage>>> => {
     const queryParams = new URLSearchParams();
@@ -44,7 +44,7 @@ const contactService = {
   },
   
   /**
-   * Mark a contact message as resolved (admin/manager only)
+   * Mark a contact message as resolved
    */
   markAsResolved: async (contactId: string): Promise<ApiResponse<ContactMessage>> => {
     return api.put<ContactMessage>(`/contact/${contactId}/resolve`, {});
@@ -58,7 +58,7 @@ const contactService = {
   },
   
   /**
-   * Delete a contact message (admin/manager only)
+   * Delete a contact message
    */
   deleteContactMessage: async (contactId: string): Promise<ApiResponse<void>> => {
     return api.delete<void>(`/contact/${contactId}`);

@@ -85,17 +85,17 @@ const appointmentService = {
   },
   
   /**
-   * Update an appointment's status
+   * Update appointment status
    */
-  updateAppointmentStatus: async (appointmentId: string, status: string, notes?: string): Promise<ApiResponse<Appointment>> => {
-    return api.put<Appointment>(`/appointments/${appointmentId}/status`, { status, notes });
+  updateAppointmentStatus: async (appointmentId: string, status: string): Promise<ApiResponse<Appointment>> => {
+    return api.put<Appointment>(`/appointments/${appointmentId}/status`, { status });
   },
   
   /**
    * Cancel an appointment
    */
-  cancelAppointment: async (appointmentId: string, reason?: string): Promise<ApiResponse<void>> => {
-    return api.put<void>(`/appointments/${appointmentId}/cancel`, { reason });
+  cancelAppointment: async (appointmentId: string, reason?: string): Promise<ApiResponse<Appointment>> => {
+    return api.put<Appointment>(`/appointments/${appointmentId}/cancel`, { reason });
   },
   
   /**

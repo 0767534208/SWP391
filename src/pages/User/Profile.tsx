@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { FaUserCircle, FaCheckCircle, FaTimesCircle, FaClock, FaEnvelope, FaPhone, FaBirthdayCake, FaMapMarkerAlt, FaUser, FaFileAlt } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
-import { userAPI, appointmentAPI, type UserData, type AppointmentData } from '../../utils/api';
+import { userAPI, appointmentAPI } from '../../utils/api';
+import type { UserData } from '../../types';
+import type { AppointmentData } from '../../utils/api';
 import { format } from 'date-fns';
 
 // Helper function to get status text based on status code
@@ -203,24 +205,6 @@ const Profile = () => {
     dateOfBirth: '',
     address: '',
   });
-
-  // Function to set sample user ID
-  const setSampleUserId = () => {
-    const currentUser = localStorage.getItem('user');
-    if (currentUser) {
-      const userData = JSON.parse(currentUser);
-      const updatedUser = {
-        ...userData,
-        userID: "73539b7a-f7e5-4889-a662-b71c9bbf7e88"
-      };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      setUser(updatedUser);
-      setError(null);
-      alert("Đã thiết lập ID mẫu. Hãy tải lại dữ liệu.");
-    } else {
-      alert("Không tìm thấy thông tin người dùng trong localStorage");
-    }
-  };
 
   // Function to create sample user
   const createSampleUser = () => {

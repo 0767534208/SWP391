@@ -44,16 +44,10 @@ const paymentService = {
   },
   
   /**
-   * Create a new payment
+   * Create a payment
    */
-  createPayment: async (paymentData: PaymentRequest): Promise<ApiResponse<{
-    payment: Payment;
-    redirectUrl?: string;
-  }>> => {
-    return api.post<{
-      payment: Payment;
-      redirectUrl?: string;
-    }>('/payments', paymentData);
+  createPayment: async (paymentData: PaymentRequest): Promise<ApiResponse<Payment>> => {
+    return api.post<Payment>('/payments', paymentData);
   },
   
   /**
@@ -64,13 +58,10 @@ const paymentService = {
   },
   
   /**
-   * Verify a payment after redirection from a payment gateway
+   * Verify a payment
    */
-  verifyPayment: async (
-    paymentId: string, 
-    transactionId: string
-  ): Promise<ApiResponse<Payment>> => {
-    return api.post<Payment>(`/payments/${paymentId}/verify`, { transactionId });
+  verifyPayment: async (paymentId: string, transactionId: string): Promise<ApiResponse<Payment>> => {
+    return api.put<Payment>(`/payments/${paymentId}/verify`, { transactionId });
   },
   
   /**

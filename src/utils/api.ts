@@ -5,7 +5,7 @@
  * Bao gồm xử lý token, refresh token, và các endpoint API cơ bản
  */
 
-import type { UserData, RegisterRequest } from '../types';
+import type { UserData, RegisterRequest, AppointmentRequest } from '../types';
 import { API, STORAGE_KEYS, ROUTES } from '../config/constants';
 
 // Define interface for API response
@@ -13,6 +13,28 @@ export interface ApiResponse<T> {
   message: string;
   statusCode: number;
   data?: T;
+}
+
+/**
+ * Thông tin lịch hẹn từ API
+ */
+export interface AppointmentData {
+  appointmentID: string;
+  customerID: string;
+  consultantID: string;
+  appointmentDate: string;
+  status: number;
+  appointmentType: number;
+  totalAmount: number;
+  paymentStatus: number;
+  treatmentID?: string;
+  slot: {
+    startTime: string;
+    endTime: string;
+  };
+  consultant: {
+    name: string;
+  };
 }
 
 /**
@@ -177,6 +199,33 @@ export const uploadFile = async (file: File, path: string): Promise<ApiResponse<
   }
 };
 
+// Appointment API endpoints
+export const appointmentAPI = {
+  /**
+   * Lấy tất cả lịch hẹn của một khách hàng
+   * @param customerId - ID của khách hàng
+   */
+  getAppointmentsByCustomerId: async (customerId: string): Promise<ApiResponse<AppointmentData[]>> => {
+    return apiRequest<AppointmentData[]>(`/appointments/customer/${customerId}`, 'GET');
+  },
+  
+  /**
+   * Lấy lịch hẹn theo ID tư vấn viên
+   * @param consultantId - ID của tư vấn viên
+   */
+  getAppointmentsByConsultantId: async (consultantId: string): Promise<ApiResponse<AppointmentData[]>> => {
+    return apiRequest<AppointmentData[]>(`/appointment/consultant/${consultantId}`, 'GET');
+  },
+  
+  /**
+   * Tạo lịch hẹn mới
+   * @param appointmentData - Thông tin lịch hẹn
+   */
+  createAppointment: async (appointmentData: AppointmentRequest): Promise<ApiResponse<AppointmentData>> => {
+    return apiRequest<AppointmentData>('/appointments', 'POST', appointmentData);
+  }
+};
+
 // Auth API endpoints
 export const authAPI = {
   /**
@@ -274,6 +323,71 @@ export const userAPI = {
   uploadProfilePicture: (file: File): Promise<ApiResponse<{fileUrl: string}>> => {
     return uploadFile(file, API.USER.UPLOAD_PROFILE_PICTURE);
   },
+};
+
+// Service API endpoints
+export const serviceAPI = {
+  /**
+   * Lấy tất cả dịch vụ
+   */
+  getServices: async (): Promise<ApiResponse<any[]>> => {
+    return apiRequest<any[]>('/services', 'GET');
+  },
+  
+  /**
+   * Lấy dịch vụ theo ID
+   */
+  getServiceById: async (serviceId: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/services/${serviceId}`, 'GET');
+  },
+  
+  /**
+   * Lấy dịch vụ theo danh mục
+   */
+  getServicesByCategory: async (categoryId: string): Promise<ApiResponse<any[]>> => {
+    return apiRequest<any[]>(`/services/category/${categoryId}`, 'GET');
+  }
+};
+
+// Category API endpoints
+export const categoryAPI = {
+  /**
+   * Lấy tất cả danh mục
+   */
+  getCategories: async (): Promise<ApiResponse<any[]>> => {
+    return apiRequest<any[]>('/categories', 'GET');
+  },
+  
+  /**
+   * Lấy danh mục theo ID
+   */
+  getCategoryById: async (categoryId: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/categories/${categoryId}`, 'GET');
+  }
+};
+
+// Consultant Slot API endpoints
+export const consultantSlotAPI = {
+  /**
+   * Lấy tất cả tư vấn viên
+   */
+  getAllConsultants: async (): Promise<ApiResponse<any[]>> => {
+    return apiRequest<any[]>('/consultants', 'GET');
+  },
+  
+  /**
+   * Lấy slots theo ID tư vấn viên
+   */
+  getSlotsByConsultantId: async (consultantId: string): Promise<ApiResponse<any[]>> => {
+    return apiRequest<any[]>(`/slots/consultant/${consultantId}`, 'GET');
+  },
+  
+  /**
+   * Lấy slots theo ngày và ID tư vấn viên
+   */
+  getSlotsByConsultantAndDate: async (consultantId: string, date: string): Promise<ApiResponse<any[]>> => {
+    return apiRequest<any[]>(`/slots/consultant/${consultantId}/date/${date}`, 'GET');
+  }
 };
 
 // Default export with generic methods

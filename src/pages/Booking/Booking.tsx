@@ -81,6 +81,50 @@ interface CategoryData {
   status: boolean;
 }
 
+// Interface for consultant slot data
+interface ConsultantSlot {
+  slotID: string;
+  consultantID: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  isBooked: boolean;
+}
+
+// Interface for consultant data
+interface ConsultantData {
+  consultantID: string;
+  userID: string;
+  name: string;
+  specialty: string;
+  experience: number;
+  bio: string;
+  rating: number;
+  imageUrl?: string;
+  id?: number;
+  image?: string;
+  education?: string;
+  certificates?: Certificate[];
+  schedule?: {
+    monday: TimeSlot[];
+    tuesday: TimeSlot[];
+    wednesday: TimeSlot[];
+    thursday: TimeSlot[];
+    friday: TimeSlot[];
+    saturday: TimeSlot[];
+    sunday: TimeSlot[];
+  };
+  price?: string;
+}
+
+// Define the type for slot selection
+interface SlotSelection {
+  slot: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+}
+
 const Booking = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -104,7 +148,7 @@ const Booking = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [consultants, setConsultants] = useState<any[]>([]);
-  const [consultantSlots, setConsultantSlots] = useState<any[]>([]);
+  const [consultantSlots, setConsultantSlots] = useState<ConsultantSlot[]>([]);
   const [consultantLoading, setConsultantLoading] = useState(false);
   const [slotLoading, setSlotLoading] = useState(false);
 
@@ -149,7 +193,7 @@ const Booking = () => {
           }
           
           // Map API data to UI format
-          const mappedServices: ServiceUI[] = serviceResponse.data.map(service => ({
+          const mappedServices: ServiceUI[] = serviceResponse.data.map((service: ServiceData) => ({
             id: service.servicesID,
             name: service.servicesName,
             price: formatPrice(service.servicesPrice),
@@ -255,13 +299,13 @@ const Booking = () => {
     if (!consultant) return [];
     
     const dayOfWeek = getDayOfWeek(selectedDate);
-    const daySchedule = consultant.schedule[dayOfWeek as keyof typeof consultant.schedule];
+    const daySchedule = consultant.schedule?.[dayOfWeek as keyof typeof consultant.schedule];
     
     if (!daySchedule || daySchedule.length === 0) return [];
     
     // Create array of available hours based on consultant schedule
     const availableHours: string[] = [];
-    daySchedule.forEach(slot => {
+    daySchedule.forEach((slot: TimeSlot) => {
       const startHour = parseInt(slot.start.split(':')[0]);
       const endHour = parseInt(slot.end.split(':')[0]);
       
@@ -439,8 +483,8 @@ const Booking = () => {
   const getConsultantTimeSlots = (): string[] => {
     if (!selectedConsultant || !selectedDate) return [];
     // Filter slots by selectedDate
-    const slots = consultantSlots.filter((slot: any) => slot.date === selectedDate);
-    return slots.map((slot: any) => `${slot.startTime} - ${slot.endTime}`);
+    const slots = consultantSlots.filter((slot: ConsultantSlot) => slot.date === selectedDate);
+    return slots.map((slot: ConsultantSlot) => `${slot.startTime} - ${slot.endTime}`);
   };
 
   return (

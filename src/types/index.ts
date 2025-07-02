@@ -145,6 +145,18 @@ export interface UpdateAppointmentStatusRequest {
   status: AppointmentStatus;
 }
 
+/**
+ * Yêu cầu đặt lịch hẹn
+ */
+export interface AppointmentRequest {
+  customerId: string;
+  consultantId: string;
+  serviceId: string;
+  slotId: string;
+  appointmentDate: string;
+  notes?: string;
+}
+
 // ========== Service Types ==========
 
 /**
@@ -193,6 +205,23 @@ export interface Consultant {
 }
 
 /**
+ * Thông tin profile của tư vấn viên
+ */
+export interface ConsultantProfile {
+  id: string;
+  userId: string;
+  specialization: string;
+  experience: number;
+  bio: string;
+  rating?: number;
+  isAvailable: boolean;
+  createdAt: string;
+  updatedAt: string;
+  user?: UserData;
+  availability?: {date: string, slots: Slot[]}[];
+}
+
+/**
  * Yêu cầu tạo tư vấn viên mới
  */
 export interface CreateConsultantRequest {
@@ -200,6 +229,16 @@ export interface CreateConsultantRequest {
   specialization: string;
   experience: number;
   bio: string;
+  isAvailable?: boolean;
+}
+
+/**
+ * Yêu cầu cập nhật profile tư vấn viên
+ */
+export interface ConsultantProfileRequest {
+  specialization?: string;
+  experience?: number;
+  bio?: string;
   isAvailable?: boolean;
 }
 
@@ -262,6 +301,18 @@ export interface CreateBlogRequest {
   tags?: string[];
 }
 
+/**
+ * Yêu cầu tạo blog mới
+ */
+export interface BlogCreationRequest {
+  title: string;
+  content: string;
+  summary: string;
+  image?: string;
+  isPublished?: boolean;
+  tags?: string[];
+}
+
 // ========== Test Result Types ==========
 
 /**
@@ -309,9 +360,19 @@ export interface CycleData {
 }
 
 /**
- * Yêu cầu tạo chu kỳ mới
+ * Yêu cầu tạo chu kỳ kinh nguyệt mới
  */
 export interface CreateCycleRequest {
+  startDate: string;
+  endDate?: string;
+  symptoms?: string[];
+  notes?: string;
+}
+
+/**
+ * Yêu cầu cập nhật dữ liệu chu kỳ
+ */
+export interface CycleDataRequest {
   startDate: string;
   endDate?: string;
   symptoms?: string[];
@@ -356,6 +417,16 @@ export interface CreatePaymentRequest {
   paymentMethod: string;
 }
 
+/**
+ * Yêu cầu thanh toán
+ */
+export interface PaymentRequest {
+  appointmentId: string;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+}
+
 // ========== Contact Types ==========
 
 /**
@@ -382,6 +453,16 @@ export interface CreateContactRequest {
   message: string;
 }
 
+/**
+ * Yêu cầu liên hệ
+ */
+export interface ContactRequest {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}
+
 // ========== Pagination Types ==========
 
 /**
@@ -390,6 +471,11 @@ export interface CreateContactRequest {
 export interface PaginationParams {
   page: number;
   limit: number;
+  pageNumber?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDirection?: string;
+  searchTerm?: string;
 }
 
 /**

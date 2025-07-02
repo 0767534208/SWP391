@@ -1,7 +1,7 @@
 import api from '../utils/api';
 import type { 
   ApiResponse, 
-  ConsultantProfile, 
+  ConsultantProfile,
   ConsultantProfileRequest, 
   PaginatedResponse, 
   PaginationParams, 
