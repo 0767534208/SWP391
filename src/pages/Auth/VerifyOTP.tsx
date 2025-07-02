@@ -135,8 +135,8 @@ const VerifyOTP: React.FC = () => {
               // Lấy vai trò và điều hướng
               const role = authService.getUserRole() || USER_ROLES.USER;
               
-              // Dispatch custom event để thông báo các component khác về thay đổi trạng thái đăng nhập
-              window.dispatchEvent(new Event('loginStateChanged'));
+              // Thông báo thay đổi trạng thái đăng nhập để cập nhật Navbar
+              window.dispatchEvent(new Event('login-state-changed'));
               
               redirectBasedOnRole(role);
             } else {

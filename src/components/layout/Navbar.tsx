@@ -1,26 +1,35 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FaUserCircle, FaChevronDown } from 'react-icons/fa';
 import './Navbar.css';
 
-const Navbar = () => {
+interface UserData {
+  id?: string;
+  username?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+  [key: string]: string | number | boolean | undefined;
+}
+
+const Navbar: React.FC = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<UserData | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
-  const servicesDropdownRef = useRef(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const servicesDropdownRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Function to update user state from localStorage
-  const updateUserState = () => {
+  // Hàm để cập nhật thông tin người dùng từ localStorage
+  const updateUserInfo = () => {
     const userData = localStorage.getItem('user');
     const role = localStorage.getItem('userRole');
-    const isLoggedIn = localStorage.getItem('isLoggedIn');
     
-    if (userData && isLoggedIn === 'true') {
+    if (userData) {
       setUser(JSON.parse(userData));
     } else {
       setUser(null);
@@ -33,49 +42,41 @@ const Navbar = () => {
     }
   };
 
-  // Check auth state when component mounts and on route changes
+  // Cập nhật thông tin người dùng khi component mount
   useEffect(() => {
-    updateUserState();
-  }, [location.pathname]); // Re-check when route changes
+    updateUserInfo();
+  }, []);
 
-  // Listen for localStorage changes from other tabs/windows
+  // Cập nhật thông tin người dùng khi route thay đổi
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'user' || e.key === 'userRole' || e.key === 'isLoggedIn' || e.key === 'token') {
-        updateUserState();
-      }
+    updateUserInfo();
+  }, [location]);
+
+  // Cập nhật thông tin người dùng khi localStorage thay đổi
+  useEffect(() => {
+    // Hàm xử lý sự kiện storage
+    const handleStorageChange = () => {
+      updateUserInfo();
     };
 
-    // Custom event for login state changes
-    const handleLoginChange = () => {
-      updateUserState();
-    };
-
-    // Add event listeners
+    // Đăng ký sự kiện lắng nghe thay đổi localStorage
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('loginStateChanged', handleLoginChange);
 
-    // Initial check
-    updateUserState();
-
-    // Polling for auth state changes (backup approach)
-    const checkInterval = setInterval(() => {
-      updateUserState();
-    }, 1000); // Check every second
+    // Tạo một custom event listener để cập nhật navbar từ các component khác
+    window.addEventListener('login-state-changed', handleStorageChange);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('loginStateChanged', handleLoginChange);
-      clearInterval(checkInterval);
+      window.removeEventListener('login-state-changed', handleStorageChange);
     };
   }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !(dropdownRef.current as any).contains(event.target)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
       }
-      if (servicesDropdownRef.current && !(servicesDropdownRef.current as any).contains(event.target)) {
+      if (servicesDropdownRef.current && !servicesDropdownRef.current.contains(event.target as Node)) {
         setServicesDropdownOpen(false);
       }
     }
@@ -97,10 +98,6 @@ const Navbar = () => {
     localStorage.removeItem('refreshToken');
     setUser(null);
     setUserRole(null);
-    
-    // Dispatch custom event to notify about logout
-    window.dispatchEvent(new Event('loginStateChanged'));
-    
     navigate('/auth/login');
   };
 

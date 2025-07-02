@@ -10,22 +10,6 @@ import type { RegisterRequest, UserData } from '../types';
 import type { ApiResponse } from '../utils/api';
 import { STORAGE_KEYS } from '../config/constants';
 
-// Hàm hỗ trợ để tạo dữ liệu người dùng mẫu cho mục đích test
-const createMockUserData = (username: string, name: string, roles: string[]): UserData => {
-  return {
-    userID: `mock-${username}-id`,
-    userName: username,
-    email: `${username.toLowerCase()}@example.com`,
-    name: name,
-    roles: roles,
-    token: `mock-token-${username}`,
-    refreshToken: `mock-refresh-token-${username}`,
-    address: '123 Main St',
-    phone: '555-1234',
-    dateOfBirth: '1990-01-01'
-  };
-};
-
 /**
  * Authentication service với đầy đủ chức năng xác thực
  */
@@ -39,94 +23,9 @@ const authService = {
    */
   login: async (username: string, password: string): Promise<ApiResponse<UserData>> => {
     try {
-      // Ghi log thông tin đăng nhập để debug (không bao gồm mật khẩu đầy đủ)
-      console.log(`Attempting login for user: ${username}, password length: ${password.length}`);
-      
-      // Fix cho lỗi "Your account has Proplem to Identify who you are"
-      // Tạo một bản sao của username và password để đảm bảo định dạng đúng
-      const cleanUsername = username.trim();
-      
-      // Các tài khoản mẫu được cung cấp, map đến dữ liệu mẫu thực tế để test
-      let userData: UserData | null = null;
-      let mockResponse: ApiResponse<UserData> | null = null;
-      
-      // Mock login cho các tài khoản test
-      if (cleanUsername === 'Admin' && password === 'Admin@123') {
-        userData = createMockUserData(cleanUsername, 'Admin', ['admin']);
-        mockResponse = { statusCode: 200, message: 'Login successful', data: userData };
-      } 
-      else if (cleanUsername === 'Manager' && password === 'Manager@123') {
-        userData = createMockUserData(cleanUsername, 'Manager', ['manager']);
-        mockResponse = { statusCode: 200, message: 'Login successful', data: userData };
-      }
-      else if (cleanUsername === 'Staff' && password === 'Staff@123') {
-        userData = createMockUserData(cleanUsername, 'Staff', ['staff']);
-        mockResponse = { statusCode: 200, message: 'Login successful', data: userData };
-      }
-      else if ((cleanUsername === 'Consultant' && password === 'Consultant@123') || 
-               (cleanUsername === 'Consultant2' && password === 'Consultant@1234')) {
-        userData = createMockUserData(cleanUsername, cleanUsername, ['consultant']);
-        mockResponse = { statusCode: 200, message: 'Login successful', data: userData };
-      }
-      else if (cleanUsername === 'Customer' && password === 'Customer@123') {
-        userData = createMockUserData(cleanUsername, 'Customer', ['user']);
-        mockResponse = { statusCode: 200, message: 'Login successful', data: userData };
-      }
-      
-      // Nếu có dữ liệu mock, sử dụng nó thay vì gọi API
-      if (mockResponse && userData) {
-        console.log('Using mock data for testing');
-        
-        // Lưu thông tin xác thực vào localStorage
-        localStorage.setItem(STORAGE_KEYS.TOKEN, userData.token);
-        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, userData.refreshToken);
-        localStorage.setItem(STORAGE_KEYS.IS_LOGGED_IN, 'true');
-        
-        // Lấy role đầu tiên nếu có
-        const role = userData.roles && userData.roles.length > 0 
-          ? userData.roles[0].toLowerCase() 
-          : 'user';
-        localStorage.setItem(STORAGE_KEYS.USER_ROLE, role);
-        
-        // Lưu thông tin người dùng
-        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify({
-          id: userData.userID,
-          username: userData.userName,
-          email: userData.email,
-          name: userData.name,
-          role: role,
-          address: userData.address,
-          phone: userData.phone,
-          dateOfBirth: userData.dateOfBirth
-        }));
-        
-        // Dispatch custom event để thông báo các component khác về thay đổi trạng thái đăng nhập
-        window.dispatchEvent(new Event('loginStateChanged'));
-        
-        console.log('Authentication data saved to localStorage');
-        
-        return mockResponse;
-      }
-      
-      // Nếu không có dữ liệu mock, tiếp tục gọi API
-      const response = await authAPI.login(cleanUsername, password);
-      
-      console.log('Login response received:', {
-        statusCode: response.statusCode,
-        message: response.message,
-        hasData: !!response.data
-      });
+      const response = await authAPI.login(username, password);
       
       if (response.statusCode === 200 && response.data) {
-        // Ghi log chi tiết về dữ liệu nhận được
-        console.log('Login successful, received data:', {
-          userID: response.data.userID,
-          userName: response.data.userName,
-          email: response.data.email,
-          name: response.data.name,
-          hasRoles: Array.isArray(response.data.roles) && response.data.roles.length > 0
-        });
-        
         // Lưu thông tin xác thực vào localStorage
         localStorage.setItem(STORAGE_KEYS.TOKEN, response.data.token);
         localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.data.refreshToken);
@@ -139,7 +38,7 @@ const authService = {
         localStorage.setItem(STORAGE_KEYS.USER_ROLE, role);
         
         // Lưu thông tin người dùng
-        const userData = {
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify({
           id: response.data.userID,
           username: response.data.userName,
           email: response.data.email,
@@ -148,48 +47,12 @@ const authService = {
           address: response.data.address,
           phone: response.data.phone,
           dateOfBirth: response.data.dateOfBirth
-        };
-        
-        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
-
-        // Dispatch custom event để thông báo các component khác về thay đổi trạng thái đăng nhập
-        window.dispatchEvent(new Event('loginStateChanged'));
-        
-        console.log('Authentication data saved to localStorage');
-      } else {
-        // Ghi log khi đăng nhập thất bại
-        console.error('Login failed:', response.message || 'Unknown error');
-        
-        // Xóa dữ liệu xác thực cũ nếu có
-        authService.clearAuthData();
+        }));
       }
       
       return response;
     } catch (error) {
       console.error('Login error:', error);
-      
-      // Xử lý các loại lỗi phổ biến
-      if (error instanceof Error) {
-        // Kiểm tra lỗi mạng
-        if (error.message.includes('Failed to fetch') || error.message.includes('Network')) {
-          console.error('Network connection issue detected');
-          throw new Error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng của bạn.');
-        }
-        
-        // Kiểm tra lỗi CORS
-        if (error.message.includes('CORS') || error.message.includes('cross-origin')) {
-          console.error('CORS issue detected');
-          throw new Error('Lỗi kết nối máy chủ (CORS). Vui lòng liên hệ quản trị viên.');
-        }
-        
-        // Kiểm tra lỗi xác thực
-        if (error.message.includes('401') || error.message.includes('auth') || 
-            error.message.includes('unauthorized') || error.message.toLowerCase().includes('không hợp lệ')) {
-          console.error('Authentication failed');
-          throw new Error('Tên đăng nhập hoặc mật khẩu không chính xác.');
-        }
-      }
-      
       throw error;
     }
   },
@@ -344,7 +207,7 @@ const authService = {
       console.error('Error parsing user data:', error);
       return null;
     }
-  },
+  }
 };
 
 export default authService; 
