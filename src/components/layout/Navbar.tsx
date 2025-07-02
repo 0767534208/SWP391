@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaUserCircle, FaChevronDown } from 'react-icons/fa';
 import './Navbar.css';
 
@@ -12,12 +12,15 @@ const Navbar = () => {
   const dropdownRef = useRef(null);
   const servicesDropdownRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  useEffect(() => {
+  // Function to update user state from localStorage
+  const updateUserState = () => {
     const userData = localStorage.getItem('user');
     const role = localStorage.getItem('userRole');
+    const isLoggedIn = localStorage.getItem('isLoggedIn');
     
-    if (userData) {
+    if (userData && isLoggedIn === 'true') {
       setUser(JSON.parse(userData));
     } else {
       setUser(null);
@@ -28,6 +31,43 @@ const Navbar = () => {
     } else {
       setUserRole(null);
     }
+  };
+
+  // Check auth state when component mounts and on route changes
+  useEffect(() => {
+    updateUserState();
+  }, [location.pathname]); // Re-check when route changes
+
+  // Listen for localStorage changes from other tabs/windows
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'user' || e.key === 'userRole' || e.key === 'isLoggedIn' || e.key === 'token') {
+        updateUserState();
+      }
+    };
+
+    // Custom event for login state changes
+    const handleLoginChange = () => {
+      updateUserState();
+    };
+
+    // Add event listeners
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('loginStateChanged', handleLoginChange);
+
+    // Initial check
+    updateUserState();
+
+    // Polling for auth state changes (backup approach)
+    const checkInterval = setInterval(() => {
+      updateUserState();
+    }, 1000); // Check every second
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('loginStateChanged', handleLoginChange);
+      clearInterval(checkInterval);
+    };
   }, []);
 
   useEffect(() => {
@@ -57,6 +97,10 @@ const Navbar = () => {
     localStorage.removeItem('refreshToken');
     setUser(null);
     setUserRole(null);
+    
+    // Dispatch custom event to notify about logout
+    window.dispatchEvent(new Event('loginStateChanged'));
+    
     navigate('/auth/login');
   };
 

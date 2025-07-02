@@ -25,15 +25,42 @@ const handleResponse = async <T>(response: Response): Promise<ApiResponse<T>> =>
   if (!response.ok) {
     const errorText = await response.text();
     let errorMessage;
+    let errorData: Record<string, unknown> = {};
     
     try {
-      const errorData = JSON.parse(errorText);
-      errorMessage = errorData.message || `API error: ${response.status}`;
+      errorData = JSON.parse(errorText);
+      console.error('API error response:', errorData);
+      errorMessage = errorData.message 
+        ? String(errorData.message) 
+        : `API error: ${response.status}`;
     } catch {
+      console.error('Failed to parse error response:', errorText);
       errorMessage = `API error: ${response.status} - ${errorText || 'Unknown error'}`;
     }
     
-    throw new Error(errorMessage);
+    // Ghi log thêm thông tin lỗi
+    console.error(`API Error Details - Status: ${response.status}, URL: ${response.url}`);
+    
+    // Xử lý các lỗi HTTP phổ biến
+    switch (response.status) {
+      case 400:
+        throw new Error(`Yêu cầu không hợp lệ: ${errorMessage}`);
+      case 401:
+        throw new Error(`Không được phép truy cập: ${errorMessage}`);
+      case 403:
+        throw new Error(`Truy cập bị từ chối: ${errorMessage}`);
+      case 404:
+        throw new Error(`Không tìm thấy tài nguyên: ${errorMessage}`);
+      case 429:
+        throw new Error('Quá nhiều yêu cầu. Vui lòng thử lại sau.');
+      case 500:
+      case 501:
+      case 502:
+      case 503:
+        throw new Error('Lỗi máy chủ. Vui lòng thử lại sau.');
+      default:
+        throw new Error(errorMessage);
+    }
   }
   
   return response.json();
@@ -110,25 +137,28 @@ const apiRequest = async <T>(
     method,
     headers,
     mode: 'cors',
+    credentials: 'include',
   };
   
   if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
     options.body = typeof body === 'string' ? body : JSON.stringify(body);
+    
+    if (endpoint === API.AUTH.LOGIN) {
+      console.log('Login API called');
+    }
   }
   
   try {
+    console.log(`Calling API: ${method} ${API.BASE_URL}${endpoint}`);
     const response = await fetch(`${API.BASE_URL}${endpoint}`, options);
+    console.log(`API response status: ${response.status} ${response.statusText}`);
     
-    // Handle 401 Unauthorized - Token hết hạn
     if (response.status === 401 && retry) {
-      // Try to refresh the token
       const refreshed = await refreshAuthToken();
       
       if (refreshed) {
-        // Retry the original request with the new token
         return apiRequest<T>(endpoint, method, body, customHeaders, false);
       } else {
-        // Clear local storage and redirect to login
         localStorage.removeItem(STORAGE_KEYS.TOKEN);
         localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
         localStorage.removeItem(STORAGE_KEYS.IS_LOGGED_IN);
@@ -141,8 +171,13 @@ const apiRequest = async <T>(
     
     return handleResponse<T>(response);
   } catch (error) {
-    // Log the error for debugging
     console.error(`API Request Error (${method} ${endpoint}):`, error);
+    
+    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      console.error('Network error - Please check your connection or the API server might be down');
+      throw new Error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng của bạn.');
+    }
+    
     throw error;
   }
 };

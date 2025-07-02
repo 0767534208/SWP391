@@ -166,25 +166,64 @@ const Login: React.FC = () => {
     setError('');
     setSuccessMessage('');
     setIsLoading(true);
+    
+    // Debug mode - log để debug
+    console.log('Starting login attempt for:', username);
 
     try {
       // Gọi service xác thực
       const response = await authService.login(username, password);
       
+      console.log('Login response received:', {
+        statusCode: response.statusCode,
+        message: response.message,
+        hasData: !!response.data
+      });
+      
       // Kiểm tra kết quả
       if (response.statusCode === 200 && response.data) {
         // Service đã xử lý lưu token và thông tin người dùng
+        console.log('Login successful, redirecting...');
         
         // Điều hướng dựa trên vai trò
         const role = authService.getUserRole() || USER_ROLES.USER;
         redirectBasedOnRole(role);
       } else {
-        setError('Đăng nhập thất bại. Vui lòng kiểm tra thông tin đăng nhập.');
+        // Hiển thị lỗi đến từ API
+        let errorMsg = response.message || 'Đăng nhập thất bại. Vui lòng kiểm tra thông tin đăng nhập.';
+        
+        // Làm rõ thông báo lỗi
+        if (errorMsg.includes('Your account has Proplem to Identify who you are')) {
+          errorMsg = 'Tài khoản của bạn có vấn đề xác thực. Vui lòng liên hệ quản trị viên.';
+        } else if (errorMsg.includes('Invalid credentials')) {
+          errorMsg = 'Tên đăng nhập hoặc mật khẩu không chính xác.';
+        }
+        
+        console.error('Login failed with response:', response);
+        setError(errorMsg);
       }
     } catch (err: unknown) {
-      console.error('Login error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Lỗi không xác định';
-      setError('Đăng nhập thất bại: ' + errorMessage);
+      console.error('Login error details:', err);
+      
+      // Xử lý thông báo lỗi chi tiết
+      let errorMessage = 'Đăng nhập thất bại';
+      
+      if (err instanceof Error) {
+        // Đã có xử lý cụ thể trong authService
+        errorMessage = err.message;
+        
+        if (err.message.includes('Failed to fetch') || err.message.toLowerCase().includes('network')) {
+          errorMessage = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng của bạn.';
+        } else if (err.message.includes('timeout')) {
+          errorMessage = 'Kết nối đến máy chủ quá chậm. Vui lòng thử lại sau.';
+        } else if (err.message.includes('mật khẩu') || err.message.includes('không chính xác')) {
+          errorMessage = 'Tên đăng nhập hoặc mật khẩu không chính xác.';
+        } else if (err.message.includes('Your account has Proplem')) {
+          errorMessage = 'Tài khoản của bạn có vấn đề xác thực. Vui lòng liên hệ quản trị viên.';
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
