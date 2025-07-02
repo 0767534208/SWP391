@@ -1,19 +1,31 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FaUserCircle, FaChevronDown } from 'react-icons/fa';
 import './Navbar.css';
 
-const Navbar = () => {
+interface UserData {
+  id?: string;
+  username?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+  [key: string]: string | number | boolean | undefined;
+}
+
+const Navbar: React.FC = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<UserData | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
-  const servicesDropdownRef = useRef(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const servicesDropdownRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  useEffect(() => {
+  // Hàm để cập nhật thông tin người dùng từ localStorage
+  const updateUserInfo = () => {
     const userData = localStorage.getItem('user');
     const role = localStorage.getItem('userRole');
     
@@ -28,14 +40,43 @@ const Navbar = () => {
     } else {
       setUserRole(null);
     }
+  };
+
+  // Cập nhật thông tin người dùng khi component mount
+  useEffect(() => {
+    updateUserInfo();
+  }, []);
+
+  // Cập nhật thông tin người dùng khi route thay đổi
+  useEffect(() => {
+    updateUserInfo();
+  }, [location]);
+
+  // Cập nhật thông tin người dùng khi localStorage thay đổi
+  useEffect(() => {
+    // Hàm xử lý sự kiện storage
+    const handleStorageChange = () => {
+      updateUserInfo();
+    };
+
+    // Đăng ký sự kiện lắng nghe thay đổi localStorage
+    window.addEventListener('storage', handleStorageChange);
+
+    // Tạo một custom event listener để cập nhật navbar từ các component khác
+    window.addEventListener('login-state-changed', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('login-state-changed', handleStorageChange);
+    };
   }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !(dropdownRef.current as any).contains(event.target)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
       }
-      if (servicesDropdownRef.current && !(servicesDropdownRef.current as any).contains(event.target)) {
+      if (servicesDropdownRef.current && !servicesDropdownRef.current.contains(event.target as Node)) {
         setServicesDropdownOpen(false);
       }
     }

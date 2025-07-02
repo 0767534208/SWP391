@@ -195,7 +195,8 @@ const Register: React.FC = () => {
         localStorage.setItem('pendingRegistration', JSON.stringify({
           email: formData.email,
           username: formData.username,
-          name: formData.name
+          name: formData.name,
+          password: formData.password // Lưu mật khẩu để tự động đăng nhập sau khi xác thực OTP
         }));
         navigate(ROUTES.AUTH.VERIFY_OTP);
       } else {

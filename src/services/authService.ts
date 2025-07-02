@@ -72,7 +72,8 @@ const authService = {
         localStorage.setItem(STORAGE_KEYS.PENDING_REGISTRATION, JSON.stringify({
           email: userData.email,
           username: userData.username,
-          name: userData.name
+          name: userData.name,
+          password: userData.password // Lưu mật khẩu để tự động đăng nhập sau OTP
         }));
       }
       

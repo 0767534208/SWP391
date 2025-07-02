@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../../services';
-import { STORAGE_KEYS, ROUTES } from '../../config/constants';
+import { STORAGE_KEYS, ROUTES, USER_ROLES } from '../../config/constants';
 import './Auth.css';
 
 const VerifyOTP: React.FC = () => {
@@ -15,6 +15,8 @@ const VerifyOTP: React.FC = () => {
   const [timer, setTimer] = useState(60);
   const [isResendDisabled, setIsResendDisabled] = useState(true);
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -30,6 +32,8 @@ const VerifyOTP: React.FC = () => {
       const registrationData = JSON.parse(pendingRegistration);
       if (registrationData && registrationData.email) {
         setEmail(registrationData.email);
+        setUsername(registrationData.username || '');
+        setPassword(registrationData.password || '');
       } else {
         navigate(ROUTES.AUTH.REGISTER);
         return;
@@ -77,6 +81,27 @@ const VerifyOTP: React.FC = () => {
     }
   };
 
+  // Hàm điều hướng dựa trên vai trò người dùng
+  const redirectBasedOnRole = (role: string) => {
+    switch (role) {
+      case USER_ROLES.ADMIN:
+        navigate(ROUTES.ADMIN.DASHBOARD);
+        break;
+      case USER_ROLES.MANAGER:
+        navigate(ROUTES.MANAGER.DASHBOARD);
+        break;
+      case USER_ROLES.STAFF:
+        navigate(ROUTES.STAFF.DASHBOARD);
+        break;
+      case USER_ROLES.CONSULTANT:
+        navigate(ROUTES.CONSULTANT.PROFILE);
+        break;
+      default:
+        navigate(ROUTES.HOME);
+        break;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const otpValue = otp.join('');
@@ -97,8 +122,36 @@ const VerifyOTP: React.FC = () => {
       console.log('OTP verification response:', response);
       
       if (response.statusCode === 200) {
+        // Xóa thông tin đăng ký tạm thời
         localStorage.removeItem(STORAGE_KEYS.PENDING_REGISTRATION);
-        navigate(ROUTES.AUTH.LOGIN, { state: { verified: true } });
+        
+        // Tự động đăng nhập sau khi xác thực OTP thành công
+        if (username) {
+          try {
+            console.log('Auto login after OTP verification for:', username);
+            const loginResponse = await authService.login(username, password);
+            
+            if (loginResponse.statusCode === 200 && loginResponse.data) {
+              // Lấy vai trò và điều hướng
+              const role = authService.getUserRole() || USER_ROLES.USER;
+              
+              // Thông báo thay đổi trạng thái đăng nhập để cập nhật Navbar
+              window.dispatchEvent(new Event('login-state-changed'));
+              
+              redirectBasedOnRole(role);
+            } else {
+              // Nếu đăng nhập tự động thất bại, chuyển đến trang đăng nhập
+              navigate(ROUTES.AUTH.LOGIN, { state: { verified: true } });
+            }
+          } catch (loginErr) {
+            console.error('Auto login error:', loginErr);
+            // Nếu đăng nhập tự động thất bại, chuyển đến trang đăng nhập
+            navigate(ROUTES.AUTH.LOGIN, { state: { verified: true } });
+          }
+        } else {
+          // Nếu không có tên đăng nhập, chuyển đến trang đăng nhập
+          navigate(ROUTES.AUTH.LOGIN, { state: { verified: true } });
+        }
       } else {
         setError('Mã OTP không hợp lệ hoặc đã hết hạn.');
       }

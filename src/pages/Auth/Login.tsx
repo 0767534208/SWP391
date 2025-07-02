@@ -175,6 +175,9 @@ const Login: React.FC = () => {
       if (response.statusCode === 200 && response.data) {
         // Service đã xử lý lưu token và thông tin người dùng
         
+        // Thông báo thay đổi trạng thái đăng nhập để cập nhật Navbar
+        window.dispatchEvent(new Event('login-state-changed'));
+        
         // Điều hướng dựa trên vai trò
         const role = authService.getUserRole() || USER_ROLES.USER;
         redirectBasedOnRole(role);
