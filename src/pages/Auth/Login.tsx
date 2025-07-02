@@ -1,28 +1,17 @@
+/**
+ * Login Component
+ * 
+ * Component xử lý đăng nhập người dùng và điều hướng dựa trên vai trò
+ */
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { authService } from '../../services';
+import { ROUTES, USER_ROLES } from '../../config/constants';
 import './Auth.css';
 
-// Define interface for API response
-interface LoginResponse {
-  message: string;
-  statusCode: number;
-  data?: {
-    userID: string;
-    userName: string;
-    email: string;
-    name: string;
-    address: string;
-    phone: string;
-    dateOfBirth: string;
-    isActive: boolean;
-    roles: string[];
-    token: string;
-    refreshToken: string;
-  };
-}
-
-const Login = () => {
+const Login: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({
@@ -35,38 +24,47 @@ const Login = () => {
     username: false,
     password: false
   });
+  const [successMessage, setSuccessMessage] = useState('');
 
-  // Check if user is already logged in
+  // Kiểm tra nếu người dùng đã đăng nhập
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    const userRole = localStorage.getItem('userRole')?.toLowerCase();
-    
-    if (isLoggedIn && userRole) {
-      redirectBasedOnRole(userRole);
+    // Hiển thị thông báo thành công nếu vừa xác thực OTP
+    const state = location.state as { verified?: boolean } | undefined;
+    if (state?.verified) {
+      setSuccessMessage('Xác thực email thành công! Vui lòng đăng nhập.');
     }
-  }, []);
 
-  // Function to handle redirection based on role
+    if (authService.isLoggedIn()) {
+      const userRole = authService.getUserRole()?.toLowerCase();
+      
+      if (userRole) {
+        redirectBasedOnRole(userRole);
+      }
+    }
+  }, [location.state]);
+
+  // Hàm điều hướng dựa trên vai trò người dùng
   const redirectBasedOnRole = (role: string) => {
     switch (role) {
-      case 'admin':
-        navigate('/admin');
+      case USER_ROLES.ADMIN:
+        navigate(ROUTES.ADMIN.DASHBOARD);
         break;
-      case 'manager':
-        navigate('/manager');
+      case USER_ROLES.MANAGER:
+        navigate(ROUTES.MANAGER.DASHBOARD);
         break;
-      case 'staff':
-        navigate('/staff');
+      case USER_ROLES.STAFF:
+        navigate(ROUTES.STAFF.DASHBOARD);
         break;
-      case 'consultant':
-        navigate('/consultant/profile');
+      case USER_ROLES.CONSULTANT:
+        navigate(ROUTES.CONSULTANT.PROFILE);
         break;
       default:
-        navigate('/');
+        navigate(ROUTES.HOME);
         break;
     }
   };
 
+  // Validate tên đăng nhập
   const validateUsername = (value: string) => {
     if (!value.trim()) {
       return 'Tên đăng nhập không được để trống';
@@ -83,6 +81,7 @@ const Login = () => {
     return '';
   };
 
+  // Validate mật khẩu
   const validatePassword = (value: string) => {
     if (!value) {
       return 'Mật khẩu không được để trống';
@@ -93,6 +92,7 @@ const Login = () => {
     return '';
   };
 
+  // Xử lý khi người dùng rời khỏi trường nhập liệu
   const handleBlur = (field: 'username' | 'password') => {
     setTouched({
       ...touched,
@@ -112,6 +112,7 @@ const Login = () => {
     }
   };
 
+  // Xử lý thay đổi tên đăng nhập
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setUsername(value);
@@ -123,6 +124,7 @@ const Login = () => {
     }
   };
 
+  // Xử lý thay đổi mật khẩu
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setPassword(value);
@@ -134,14 +136,16 @@ const Login = () => {
     }
   };
 
+  // Kiểm tra form có hợp lệ không
   const isFormValid = () => {
     return !errors.username && !errors.password && username && password;
   };
 
+  // Xử lý đăng nhập
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate all fields
+    // Validate tất cả các trường
     const usernameError = validateUsername(username);
     const passwordError = validatePassword(password);
     
@@ -160,58 +164,27 @@ const Login = () => {
     }
     
     setError('');
+    setSuccessMessage('');
     setIsLoading(true);
 
     try {
-      // Try using fetch instead of axios
-      const response = await fetch('https://ghsmsystemdemopublish.azurewebsites.net/api/account/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ username, password })
-      });
+      // Gọi service xác thực
+      const response = await authService.login(username, password);
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      // Check if the response is successful
-      if (data.statusCode === 200 && data.data) {
-        const userData = data.data;
+      // Kiểm tra kết quả
+      if (response.statusCode === 200 && response.data) {
+        // Service đã xử lý lưu token và thông tin người dùng
         
-        // Store the token and user info
-        localStorage.setItem('token', userData.token);
-        localStorage.setItem('refreshToken', userData.refreshToken);
-        localStorage.setItem('isLoggedIn', 'true');
-        
-        // Get the first role if available
-        const role = userData.roles && userData.roles.length > 0 ? userData.roles[0].toLowerCase() : 'user';
-        localStorage.setItem('userRole', role);
-        
-        // Store user data
-        localStorage.setItem('user', JSON.stringify({
-          id: userData.userID,
-          username: userData.userName,
-          email: userData.email,
-          name: userData.name,
-          role: role,
-          address: userData.address,
-          phone: userData.phone,
-          dateOfBirth: userData.dateOfBirth
-        }));
-
-        // Redirect based on user role
+        // Điều hướng dựa trên vai trò
+        const role = authService.getUserRole() || USER_ROLES.USER;
         redirectBasedOnRole(role);
       } else {
         setError('Đăng nhập thất bại. Vui lòng kiểm tra thông tin đăng nhập.');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
-      setError('Đăng nhập thất bại: ' + err.message);
+      const errorMessage = err instanceof Error ? err.message : 'Lỗi không xác định';
+      setError('Đăng nhập thất bại: ' + errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -232,6 +205,7 @@ const Login = () => {
         
         <form className="login-form" onSubmit={handleSubmit}>
           {error && <div className="login-error">{error}</div>}
+          {successMessage && <div className="login-success">{successMessage}</div>}
           
           <div className="login-form-group">
             <label htmlFor="login-username">Tên đăng nhập</label>
@@ -250,7 +224,7 @@ const Login = () => {
               <div className="field-error">{errors.username}</div>
             )}
           </div>
-
+          
           <div className="login-form-group">
             <label htmlFor="login-password">Mật khẩu</label>
             <input 
@@ -268,32 +242,32 @@ const Login = () => {
               <div className="field-error">{errors.password}</div>
             )}
           </div>
-
+          
           <div className="login-options">
-            <label className="login-remember">
-              <input type="checkbox" />
-              <span>Ghi nhớ đăng nhập</span>
-            </label>
-            <a href="#" className="login-forgot">Quên mật khẩu?</a>
+            <div className="remember-me">
+              <input type="checkbox" id="remember" name="remember" />
+              <label htmlFor="remember">Ghi nhớ đăng nhập</label>
+            </div>
+            <Link to={ROUTES.AUTH.FORGOT_PASSWORD} className="forgot-password">Quên mật khẩu?</Link>
           </div>
-
+          
           <button 
             type="submit" 
-            className="login-submit" 
+            className="login-submit"
             disabled={isLoading || !isFormValid()}
           >
-            {isLoading ? 'Đang xử lý...' : 'Đăng nhập'}
+            {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </button>
-
-          <div className="login-footer">
-            <p>
-              Bạn chưa có tài khoản?{' '}
-              <Link to="/auth/register" className="login-link">
-                Đăng ký ngay
-              </Link>
-            </p>
-          </div>
         </form>
+        
+        <div className="login-footer">
+          <p>
+            Bạn chưa có tài khoản?{' '}
+            <Link to={ROUTES.AUTH.REGISTER} className="login-register-link">
+              Đăng ký
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

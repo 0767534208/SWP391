@@ -13,6 +13,8 @@ import Home from './pages/Home/Home';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import VerifyOTP from './pages/Auth/VerifyOTP';
+import ForgotPassword from './pages/Auth/ForgotPassword';
+import ResetPassword from './pages/Auth/ResetPassword';
 import Booking from './pages/Booking/Booking';
 import UserBlog from './pages/Blog/UserBlog';
 import BlogDetail from './pages/Blog/BlogDetail';
@@ -40,12 +42,15 @@ import BlogManagement from './pages/Manager/BlogManagement';
 import SlotManagement from './pages/Manager/SlotManagement';
 import SlotCreation from './pages/Manager/SlotCreation';
 import WeeklyCalendar from './pages/Manager/WeeklyCalendar';
-import StaffDashboard from './pages/staff/StaffDashboard';
-import StaffAppointments from './pages/staff/StaffAppointments';
-import TestResultView from './pages/staff/TestResultView';
-import TestResultInput from './pages/staff/TestResultInput';
-import TestResultManagementStaff from './pages/staff/TestResultManagementStaff';
-import TestResultEdit from './pages/staff/TestResultEdit';
+import StaffDashboard from './pages/Staff/StaffDashboard';
+import StaffAppointments from './pages/Staff/StaffAppointments';
+import TestResultView from './pages/Staff/TestResultView';
+import TestResultInput from './pages/Staff/TestResultInput';
+import TestResultManagementStaff from './pages/Staff/TestResultManagementStaff';
+import TestResultEdit from './pages/Staff/TestResultEdit';
+
+// Import API Testers
+import ApiTesters from './components/ApiTesters';
 
 // Admin route wrapper component
 import type { ReactNode } from 'react';
@@ -138,6 +143,8 @@ function App() {
           <Route path="auth/login" element={<Login />} />
           <Route path="auth/register" element={<Register />} />
           <Route path="auth/verify-otp" element={<VerifyOTP />} />
+          <Route path="auth/forgot-password" element={<ForgotPassword />} />
+          <Route path="auth/reset-password" element={<ResetPassword />} />
           <Route path="booking" element={<Booking />} />
           <Route path="services" element={<Services />} />
           <Route path="blogUser" element={<UserBlog />} />
@@ -150,6 +157,8 @@ function App() {
           <Route path="contact" element={<Contact />} />
           <Route path="test-results/:id" element={<TestResults />} />
           <Route path="qna" element={<QnA />} />
+          {/* API Testers route */}
+          <Route path="api-testers" element={<ApiTesters />} />
         </Route>
 
         {/* Route dành cho consultant */}
@@ -205,6 +214,8 @@ function App() {
           <Route path="users" element={<Users />} />
           <Route path="appointments" element={<Appointments />} />
           <Route path="consultants" element={<Consultants />} />
+          {/* API Testers route for admins */}
+          <Route path="api-testers" element={<ApiTesters />} />
         </Route>
       </Routes>
     </Router>
