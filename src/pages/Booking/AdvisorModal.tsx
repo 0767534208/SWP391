@@ -34,12 +34,12 @@ interface Consultant {
 
 interface AdvisorModalProps {
   consultant: Consultant | null;
-  isOpen: boolean;
+  isOpen?: boolean;
   onClose: () => void;
   servicePrice?: string;
 }
 
-const AdvisorModal: React.FC<AdvisorModalProps> = ({ consultant, isOpen, onClose, servicePrice }) => {
+const AdvisorModal: React.FC<AdvisorModalProps> = ({ consultant, isOpen = true, onClose, servicePrice }) => {
   if (!isOpen || !consultant) return null;
 
   // Close modal when clicking outside of content

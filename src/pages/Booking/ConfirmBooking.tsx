@@ -43,6 +43,7 @@ interface LocationState {
   date: string;
   time: string;
   personal: PersonalInfo;
+  appointmentId?: string;
 }
 
 const ConfirmBooking: React.FC = () => {
@@ -56,11 +57,11 @@ const ConfirmBooking: React.FC = () => {
     return null;
   }
 
-  const { service, consultant, date, time, personal } = state;
+  const { service, consultant, date, time, personal, appointmentId } = state;
 
   const handleFinalConfirm = () => {
     // Navigate to payment page with booking details
-    navigate('/payment', { state });
+    navigate('/payment', { state: { ...state, appointmentId } });
   };
 
   // Format date to display in Vietnamese format

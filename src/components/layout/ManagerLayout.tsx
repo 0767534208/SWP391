@@ -48,6 +48,14 @@ const ManagerLayout = () => {
               <span className="manager-nav-text text-xs font-medium">Quản lý dịch vụ</span>
             </Link>
             
+            <Link to="/manager/categories" className={`manager-nav-link flex items-center px-2 py-1.5 rounded-lg transition-colors ${isActive('/manager/categories') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800'}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="manager-sidebar-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M5 4a1 1 0 00-1 1v10a1 1 0 001 1h10a1 1 0 001-1V5a1 1 0 00-1-1H5zm0-2h10a3 3 0 013 3v10a3 3 0 01-3 3H5a3 3 0 01-3-3V5a3 3 0 013-3z" clipRule="evenodd" />
+                <path d="M7 9a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" />
+              </svg>
+              <span className="manager-nav-text text-xs font-medium">Quản lý danh mục</span>
+            </Link>
+            
             <Link to="/manager/blogs" className={`manager-nav-link flex items-center px-2 py-1.5 rounded-lg transition-colors ${isActive('/manager/blogs') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800'}`}>
               <svg xmlns="http://www.w3.org/2000/svg" className="manager-sidebar-icon" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />

@@ -33,7 +33,8 @@ const PaymentSuccess: React.FC = () => {
     },
     paymentMethod: 'vnpay',
     isPaid: true,
-    paymentStatus: 'completed'
+    paymentStatus: 'completed',
+    appointmentId: 'AP123456'
   };
   
   // Format date for display
@@ -88,7 +89,7 @@ const PaymentSuccess: React.FC = () => {
           <div className="appointment-card">
             <div className="appointment-header">
               <h3>Thông Tin Lịch Hẹn</h3>
-              <span className="appointment-id">#{Math.floor(Math.random() * 10000)}</span>
+              <span className="appointment-id">#{bookingData.appointmentId}</span>
             </div>
 
             <div className="appointment-info">

@@ -37,7 +37,8 @@ const Payment: React.FC<PaymentProps> = () => {
       name: 'Nguyễn Văn A',
       phone: '0987654321',
       email: 'example@gmail.com',
-    }
+    },
+    appointmentId: null
   };
 
   // Format booking price (remove VNĐ and dots)
@@ -57,8 +58,9 @@ const Payment: React.FC<PaymentProps> = () => {
     // Different handling based on payment method
     setTimeout(() => {
       if (paymentMethod === 'vnpay') {
+        // In a real implementation, you would pass the appointmentId to the payment service
         // Redirect to VNPay payment page (in real implementation)
-        redirectToVNPayPaymentPage();
+        redirectToVNPayPaymentPage(bookingData.appointmentId);
       } else if (paymentMethod === 'banking') {
         // For bank transfer, show banking information and redirect to success page
         navigate('/payment-success', { 
@@ -85,10 +87,16 @@ const Payment: React.FC<PaymentProps> = () => {
   };
 
   // Mock function to redirect to VNPay
-  const redirectToVNPayPaymentPage = () => {
+  const redirectToVNPayPaymentPage = (appointmentId?: string) => {
     // In a real implementation, your backend would create a payment URL
     // and you would redirect the user to that URL
-    window.location.href = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?vnp_Amount=1000000&vnp_Command=pay&vnp_CreateDate=20210801153333&vnp_CurrCode=VND&vnp_IpAddr=127.0.0.1&vnp_Locale=vn&vnp_OrderInfo=Thanh+toan+dich+vu&vnp_OrderType=250000&vnp_ReturnUrl=http%3A%2F%2Flocalhost%3A3000%2Fpayment-success&vnp_TmnCode=DEMO&vnp_TxnRef=1234567890&vnp_Version=2.1.0&vnp_SecureHash=18ee1aedaad3d07d9a19fe1187752a3adb8700bf5019b9bc1aacfaf7d1ae8d0a";
+    // Include the appointmentId in the payment process if available
+    const paymentUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?vnp_Amount=1000000&vnp_Command=pay&vnp_CreateDate=20210801153333&vnp_CurrCode=VND&vnp_IpAddr=127.0.0.1&vnp_Locale=vn&vnp_OrderInfo=Thanh+toan+dich+vu";
+    const urlWithAppointment = appointmentId ? 
+      `${paymentUrl}&vnp_OrderType=250000&vnp_ReturnUrl=http%3A%2F%2Flocalhost%3A3000%2Fpayment-success&vnp_TmnCode=DEMO&vnp_TxnRef=${appointmentId}&vnp_Version=2.1.0&vnp_SecureHash=18ee1aedaad3d07d9a19fe1187752a3adb8700bf5019b9bc1aacfaf7d1ae8d0a` :
+      `${paymentUrl}&vnp_OrderType=250000&vnp_ReturnUrl=http%3A%2F%2Flocalhost%3A3000%2Fpayment-success&vnp_TmnCode=DEMO&vnp_TxnRef=1234567890&vnp_Version=2.1.0&vnp_SecureHash=18ee1aedaad3d07d9a19fe1187752a3adb8700bf5019b9bc1aacfaf7d1ae8d0a`;
+    
+    window.location.href = urlWithAppointment;
   };
 
   // Generate a random transaction ID
