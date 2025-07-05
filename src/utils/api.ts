@@ -208,7 +208,7 @@ export const appointmentAPI = {
    * @param customerId - ID của khách hàng
    */
   getAppointmentsByCustomerId: async (customerId: string): Promise<ApiResponse<AppointmentData[]>> => {
-    return apiRequest<AppointmentData[]>(`/appointment/GetAppointmentByCustomerID/${customerId}`, 'GET');
+    return apiRequest<AppointmentData[]>(`/api/appointment/GetAppointmentByCustomerID/${customerId}`, 'GET');
   },
   
   /**
@@ -216,7 +216,7 @@ export const appointmentAPI = {
    * @param consultantId - ID của tư vấn viên
    */
   getAppointmentsByConsultantId: async (consultantId: string): Promise<ApiResponse<AppointmentData[]>> => {
-    return apiRequest<AppointmentData[]>(`/appointment/consultant/${consultantId}`, 'GET');
+    return apiRequest<AppointmentData[]>(`/api/appointment/consultant/${consultantId}`, 'GET');
   },
   
   /**
@@ -224,7 +224,7 @@ export const appointmentAPI = {
    * @param appointmentData - Thông tin lịch hẹn
    */
   createAppointment: async (appointmentData: AppointmentRequest): Promise<ApiResponse<AppointmentData>> => {
-    return apiRequest<AppointmentData>('/appointment/CreateAppointment', 'POST', appointmentData);
+    return apiRequest<AppointmentData>('/api/appointment/CreateAppointment', 'POST', appointmentData);
   }
 };
 
@@ -236,7 +236,11 @@ export const authAPI = {
    * @param password - Mật khẩu
    */
   login: async (username: string, password: string): Promise<ApiResponse<UserData>> => {
-    return apiRequest<UserData>(API.AUTH.LOGIN, 'POST', { username, password });
+    // Thử với đường dẫn API khác
+    return apiRequest<UserData>(`/api/Account/Login`, 'POST', { 
+      UserName: username,
+      Password: password 
+    });
   },
   
   /**
@@ -244,7 +248,7 @@ export const authAPI = {
    * @param userData - Thông tin người dùng đăng ký
    */
   register: (userData: RegisterRequest): Promise<ApiResponse<UserData>> => {
-    return apiRequest<UserData>(API.AUTH.REGISTER, 'POST', userData);
+    return apiRequest<UserData>(`/api${API.AUTH.REGISTER}`, 'POST', userData);
   },
   
   /**
@@ -255,7 +259,7 @@ export const authAPI = {
   verifyOTP: (email: string, otp: string): Promise<ApiResponse<void>> => {
     const endpoint = API.AUTH.VERIFY_OTP(email, otp);
     console.log('OTP verification endpoint:', endpoint);
-    return apiRequest<void>(endpoint, 'POST');
+    return apiRequest<void>(`/api${endpoint}`, 'POST');
   },
   
   /**
@@ -263,7 +267,7 @@ export const authAPI = {
    * @param refreshToken - Refresh token hiện tại
    */
   refreshToken: (refreshToken: string): Promise<ApiResponse<{token: string, refreshToken: string}>> => {
-    return apiRequest<{token: string, refreshToken: string}>(API.AUTH.REFRESH_TOKEN, 'POST', { refreshToken });
+    return apiRequest<{token: string, refreshToken: string}>(`/api${API.AUTH.REFRESH_TOKEN}`, 'POST', { refreshToken });
   },
   
   /**
@@ -271,7 +275,7 @@ export const authAPI = {
    * @param email - Email đã đăng ký
    */
   forgotPassword: (email: string): Promise<ApiResponse<void>> => {
-    return apiRequest<void>(API.AUTH.FORGOT_PASSWORD, 'POST', { email });
+    return apiRequest<void>(`/api${API.AUTH.FORGOT_PASSWORD}`, 'POST', { email });
   },
   
   /**
@@ -281,14 +285,14 @@ export const authAPI = {
    * @param newPassword - Mật khẩu mới
    */
   resetPassword: (email: string, token: string, newPassword: string): Promise<ApiResponse<void>> => {
-    return apiRequest<void>(API.AUTH.RESET_PASSWORD, 'POST', { email, token, newPassword });
+    return apiRequest<void>(`/api${API.AUTH.RESET_PASSWORD}`, 'POST', { email, token, newPassword });
   },
   
   /**
    * Đăng xuất
    */
   logout: (): Promise<ApiResponse<void>> => {
-    return apiRequest<void>(API.AUTH.LOGOUT, 'POST');
+    return apiRequest<void>(`/api${API.AUTH.LOGOUT}`, 'POST');
   },
 };
 
@@ -333,14 +337,14 @@ export const serviceAPI = {
    * Lấy tất cả dịch vụ
    */
   getServices: async (): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>('/Service/GetService', 'GET');
+    return apiRequest<any[]>('/api/Service/GetService', 'GET');
   },
   
   /**
    * Lấy dịch vụ theo ID
    */
   getServiceById: async (serviceId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/Service/GetServiceById/${serviceId}`, 'GET');
+    return apiRequest<any>(`/api/Service/GetServiceById/${serviceId}`, 'GET');
   },
   
   /**

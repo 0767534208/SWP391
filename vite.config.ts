@@ -5,12 +5,14 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    port: 5173,
+    strictPort: true,
+    cors: true,
     proxy: {
       '/api': {
-        target: 'https://ghsmsystemdemopublish.azurewebsites.net',
+        target: 'https://localhost:7084',
         changeOrigin: true,
-        secure: true,
-        rewrite: (path) => path.replace(/^\/api/, '/api')
+        secure: false
       }
     }
   }
