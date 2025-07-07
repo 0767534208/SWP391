@@ -347,32 +347,26 @@ export const serviceAPI = {
     return apiRequest<any>(`/api/Service/GetServiceById/${serviceId}`, 'GET');
   },
   
-  /**
-   * Lấy dịch vụ theo danh mục
-   */
-  getServicesByCategory: async (categoryId: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>(`/Service/GetServicesByCategory/${categoryId}`, 'GET');
-  },
 
   /**
    * Tạo dịch vụ mới (dành cho Manager)
    */
   createService: async (serviceData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/Service/CreateService', 'POST', serviceData);
+    return apiRequest<any>('/api/Service/CreateService', 'POST', serviceData);
   },
 
   /**
    * Cập nhật dịch vụ (dành cho Manager)
    */
   updateService: async (serviceId: string, serviceData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/Service/UpdateService/${serviceId}`, 'PUT', serviceData);
+    return apiRequest<any>(`/api/Service/UpdateService/${serviceId}`, 'PUT', serviceData);
   },
 
   /**
    * Xóa dịch vụ (dành cho Manager)
    */
   deleteService: async (serviceId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/Service/DeleteService/${serviceId}`, 'DELETE');
+    return apiRequest<any>(`/api/Service/DeleteService/${serviceId}`, 'DELETE');
   }
 };
 
@@ -382,35 +376,35 @@ export const categoryAPI = {
    * Lấy tất cả danh mục
    */
   getCategories: async (): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>('/Category/GetCategory', 'GET');
+    return apiRequest<any[]>('/api/Category/GetCategory', 'GET');
   },
   
   /**
    * Lấy danh mục theo ID
    */
   getCategoryById: async (categoryId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/Category/GetCategoryById/${categoryId}`, 'GET');
+    return apiRequest<any>(`/api/Category/GetCategoryById/${categoryId}`, 'GET');
   },
 
   /**
    * Tạo danh mục mới (dành cho Manager)
    */
   createCategory: async (categoryData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/Category/CreateCategory', 'POST', categoryData);
+    return apiRequest<any>('/api/Category/CreateCategory', 'POST', categoryData);
   },
 
   /**
    * Cập nhật danh mục (dành cho Manager)
    */
   updateCategory: async (categoryId: string, categoryData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/Category/UpdateCategory/${categoryId}`, 'PUT', categoryData);
+    return apiRequest<any>(`/api/Category/UpdateCategory/${categoryId}`, 'PUT', categoryData);
   },
 
   /**
    * Xóa danh mục (dành cho Manager)
    */
   deleteCategory: async (categoryId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/Category/DeleteCategory/${categoryId}`, 'DELETE');
+    return apiRequest<any>(`/api/Category/DeleteCategory/${categoryId}`, 'DELETE');
   }
 };
 
@@ -420,56 +414,53 @@ export const consultantSlotAPI = {
    * Lấy tất cả tư vấn viên và slot của họ
    */
   getAllConsultants: async (): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>('/consultantSlot/GetAll', 'GET');
+    return apiRequest<any[]>('/api/consultantSlot/GetAll', 'GET');
   },
   
   /**
    * Lấy slots theo ID tư vấn viên
    */
   getSlotsByConsultantId: async (consultantId: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>(`/consultantSlot?consultantId=${consultantId}`, 'GET');
+    return apiRequest<any[]>(`/api/consultantSlot?consultantId=${consultantId}`, 'GET');
   },
   
   /**
    * Lấy slots theo ngày và ID tư vấn viên
    */
-  getSlotsByConsultantAndDate: async (consultantId: string, date: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>(`/consultantSlot?consultantId=${consultantId}&date=${date}`, 'GET');
-  },
-
+ 
   /**
    * Tạo slot mới (dành cho Manager)
    */
   createSlot: async (slotData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/consultantSlot/CreateSlot', 'POST', slotData);
+    return apiRequest<any>('/api/consultantSlot/CreateSlot', 'POST', slotData);
   },
 
   /**
    * Cập nhật slot (dành cho Manager)
    */
   updateSlot: async (slotId: string, slotData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/consultantSlot/UpdateSlot/${slotId}`, 'PUT', slotData);
+    return apiRequest<any>(`/api/consultantSlot/UpdateSlot/${slotId}`, 'PUT', slotData);
   },
 
   /**
    * Xóa slot (dành cho Manager)
    */
   deleteSlot: async (slotId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/consultantSlot/DeleteSlot/${slotId}`, 'DELETE');
+    return apiRequest<any>(`/api/consultantSlot/DeleteSlot/${slotId}`, 'DELETE');
   },
 
   /**
    * Duyệt slot (dành cho Manager)
    */
   approveSlot: async (slotId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/consultantSlot/ApproveSlot/${slotId}`, 'PUT');
+    return apiRequest<any>(`/api/consultantSlot/ApproveSlot/${slotId}`, 'PUT');
   },
 
   /**
    * Từ chối slot (dành cho Manager)
    */
   rejectSlot: async (slotId: string, reason?: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/consultantSlot/RejectSlot/${slotId}`, 'PUT', { reason });
+    return apiRequest<any>(`/api/consultantSlot/RejectSlot/${slotId}`, 'PUT', { reason });
   }
 };
 
@@ -479,42 +470,42 @@ export const blogAPI = {
    * Lấy tất cả bài viết
    */
   getBlogs: async (): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>('/Blog/GetAllBlog', 'GET');
+    return apiRequest<any[]>('/api/blog/GetAllBlog', 'GET');
   },
   
   /**
    * Lấy bài viết theo ID
    */
   getBlogById: async (blogId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/Blog/GetBlogById/${blogId}`, 'GET');
+    return apiRequest<any>(`/api/blog/GetBlogById/${blogId}`, 'GET');
   },
   
   /**
    * Tạo bài viết mới (dành cho Manager)
    */
   createBlog: async (blogData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/Blog/CreateBlog', 'POST', blogData);
+    return apiRequest<any>('/api/blog/CreateBlog', 'POST', blogData);
   },
   
   /**
    * Cập nhật bài viết (dành cho Manager)
    */
   updateBlog: async (blogId: string, blogData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/Blog/UpdateBlog/${blogId}`, 'PUT', blogData);
+    return apiRequest<any>(`/api/blog/UpdateBlog/${blogId}`, 'PUT', blogData);
   },
   
   /**
    * Xóa bài viết (dành cho Manager)
    */
   deleteBlog: async (blogId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/Blog/DeleteBlog/${blogId}`, 'DELETE');
+    return apiRequest<any>(`/api/Blog/DeleteBlog/${blogId}`, 'DELETE');
   },
 
   /**
    * Upload hình ảnh cho bài viết (dành cho Manager)
    */
   uploadBlogImage: async (file: File): Promise<ApiResponse<{fileUrl: string}>> => {
-    return uploadFile(file, '/Blog/UploadImage');
+    return uploadFile(file, '/api/Blog/UploadImage');
   }
 };
 
@@ -564,48 +555,48 @@ export const consultantAPI = {
    * Lấy tất cả tư vấn viên
    */
   getAllConsultants: async (): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>('/Consultant/GetConsultant', 'GET');
+    return apiRequest<any[]>('/api/Consultant/GetConsultant', 'GET');
   },
   
   /**
    * Lấy tư vấn viên theo ID
    */
   getConsultantById: async (consultantId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/Consultant/GetConsultantById/${consultantId}`, 'GET');
+    return apiRequest<any>(`/api/Consultant/GetConsultantById/${consultantId}`, 'GET');
   },
   
   /**
    * Tạo tư vấn viên mới
    */
   createConsultant: async (consultantData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/Consultant/CreateConsultant', 'POST', consultantData);
+    return apiRequest<any>('/api/Consultant/CreateConsultant', 'POST', consultantData);
   },
   
   /**
    * Cập nhật thông tin tư vấn viên
    */
   updateConsultant: async (consultantId: string, consultantData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/Consultant/UpdateConsultant/${consultantId}`, 'PUT', consultantData);
+    return apiRequest<any>(`/api/Consultant/UpdateConsultant/${consultantId}`, 'PUT', consultantData);
   },
   
   /**
    * Xóa tư vấn viên
    */
   deleteConsultant: async (consultantId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/Consultant/DeleteConsultant/${consultantId}`, 'DELETE');
+    return apiRequest<any>(`/api/Consultant/DeleteConsultant/${consultantId}`, 'DELETE');
   },
   
   /**
    * Kích hoạt tư vấn viên
    */
   activateConsultant: async (consultantId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/Consultant/ActivateConsultant/${consultantId}`, 'PUT');
+    return apiRequest<any>(`/api/Consultant/ActivateConsultant/${consultantId}`, 'PUT');
   },
   
   /**
    * Vô hiệu hóa tư vấn viên
    */
   deactivateConsultant: async (consultantId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/Consultant/DeactivateConsultant/${consultantId}`, 'PUT');
+    return apiRequest<any>(`/api/Consultant/DeactivateConsultant/${consultantId}`, 'PUT');
   }
 }; 
