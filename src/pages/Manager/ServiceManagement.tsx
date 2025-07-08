@@ -161,34 +161,31 @@ const ServiceManagement: React.FC = () => {
     try {
       setLoading(true);
       
-      // Chuẩn bị dữ liệu theo đúng định dạng API yêu cầu
-      const serviceData = {
-        ClinicID: currentService.clinicID || 1,
-        CategoryID: currentService.categoryID,
-        ManagerID: currentService.managerID || managerID,
-        ServicesName: currentService.servicesName,
-        Description: currentService.description,
-        ServicesPrice: currentService.servicesPrice,
-        ServiceType: currentService.serviceType !== undefined ? currentService.serviceType : 0,
-        Status: currentService.status,
-        Images: currentService.imageFiles || [] // Sử dụng file objects thay vì URLs
-      };
-      
-      console.log('Sending data to API:', serviceData);
-      
       if (!isAddingNew) {
-        // Update existing service
+        // Update existing service - chỉ gửi các fields được hỗ trợ
+        const updateData = {
+          servicesName: currentService.servicesName,
+          description: currentService.description,
+          servicesPrice: currentService.servicesPrice,
+          serviceType: currentService.serviceType !== undefined ? currentService.serviceType : 0,
+          status: currentService.status
+          // Note: không gửi categoryID vì API UpdateService không hỗ trợ
+        };
+        
+        console.log('Updating service with data:', updateData);
+        
         const response = await serviceAPI.updateService(
           currentService.servicesID, 
-          serviceData
+          updateData
         );
         
         if (response.statusCode === 200 || response.statusCode === 201) {
-          setServices(prevServices => 
-            prevServices.map(service => 
-              service.servicesID === currentService.servicesID ? response.data : service
-            )
-          );
+          // Refresh lại toàn bộ danh sách services để đảm bảo dữ liệu đồng bộ
+          const serviceResponse = await serviceAPI.getServices();
+          if (serviceResponse.statusCode === 200 && serviceResponse.data) {
+            setServices(serviceResponse.data);
+          }
+          
           setShowModal(false);
           setCurrentService(null);
         } else {
@@ -196,13 +193,30 @@ const ServiceManagement: React.FC = () => {
           console.error('API response error:', response);
         }
       } else {
-        // Add new service
+        // Add new service - gửi đầy đủ dữ liệu cho CreateService
+        const serviceData = {
+          ClinicID: currentService.clinicID || 1,
+          CategoryID: currentService.categoryID,
+          ManagerID: currentService.managerID || managerID,
+          ServicesName: currentService.servicesName,
+          Description: currentService.description,
+          ServicesPrice: currentService.servicesPrice,
+          ServiceType: currentService.serviceType !== undefined ? currentService.serviceType : 0,
+          Status: currentService.status,
+          Images: currentService.imageFiles || []
+        };
+        
+        console.log('Creating service with data:', serviceData);
+        
         const response = await serviceAPI.createService(serviceData);
         
-        console.log('Create service response:', response);
-        
         if (response.statusCode === 200 || response.statusCode === 201) {
-          setServices(prevServices => [...prevServices, response.data]);
+          // Refresh lại toàn bộ danh sách services
+          const serviceResponse = await serviceAPI.getServices();
+          if (serviceResponse.statusCode === 200 && serviceResponse.data) {
+            setServices(serviceResponse.data);
+          }
+          
           setShowModal(false);
           setCurrentService(null);
         } else {
@@ -236,12 +250,12 @@ const ServiceManagement: React.FC = () => {
         status: !service.status
       });
       
-      if (response.statusCode === 200 && response.data) {
-        setServices(prevServices => 
-          prevServices.map(s => 
-            s.servicesID === id ? response.data : s
-          )
-        );
+      if (response.statusCode === 200) {
+        // Refresh lại toàn bộ danh sách services để đảm bảo dữ liệu đồng bộ
+        const serviceResponse = await serviceAPI.getServices();
+        if (serviceResponse.statusCode === 200 && serviceResponse.data) {
+          setServices(serviceResponse.data);
+        }
       } else {
         setError('Không thể cập nhật trạng thái dịch vụ. Vui lòng thử lại sau.');
       }
@@ -252,8 +266,6 @@ const ServiceManagement: React.FC = () => {
       setLoading(false);
     }
   };
-
-
 
   // Upload image to server and get URL
   const uploadImage = async (file: File): Promise<string> => {
@@ -460,7 +472,6 @@ const ServiceManagement: React.FC = () => {
                       </svg>
                     )}
                   </button>
-
                 </td>
               </tr>
             ))}
@@ -507,13 +518,20 @@ const ServiceManagement: React.FC = () => {
                 </div>
                 
                 <div className="form-group">
-                  <label htmlFor="categoryID">Danh mục</label>
+                  <label htmlFor="categoryID">
+                    Danh mục
+                    {isEditing && !isAddingNew && (
+                      <span style={{fontSize: '12px', color: '#666', fontWeight: 'normal'}}>
+                        {' '}(Không thể thay đổi danh mục sau khi tạo)
+                      </span>
+                    )}
+                  </label>
                   <select
                     id="categoryID"
                     value={currentService.categoryID}
                     onChange={(e) => setCurrentService({...currentService, categoryID: Number(e.target.value)})}
                     required
-                    disabled={!isEditing}
+                    disabled={!isEditing || !isAddingNew}
                   >
                     {categories.map(category => (
                       <option key={category.categoryID} value={category.categoryID}>
@@ -635,16 +653,7 @@ const ServiceManagement: React.FC = () => {
                     <button type="submit" className="save-btn">Lưu</button>
                   </>
                 ) : (
-                  <>
-                    <button type="button" className="cancel-btn" onClick={() => setShowModal(false)}>Đóng</button>
-                    <button 
-                      type="button" 
-                      className="edit-btn"
-                      onClick={() => setIsEditing(true)}
-                    >
-                      Chỉnh sửa
-                    </button>
-                  </>
+                  <button type="button" className="cancel-btn" onClick={() => setShowModal(false)}>Đóng</button>
                 )}
               </div>
             </form>
