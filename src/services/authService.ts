@@ -39,14 +39,16 @@ const authService = {
         
         // Lưu thông tin người dùng
         localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify({
-          id: response.data.userID,
-          username: response.data.userName,
+          userID: response.data.userID,
+          customerID: response.data.customerID || response.data.userID, 
+          userName: response.data.userName,
           email: response.data.email,
           name: response.data.name,
           role: role,
           address: response.data.address,
           phone: response.data.phone,
-          dateOfBirth: response.data.dateOfBirth
+          dateOfBirth: response.data.dateOfBirth,
+          roles: response.data.roles
         }));
       }
       

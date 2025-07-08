@@ -38,6 +38,7 @@ import Consultants from './pages/Admin/Consultant';
 
 import ManagerDashboard from './pages/Manager/ManagerDashboard';
 import ServiceManagement from './pages/Manager/ServiceManagement';
+import CategoryManagement from './pages/Manager/CategoryManagement';
 import BlogManagement from './pages/Manager/BlogManagement';
 import SlotManagement from './pages/Manager/SlotManagement';
 import SlotCreation from './pages/Manager/SlotCreation';
@@ -183,6 +184,7 @@ function App() {
         }>
           <Route index element={<ManagerDashboard />} />
           <Route path="services" element={<ServiceManagement />} />
+          <Route path="categories" element={<CategoryManagement />} />
           <Route path="blogs" element={<BlogManagement />} />
           <Route path="slots" element={<SlotManagement />} />
           <Route path="slot-calendar" element={<WeeklyCalendar />} />

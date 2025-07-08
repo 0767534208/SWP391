@@ -23,6 +23,7 @@ export interface ApiResponse<T = unknown> {
  */
 export interface UserData {
   userID: string;
+  customerID?: string;
   userName: string;
   email: string;
   name: string;
@@ -149,12 +150,16 @@ export interface UpdateAppointmentStatusRequest {
  * Yêu cầu đặt lịch hẹn
  */
 export interface AppointmentRequest {
-  customerId: string;
-  consultantId: string;
-  serviceId: string;
-  slotId: string;
+  customerID: string;
+  consultantID: string;
+  clinicID: number;
+  slotID: number;
   appointmentDate: string;
-  notes?: string;
+  appointmentDetails: {
+    servicesID: number;
+    consultantProfileID: number;
+    quantity: number;
+  }[];
 }
 
 // ========== Service Types ==========

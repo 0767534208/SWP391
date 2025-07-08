@@ -6,7 +6,7 @@
  * Các URL API
  */
 export const API = {
-  BASE_URL: '/api', // Sử dụng proxy để tránh CORS
+  BASE_URL: '', // Để trống vì proxy đã xử lý việc này
   
   // Auth endpoints
   AUTH: {

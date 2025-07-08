@@ -201,12 +201,14 @@ export const uploadFile = async (file: File, path: string): Promise<ApiResponse<
 
 // Appointment API endpoints
 export const appointmentAPI = {
+
+  
   /**
    * Lấy tất cả lịch hẹn của một khách hàng
    * @param customerId - ID của khách hàng
    */
   getAppointmentsByCustomerId: async (customerId: string): Promise<ApiResponse<AppointmentData[]>> => {
-    return apiRequest<AppointmentData[]>(`/appointments/customer/${customerId}`, 'GET');
+    return apiRequest<AppointmentData[]>(`/api/appointment/GetAppointmentByCustomerID/${customerId}`, 'GET');
   },
   
   /**
@@ -214,7 +216,7 @@ export const appointmentAPI = {
    * @param consultantId - ID của tư vấn viên
    */
   getAppointmentsByConsultantId: async (consultantId: string): Promise<ApiResponse<AppointmentData[]>> => {
-    return apiRequest<AppointmentData[]>(`/appointment/consultant/${consultantId}`, 'GET');
+    return apiRequest<AppointmentData[]>(`/api/appointment/consultant/${consultantId}`, 'GET');
   },
   
   /**
@@ -222,7 +224,7 @@ export const appointmentAPI = {
    * @param appointmentData - Thông tin lịch hẹn
    */
   createAppointment: async (appointmentData: AppointmentRequest): Promise<ApiResponse<AppointmentData>> => {
-    return apiRequest<AppointmentData>('/appointments', 'POST', appointmentData);
+    return apiRequest<AppointmentData>('/api/appointment/CreateAppointment', 'POST', appointmentData);
   }
 };
 
@@ -234,7 +236,11 @@ export const authAPI = {
    * @param password - Mật khẩu
    */
   login: async (username: string, password: string): Promise<ApiResponse<UserData>> => {
-    return apiRequest<UserData>(API.AUTH.LOGIN, 'POST', { username, password });
+    // Thử với đường dẫn API khác
+    return apiRequest<UserData>(`/api/Account/Login`, 'POST', { 
+      UserName: username,
+      Password: password 
+    });
   },
   
   /**
@@ -242,7 +248,7 @@ export const authAPI = {
    * @param userData - Thông tin người dùng đăng ký
    */
   register: (userData: RegisterRequest): Promise<ApiResponse<UserData>> => {
-    return apiRequest<UserData>(API.AUTH.REGISTER, 'POST', userData);
+    return apiRequest<UserData>(`/api${API.AUTH.REGISTER}`, 'POST', userData);
   },
   
   /**
@@ -253,7 +259,7 @@ export const authAPI = {
   verifyOTP: (email: string, otp: string): Promise<ApiResponse<void>> => {
     const endpoint = API.AUTH.VERIFY_OTP(email, otp);
     console.log('OTP verification endpoint:', endpoint);
-    return apiRequest<void>(endpoint, 'POST');
+    return apiRequest<void>(`/api${endpoint}`, 'POST');
   },
   
   /**
@@ -261,7 +267,7 @@ export const authAPI = {
    * @param refreshToken - Refresh token hiện tại
    */
   refreshToken: (refreshToken: string): Promise<ApiResponse<{token: string, refreshToken: string}>> => {
-    return apiRequest<{token: string, refreshToken: string}>(API.AUTH.REFRESH_TOKEN, 'POST', { refreshToken });
+    return apiRequest<{token: string, refreshToken: string}>(`/api${API.AUTH.REFRESH_TOKEN}`, 'POST', { refreshToken });
   },
   
   /**
@@ -269,7 +275,7 @@ export const authAPI = {
    * @param email - Email đã đăng ký
    */
   forgotPassword: (email: string): Promise<ApiResponse<void>> => {
-    return apiRequest<void>(API.AUTH.FORGOT_PASSWORD, 'POST', { email });
+    return apiRequest<void>(`/api${API.AUTH.FORGOT_PASSWORD}`, 'POST', { email });
   },
   
   /**
@@ -279,14 +285,14 @@ export const authAPI = {
    * @param newPassword - Mật khẩu mới
    */
   resetPassword: (email: string, token: string, newPassword: string): Promise<ApiResponse<void>> => {
-    return apiRequest<void>(API.AUTH.RESET_PASSWORD, 'POST', { email, token, newPassword });
+    return apiRequest<void>(`/api${API.AUTH.RESET_PASSWORD}`, 'POST', { email, token, newPassword });
   },
   
   /**
    * Đăng xuất
    */
   logout: (): Promise<ApiResponse<void>> => {
-    return apiRequest<void>(API.AUTH.LOGOUT, 'POST');
+    return apiRequest<void>(`/api${API.AUTH.LOGOUT}`, 'POST');
   },
 };
 
@@ -331,21 +337,36 @@ export const serviceAPI = {
    * Lấy tất cả dịch vụ
    */
   getServices: async (): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>('/services', 'GET');
+    return apiRequest<any[]>('/api/Service/GetService', 'GET');
   },
   
   /**
    * Lấy dịch vụ theo ID
    */
   getServiceById: async (serviceId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/services/${serviceId}`, 'GET');
+    return apiRequest<any>(`/api/Service/GetServiceById/${serviceId}`, 'GET');
   },
   
+
   /**
-   * Lấy dịch vụ theo danh mục
+   * Tạo dịch vụ mới (dành cho Manager)
    */
-  getServicesByCategory: async (categoryId: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>(`/services/category/${categoryId}`, 'GET');
+  createService: async (serviceData: any): Promise<ApiResponse<any>> => {
+    return apiRequest<any>('/api/Service/CreateService', 'POST', serviceData);
+  },
+
+  /**
+   * Cập nhật dịch vụ (dành cho Manager)
+   */
+  updateService: async (serviceId: string, serviceData: any): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/Service/UpdateService/${serviceId}`, 'PUT', serviceData);
+  },
+
+  /**
+   * Xóa dịch vụ (dành cho Manager)
+   */
+  deleteService: async (serviceId: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/Service/DeleteService/${serviceId}`, 'DELETE');
   }
 };
 
@@ -355,38 +376,136 @@ export const categoryAPI = {
    * Lấy tất cả danh mục
    */
   getCategories: async (): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>('/categories', 'GET');
+    return apiRequest<any[]>('/api/Category/GetCategory', 'GET');
   },
   
   /**
    * Lấy danh mục theo ID
    */
   getCategoryById: async (categoryId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/categories/${categoryId}`, 'GET');
+    return apiRequest<any>(`/api/Category/GetCategoryById/${categoryId}`, 'GET');
+  },
+
+  /**
+   * Tạo danh mục mới (dành cho Manager)
+   */
+  createCategory: async (categoryData: any): Promise<ApiResponse<any>> => {
+    return apiRequest<any>('/api/Category/CreateCategory', 'POST', categoryData);
+  },
+
+  /**
+   * Cập nhật danh mục (dành cho Manager)
+   */
+  updateCategory: async (categoryId: string, categoryData: any): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/Category/UpdateCategory/${categoryId}`, 'PUT', categoryData);
+  },
+
+  /**
+   * Xóa danh mục (dành cho Manager)
+   */
+  deleteCategory: async (categoryId: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/Category/DeleteCategory/${categoryId}`, 'DELETE');
   }
 };
 
 // Consultant Slot API endpoints
 export const consultantSlotAPI = {
   /**
-   * Lấy tất cả tư vấn viên
+   * Lấy tất cả tư vấn viên và slot của họ
    */
   getAllConsultants: async (): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>('/consultants', 'GET');
+    return apiRequest<any[]>('/api/consultantSlot/GetAll', 'GET');
   },
   
   /**
    * Lấy slots theo ID tư vấn viên
    */
   getSlotsByConsultantId: async (consultantId: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>(`/slots/consultant/${consultantId}`, 'GET');
+    return apiRequest<any[]>(`/api/consultantSlot?consultantId=${consultantId}`, 'GET');
   },
   
   /**
    * Lấy slots theo ngày và ID tư vấn viên
    */
-  getSlotsByConsultantAndDate: async (consultantId: string, date: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>(`/slots/consultant/${consultantId}/date/${date}`, 'GET');
+ 
+  /**
+   * Tạo slot mới (dành cho Manager)
+   */
+  createSlot: async (slotData: any): Promise<ApiResponse<any>> => {
+    return apiRequest<any>('/api/consultantSlot/CreateSlot', 'POST', slotData);
+  },
+
+  /**
+   * Cập nhật slot (dành cho Manager)
+   */
+  updateSlot: async (slotId: string, slotData: any): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/consultantSlot/UpdateSlot/${slotId}`, 'PUT', slotData);
+  },
+
+  /**
+   * Xóa slot (dành cho Manager)
+   */
+  deleteSlot: async (slotId: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/consultantSlot/DeleteSlot/${slotId}`, 'DELETE');
+  },
+
+  /**
+   * Duyệt slot (dành cho Manager)
+   */
+  approveSlot: async (slotId: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/consultantSlot/ApproveSlot/${slotId}`, 'PUT');
+  },
+
+  /**
+   * Từ chối slot (dành cho Manager)
+   */
+  rejectSlot: async (slotId: string, reason?: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/consultantSlot/RejectSlot/${slotId}`, 'PUT', { reason });
+  }
+};
+
+// Blog API endpoints
+export const blogAPI = {
+  /**
+   * Lấy tất cả bài viết
+   */
+  getBlogs: async (): Promise<ApiResponse<any[]>> => {
+    return apiRequest<any[]>('/api/blog/GetAllBlog', 'GET');
+  },
+  
+  /**
+   * Lấy bài viết theo ID
+   */
+  getBlogById: async (blogId: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/blog/GetBlogById/${blogId}`, 'GET');
+  },
+  
+  /**
+   * Tạo bài viết mới (dành cho Manager)
+   */
+  createBlog: async (blogData: any): Promise<ApiResponse<any>> => {
+    return apiRequest<any>('/api/blog/CreateBlog', 'POST', blogData);
+  },
+  
+  /**
+   * Cập nhật bài viết (dành cho Manager)
+   */
+  updateBlog: async (blogId: string, blogData: any): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/blog/UpdateBlog/${blogId}`, 'PUT', blogData);
+  },
+  
+  /**
+   * Xóa bài viết (dành cho Manager)
+   */
+  deleteBlog: async (blogId: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/Blog/DeleteBlog/${blogId}`, 'DELETE');
+  },
+
+  /**
+   * Upload hình ảnh cho bài viết (dành cho Manager)
+   */
+  uploadBlogImage: async (file: File): Promise<ApiResponse<{fileUrl: string}>> => {
+    return uploadFile(file, '/api/Blog/UploadImage');
   }
 };
 
@@ -404,7 +523,7 @@ export default {
    * @param endpoint - Đường dẫn API
    * @param data - Dữ liệu gửi lên
    */
-  post: <T>(endpoint: string, data: unknown): Promise<ApiResponse<T>> => 
+  post: <T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> => 
     apiRequest<T>(endpoint, 'POST', data),
   
   /**
@@ -412,16 +531,8 @@ export default {
    * @param endpoint - Đường dẫn API
    * @param data - Dữ liệu gửi lên
    */
-  put: <T>(endpoint: string, data: unknown): Promise<ApiResponse<T>> => 
+  put: <T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> => 
     apiRequest<T>(endpoint, 'PUT', data),
-  
-  /**
-   * PATCH request
-   * @param endpoint - Đường dẫn API
-   * @param data - Dữ liệu gửi lên
-   */
-  patch: <T>(endpoint: string, data: unknown): Promise<ApiResponse<T>> => 
-    apiRequest<T>(endpoint, 'PATCH', data),
   
   /**
    * DELETE request
@@ -430,5 +541,62 @@ export default {
   delete: <T>(endpoint: string): Promise<ApiResponse<T>> => 
     apiRequest<T>(endpoint, 'DELETE'),
   
+  /**
+   * Upload file
+   * @param file - File cần upload
+   * @param path - Đường dẫn API
+   */
   uploadFile,
+};
+
+// Consultant API endpoints (dành cho Manager)
+export const consultantAPI = {
+  /**
+   * Lấy tất cả tư vấn viên
+   */
+  getAllConsultants: async (): Promise<ApiResponse<any[]>> => {
+    return apiRequest<any[]>('/api/Consultant/GetConsultant', 'GET');
+  },
+  
+  /**
+   * Lấy tư vấn viên theo ID
+   */
+  getConsultantById: async (consultantId: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/Consultant/GetConsultantById/${consultantId}`, 'GET');
+  },
+  
+  /**
+   * Tạo tư vấn viên mới
+   */
+  createConsultant: async (consultantData: any): Promise<ApiResponse<any>> => {
+    return apiRequest<any>('/api/Consultant/CreateConsultant', 'POST', consultantData);
+  },
+  
+  /**
+   * Cập nhật thông tin tư vấn viên
+   */
+  updateConsultant: async (consultantId: string, consultantData: any): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/Consultant/UpdateConsultant/${consultantId}`, 'PUT', consultantData);
+  },
+  
+  /**
+   * Xóa tư vấn viên
+   */
+  deleteConsultant: async (consultantId: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/Consultant/DeleteConsultant/${consultantId}`, 'DELETE');
+  },
+  
+  /**
+   * Kích hoạt tư vấn viên
+   */
+  activateConsultant: async (consultantId: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/Consultant/ActivateConsultant/${consultantId}`, 'PUT');
+  },
+  
+  /**
+   * Vô hiệu hóa tư vấn viên
+   */
+  deactivateConsultant: async (consultantId: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/Consultant/DeactivateConsultant/${consultantId}`, 'PUT');
+  }
 }; 

@@ -1,5 +1,5 @@
 import api from '../utils/api';
-import type { ApiResponse, TestResult, TestResultRequest, PaginatedResponse, PaginationParams } from '../types';
+import type { ApiResponse, TestResult, PaginatedResponse, PaginationParams } from '../types';
 
 const testResultService = {
   /**
@@ -72,21 +72,21 @@ const testResultService = {
   
   /**
    * Get a specific test result by ID
-   */
+   
   getTestResult: async (testResultId: string): Promise<ApiResponse<TestResult>> => {
     return api.get<TestResult>(`/test-results/${testResultId}`);
   },
   
   /**
    * Create a new test result (staff only)
-   */
+   
   createTestResult: async (testResultData: TestResultRequest): Promise<ApiResponse<TestResult>> => {
     return api.post<TestResult>('/test-results', testResultData);
   },
   
   /**
    * Update a test result (staff only)
-   */
+   
   updateTestResult: async (testResultId: string, testResultData: Partial<TestResultRequest>): Promise<ApiResponse<TestResult>> => {
     return api.put<TestResult>(`/test-results/${testResultId}`, testResultData);
   },

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FaUserCircle, FaCheckCircle, FaTimesCircle, FaClock, FaEnvelope, FaPhone, FaBirthdayCake, FaMapMarkerAlt, FaUser, FaFileAlt } from 'react-icons/fa';
+import { FaUserCircle, FaCheckCircle, FaTimesCircle, FaClock, FaEnvelope, FaPhone, FaBirthdayCake, FaMapMarkerAlt, FaUser, FaFileAlt, FaSync } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { userAPI, appointmentAPI } from '../../utils/api';
 import type { UserData } from '../../types';
@@ -210,6 +210,7 @@ const Profile = () => {
   const createSampleUser = () => {
     const sampleUser = {
       userID: "73539b7a-f7e5-4889-a662-b71c9bbf7e88",
+      customerID: "73539b7a-f7e5-4889-a662-b71c9bbf7e88",
       userName: "customer",
       email: "customer@gmail.com",
       name: "Customer Sample",
@@ -247,8 +248,10 @@ const Profile = () => {
       const userData = localStorage.getItem('user');
       if (userData) {
         const parsedUser = JSON.parse(userData);
-        if (parsedUser.userID) {
-          const appointmentsResponse = await appointmentAPI.getAppointmentsByCustomerId(parsedUser.userID);
+        // Ưu tiên sử dụng customerID, nếu không có thì dùng userID
+        const customerId = parsedUser.customerID || parsedUser.userID;
+        if (customerId) {
+          const appointmentsResponse = await appointmentAPI.getAppointmentsByCustomerId(customerId);
           console.log("Reloaded appointments:", appointmentsResponse);
           if (appointmentsResponse.data) {
             setAppointments(appointmentsResponse.data);
@@ -256,7 +259,7 @@ const Profile = () => {
             setError("Không tìm thấy dữ liệu cuộc hẹn.");
           }
         } else {
-          setError("Không tìm thấy userID. Vui lòng thiết lập ID mẫu trước.");
+          setError("Không tìm thấy ID khách hàng. Vui lòng thiết lập ID mẫu trước.");
         }
       }
     } catch (error) {
@@ -286,14 +289,15 @@ const Profile = () => {
             address: parsedUser.address || '',
           });
           
-          // Fetch appointments using user ID from localStorage
-          const userID = parsedUser.userID;
-          console.log("User ID from localStorage:", userID);
+          // Fetch appointments using customer ID from localStorage
+          // Ưu tiên sử dụng customerID, nếu không có thì dùng userID
+          const customerId = parsedUser.customerID || parsedUser.userID;
+          console.log("Customer ID from localStorage:", customerId);
           
-          if (userID) {
+          if (customerId) {
             try {
-              console.log("Fetching appointments for userID:", userID);
-              const appointmentsResponse = await appointmentAPI.getAppointmentsByCustomerId(userID);
+              console.log("Fetching appointments for customerId:", customerId);
+              const appointmentsResponse = await appointmentAPI.getAppointmentsByCustomerId(customerId);
               console.log("Appointments API response:", appointmentsResponse);
               if (appointmentsResponse.data) {
                 setAppointments(appointmentsResponse.data);
@@ -302,29 +306,12 @@ const Profile = () => {
                 setError("Không tìm thấy dữ liệu cuộc hẹn cho tài khoản này.");
               }
             } catch (userIdError) {
-              console.error("Error fetching with user ID:", userIdError);
+              console.error("Error fetching with customer ID:", userIdError);
               setError("Có lỗi khi lấy dữ liệu cuộc hẹn. Vui lòng thử lại sau.");
             }
           } else {
-            console.warn("No userID found in localStorage");
-            setError("Không tìm thấy ID người dùng. Vui lòng thiết lập ID mẫu để xem dữ liệu.");
-          }
-          
-          // Try with sample ID from API documentation if no user ID
-          if (!userID) {
-            try {
-              const sampleID = "73539b7a-f7e5-4889-a662-b71c9bbf7e88";
-              console.log("Trying with sample ID:", sampleID);
-              const sampleResponse = await appointmentAPI.getAppointmentsByCustomerId(sampleID);
-              console.log("Sample ID API response:", sampleResponse);
-              
-              if (sampleResponse.data && sampleResponse.data.length > 0) {
-                console.log("Sample appointments data available but not used");
-                // We don't set appointments here, just log that data is available
-              }
-            } catch (sampleError) {
-              console.error("Error fetching with sample ID:", sampleError);
-            }
+            console.warn("No customerID found in localStorage");
+            setError("Không tìm thấy ID khách hàng. Vui lòng thiết lập ID mẫu để xem dữ liệu.");
           }
         } else {
           setError("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.");
@@ -375,7 +362,7 @@ const Profile = () => {
     setTab(newTab);
     
     // Automatically reload appointments data when switching to history tab
-    if (newTab === 'history' && user?.userID) {
+    if (newTab === 'history' && user && (user.customerID || user.userID)) {
       reloadData();
     }
   };
@@ -388,23 +375,26 @@ const Profile = () => {
     return (
       <div style={{ padding: 32, textAlign: 'center' }}>
         <div style={{ marginBottom: 20, fontSize: 20, color: '#4b5563' }}>Bạn chưa đăng nhập!</div>
-        <button 
-          onClick={createSampleUser} 
-          style={{ 
-            background: '#3b82f6', 
-            color: '#fff', 
-            border: 'none', 
-            borderRadius: 8, 
-            padding: '12px 32px', 
-            fontWeight: 700, 
-            fontSize: 16, 
-            cursor: 'pointer', 
-            boxShadow: '0 2px 8px #e3e8f0', 
-            letterSpacing: 1 
-          }}
-        >
-          Tạo người dùng mẫu
-        </button>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <button 
+            onClick={createSampleUser} 
+            style={{ 
+              background: '#3b82f6', 
+              color: '#fff', 
+              border: 'none', 
+              borderRadius: 8, 
+              padding: '12px 32px', 
+              fontWeight: 700, 
+              cursor: 'pointer',
+              boxShadow: '0 4px 6px rgba(59, 130, 246, 0.25)'
+            }}
+          >
+            Tạo người dùng mẫu
+          </button>
+        </div>
+        <div style={{ marginTop: 16, color: '#ef4444', fontSize: 14 }}>
+          {error && <p>{error}</p>}
+        </div>
       </div>
     );
   }
@@ -487,43 +477,79 @@ const Profile = () => {
       )}
       {/* Tab Booking History */}
       {tab === 'history' && (
-        <div style={{ padding: 24, background: 'linear-gradient(90deg,#f0f7ff 60%,#f3f4f6 100%)', borderRadius: 18, boxShadow: '0 2px 8px #e3e8f0' }}>
-          <h2 style={{ marginBottom: 32, fontSize: 24, color: '#2563eb', letterSpacing: 1, textAlign: 'center', fontWeight: 700 }}>Lịch Sử Đặt Khám</h2>
-          <div style={{ textAlign: 'right', marginBottom: 18 }}>
-            <button onClick={() => window.location.href = '/booking'} style={{ background: 'linear-gradient(90deg,#3b82f6 60%,#60a5fa 100%)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 28px', fontWeight: 700, fontSize: 16, cursor: 'pointer', boxShadow: '0 2px 8px #e3e8f0', letterSpacing: 1 }}>
-              Đặt Lịch Khám
-            </button>
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+            <h2 style={{ fontSize: 24, fontWeight: 700, color: '#111827', margin: 0 }}>Lịch Sử Đặt Lịch</h2>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button 
+                onClick={reloadData} 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 8, 
+                  background: '#3b82f6', 
+                  color: '#fff', 
+                  border: 'none', 
+                  borderRadius: 8, 
+                  padding: '8px 16px', 
+                  fontWeight: 600, 
+                  fontSize: 14, 
+                  cursor: 'pointer' 
+                }}
+              >
+                <FaSync /> Tải lại dữ liệu
+              </button>
+              <Link 
+                to="/booking"
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 8, 
+                  background: '#10b981', 
+                  color: '#fff', 
+                  border: 'none', 
+                  borderRadius: 8, 
+                  padding: '8px 16px', 
+                  fontWeight: 600, 
+                  fontSize: 14, 
+                  textDecoration: 'none',
+                  cursor: 'pointer' 
+                }}
+              >
+                <FaClock /> Đặt lịch khám
+              </Link>
+            </div>
           </div>
-          <div style={{ overflowX: 'auto' }}>
-            {loading ? (
-              <div style={{ textAlign: 'center', padding: 32 }}>
-                <div style={{ fontSize: 18, color: '#4b5563', marginBottom: 10 }}>Đang tải dữ liệu...</div>
-                <div style={{ width: 50, height: 50, border: '5px solid #ddd', borderTopColor: '#3b82f6', borderRadius: '50%', display: 'inline-block', animation: 'spin 1s linear infinite' }}></div>
-                <style>{`
-                  @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                  }
-                `}</style>
-              </div>
-            ) : error ? (
-              <div style={{ textAlign: 'center', padding: 32, color: '#ef4444', background: '#fee2e2', borderRadius: 8, margin: '20px 0' }}>
-                <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 10 }}>Lỗi</div>
-                <div>{error}</div>
-              </div>
-            ) : appointments.length > 0 ? (
-              <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fafbfc', borderRadius: 10, overflow: 'hidden', boxShadow: '0 1px 4px #e3e8f0' }}>
+          
+          {error && (
+            <div style={{ 
+              background: '#fee2e2', 
+              color: '#b91c1c', 
+              padding: '12px 16px', 
+              borderRadius: 8, 
+              marginBottom: 24,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
+            }}>
+              <FaTimesCircle />
+              <p style={{ margin: 0, fontSize: 16 }}>{error}</p>
+            </div>
+          )}
+
+          {appointments.length > 0 ? (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 16 }}>
                 <thead>
-                  <tr style={{ background: '#e0e7ef' }}>
-                    <th style={{ padding: 16, border: '1px solid #eee', fontWeight: 700, fontSize: 16 }}>Mã đặt lịch</th>
-                    <th style={{ padding: 16, border: '1px solid #eee', fontWeight: 700, fontSize: 16 }}>Ngày hẹn</th>
-                    <th style={{ padding: 16, border: '1px solid #eee', fontWeight: 700, fontSize: 16 }}>Thời gian</th>
-                    <th style={{ padding: 16, border: '1px solid #eee', fontWeight: 700, fontSize: 16 }}>Bác sĩ tư vấn</th>
-                    <th style={{ padding: 16, border: '1px solid #eee', fontWeight: 700, fontSize: 16 }}>Loại dịch vụ</th>
-                    <th style={{ padding: 16, border: '1px solid #eee', fontWeight: 700, fontSize: 16 }}>Số tiền</th>
-                    <th style={{ padding: 16, border: '1px solid #eee', fontWeight: 700, fontSize: 16 }}>Trạng thái</th>
-                    <th style={{ padding: 16, border: '1px solid #eee', fontWeight: 700, fontSize: 16 }}>Thanh toán</th>
-                    <th style={{ padding: 16, border: '1px solid #eee', fontWeight: 700, fontSize: 16 }}>Kết quả</th>
+                  <tr style={{ background: '#f3f4f6' }}>
+                    <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Mã</th>
+                    <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Ngày</th>
+                    <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Giờ</th>
+                    <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Tư vấn viên</th>
+                    <th style={{ padding: 16, textAlign: 'center', borderBottom: '1px solid #e5e7eb' }}>Loại</th>
+                    <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Tổng tiền</th>
+                    <th style={{ padding: 16, textAlign: 'center', borderBottom: '1px solid #e5e7eb' }}>Trạng thái</th>
+                    <th style={{ padding: 16, textAlign: 'center', borderBottom: '1px solid #e5e7eb' }}>Thanh toán</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -547,44 +573,25 @@ const Profile = () => {
                       <td style={{ padding: 16, border: '1px solid #eee', fontSize: 16, textAlign: 'center' }}>
                         <PaymentStatusBadge status={appointment.paymentStatus} />
                       </td>
-                      <td style={{ padding: 16, border: '1px solid #eee', fontSize: 16, textAlign: 'center' }}>
-                        {appointment.treatmentID ? (
-                          <Link 
-                            to={`/test-results/${appointment.treatmentID}`}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 8,
-                              background: '#4f46e5',
-                              color: 'white',
-                              padding: '8px 16px',
-                              borderRadius: 8,
-                              textDecoration: 'none',
-                              fontWeight: 600,
-                              fontSize: 14,
-                              transition: 'background 0.2s'
-                            }}
-                            onMouseOver={(e) => e.currentTarget.style.background = '#4338ca'}
-                            onMouseOut={(e) => e.currentTarget.style.background = '#4f46e5'}
-                          >
-                            <FaFileAlt /> Xem kết quả
-                          </Link>
-                        ) : (
-                          <span style={{ color: '#6b7280', fontStyle: 'italic' }}>
-                            {appointment.status === 4 ? 'Không có' : 'Chưa có'}
-                          </span>
-                        )}
-                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            ) : (
-              <div style={{ textAlign: 'center', padding: 32, color: '#6b7280', fontStyle: 'italic' }}>
-                Bạn chưa có lịch hẹn nào. Hãy đặt lịch khám ngay!
-              </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div style={{ 
+              padding: '32px 0', 
+              textAlign: 'center', 
+              color: '#6b7280',
+              background: '#f9fafb',
+              borderRadius: 8,
+              border: '1px dashed #d1d5db'
+            }}>
+              <FaFileAlt style={{ fontSize: 48, color: '#9ca3af', marginBottom: 16 }} />
+              <p style={{ fontSize: 18, fontWeight: 500, margin: 0 }}>Không có lịch sử đặt lịch</p>
+              <p style={{ fontSize: 14, margin: '8px 0 0' }}>Các cuộc hẹn của bạn sẽ xuất hiện ở đây</p>
+            </div>
+          )}
         </div>
       )}
     </div>
