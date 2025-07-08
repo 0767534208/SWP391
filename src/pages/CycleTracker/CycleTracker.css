@@ -729,13 +729,124 @@
   font-size: 1.1rem;
 }
 
-.status-options, .flow-options {
+.status-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+  margin-left: 4px;
+  align-items: flex-start;
+}
+
+.flow-options {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.status-btn, .flow-btn {
+.status-btn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 14px 24px;
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+  background-color: white;
+  color: #64748b;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: auto;
+  min-width: 180px;
+  min-height: 55px;
+  text-align: left;
+  gap: 12px;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.status-btn .status-icon {
+  font-size: 1.4rem;
+  margin-bottom: 0;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.status-btn .status-text {
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.status-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* Status button colors */
+.status-btn.period-btn {
+  border-color: #f87171;
+  background-color: #fef2f2;
+}
+
+.status-btn.period-btn .status-icon {
+  color: #ef4444;
+}
+
+.status-btn.period-btn.active {
+  background-color: #ef4444;
+  border-color: #ef4444;
+  color: white;
+}
+
+.status-btn.fertile-btn {
+  border-color: #60a5fa;
+  background-color: #eff6ff;
+}
+
+.status-btn.fertile-btn .status-icon {
+  color: #3b82f6;
+}
+
+.status-btn.fertile-btn.active {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+
+.status-btn.ovulation-btn {
+  border-color: #a78bfa;
+  background-color: #f5f3ff;
+}
+
+.status-btn.ovulation-btn .status-icon {
+  color: #8b5cf6;
+}
+
+.status-btn.ovulation-btn.active {
+  background-color: #8b5cf6;
+  border-color: #8b5cf6;
+  color: white;
+}
+
+.status-btn.none-btn {
+  border-color: #9ca3af;
+  background-color: #f9fafb;
+}
+
+.status-btn.none-btn .status-icon {
+  color: #6b7280;
+}
+
+.status-btn.none-btn.active {
+  background-color: #6b7280;
+  border-color: #6b7280;
+  color: white;
+}
+
+.flow-btn {
   padding: 10px 16px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
@@ -746,11 +857,11 @@
   transition: all 0.3s ease;
 }
 
-.status-btn:hover, .flow-btn:hover {
+.flow-btn:hover {
   background-color: #f8fafc;
 }
 
-.status-btn.active, .flow-btn.active {
+.flow-btn.active {
   background-color: #4f46e5;
   color: white;
   border-color: #4f46e5;
@@ -906,6 +1017,23 @@
   .symptoms-grid {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   }
+  
+  .status-options {
+    gap: 6px;
+    margin-left: 16px;
+  }
+  
+  .status-btn {
+    padding: 12px 20px;
+    min-height: 50px;
+    font-size: 0.9rem;
+    gap: 10px;
+    min-width: 160px;
+  }
+  
+  .status-btn .status-icon {
+    font-size: 1.2rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -932,11 +1060,32 @@
     grid-template-columns: 1fr 1fr;
   }
   
-  .status-options, .flow-options {
+  .status-options {
+    gap: 6px;
+    margin-left: 12px;
+  }
+  
+  .status-btn {
+    padding: 10px 16px;
+    min-height: 45px;
+    font-size: 0.85rem;
+    gap: 8px;
+    min-width: 140px;
+  }
+  
+  .status-btn .status-icon {
+    font-size: 1.1rem;
+  }
+  
+  .status-btn .status-text {
+    font-size: 0.85rem;
+  }
+  
+  .flow-options {
     justify-content: space-between;
   }
   
-  .status-btn, .flow-btn {
+  .flow-btn {
     flex: 1;
     padding: 8px 10px;
     font-size: 0.85rem;

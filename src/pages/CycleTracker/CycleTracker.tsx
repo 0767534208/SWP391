@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 import './CycleTracker.css'
-import { FaCalendarAlt, FaChartLine, FaInfoCircle, FaBell, FaTimes, FaSave, FaRegCircle, FaCheckCircle, FaTrash } from 'react-icons/fa'
+import { FaCalendarAlt, FaChartLine, FaInfoCircle, FaBell, FaTimes, FaSave, FaRegCircle, FaCheckCircle, FaTrash, FaTint, FaHeart, FaSeedling, FaBan } from 'react-icons/fa'
 
 // Status types for cycle tracking
 type CycleStatus = 'period' | 'fertile' | 'ovulation' | 'none'
@@ -720,28 +720,32 @@ const CycleTracker: React.FC = () => {
                                 <h4>Chọn Trạng Thái:</h4>
                                 <div className="status-options">
                                     <button 
-                                        className={`status-btn ${currentData.status === 'period' ? 'active' : ''}`}
+                                        className={`status-btn period-btn ${currentData.status === 'period' ? 'active' : ''}`}
                                         onClick={() => setCurrentData({...currentData, status: 'period'})}
                                     >
-                                        Kinh Nguyệt
+                                        <FaTint className="status-icon" />
+                                        <span className="status-text">Kinh Nguyệt</span>
                                     </button>
                                     <button 
-                                        className={`status-btn ${currentData.status === 'fertile' ? 'active' : ''}`}
+                                        className={`status-btn fertile-btn ${currentData.status === 'fertile' ? 'active' : ''}`}
                                         onClick={() => setCurrentData({...currentData, status: 'fertile'})}
                                     >
-                                        Dễ Thụ Thai
+                                        <FaSeedling className="status-icon" />
+                                        <span className="status-text">Dễ Thụ Thai</span>
                                     </button>
                                     <button 
-                                        className={`status-btn ${currentData.status === 'ovulation' ? 'active' : ''}`}
+                                        className={`status-btn ovulation-btn ${currentData.status === 'ovulation' ? 'active' : ''}`}
                                         onClick={() => setCurrentData({...currentData, status: 'ovulation'})}
                                     >
-                                        Rụng Trứng
+                                        <FaHeart className="status-icon" />
+                                        <span className="status-text">Rụng Trứng</span>
                                     </button>
                                     <button 
-                                        className={`status-btn ${currentData.status === 'none' ? 'active' : ''}`}
+                                        className={`status-btn none-btn ${currentData.status === 'none' ? 'active' : ''}`}
                                         onClick={() => setCurrentData({...currentData, status: 'none'})}
                                     >
-                                        Không
+                                        <FaBan className="status-icon" />
+                                        <span className="status-text">Không</span>
                                     </button>
                                 </div>
                             </div>
