@@ -516,7 +516,7 @@ export const serviceAPI = {
    * @param serviceData - Thông tin dịch vụ
    */
   createService: async (serviceData: any): Promise<ApiResponse<any>> => {
-    // Tạo query parameters từ serviceData
+    // Tạo query parameters từ serviceData (theo swagger spec)
     const queryParams = new URLSearchParams();
     
     if (serviceData.ClinicID) queryParams.append('ClinicID', serviceData.ClinicID.toString());
@@ -531,34 +531,32 @@ export const serviceAPI = {
     // Tạo URL với query parameters
     const url = `/api/Service/CreateService?${queryParams.toString()}`;
     
-    // Nếu có hình ảnh, sử dụng FormData cho request body
+    // Tạo FormData cho multipart/form-data (theo swagger spec)
+    const formData = new FormData();
+    
+    // Thêm hình ảnh vào formData nếu có
     if (serviceData.Images && serviceData.Images.length > 0) {
-      const formData = new FormData();
-      
-      // Thêm hình ảnh vào formData
       for (const image of serviceData.Images) {
         if (image instanceof File || image instanceof Blob) {
           formData.append('Images', image);
         }
       }
-      
-      const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const response = await fetch(`${API.BASE_URL}${url}`, {
-        method: 'POST',
-        headers,
-        body: formData,
-      });
-      
-      return handleResponse<any>(response);
-    } else {
-      // Nếu không có hình ảnh, chỉ gửi request với query parameters
-      return apiRequest<any>(url, 'POST');
     }
+    
+    const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    // Gửi request với multipart/form-data
+    const response = await fetch(`${API.BASE_URL}${url}`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+    
+    return handleResponse<any>(response);
   },
 
   /**
@@ -568,7 +566,18 @@ export const serviceAPI = {
    */
   updateService: async (serviceId: number, serviceData: any): Promise<ApiResponse<any>> => {
     const url = `/api/Service/UpdateService?serviceID=${serviceId}`;
-    return apiRequest<any>(url, 'PUT', serviceData);
+    
+    // Tạo request body theo UpdateServiceRequest schema
+    const updateRequest = {
+      servicesID: serviceId,
+      servicesName: serviceData.ServicesName || serviceData.servicesName,
+      description: serviceData.Description || serviceData.description,
+      servicesPrice: serviceData.ServicesPrice || serviceData.servicesPrice,
+      serviceType: serviceData.ServiceType !== undefined ? serviceData.ServiceType : serviceData.serviceType,
+      status: serviceData.Status !== undefined ? serviceData.Status : serviceData.status
+    };
+    
+    return apiRequest<any>(url, 'PUT', updateRequest);
   },
 
   /**

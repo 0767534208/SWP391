@@ -17,6 +17,7 @@ interface Service {
   clinicID?: number; // Default to 1
   managerID?: string; // From logged-in user
   serviceType?: number; // 0: Tư vấn, 1: Xét nghiệm
+  imageFiles?: File[]; // Thêm field để lưu file objects cho upload
 }
 
 interface Category {
@@ -109,6 +110,7 @@ const ServiceManagement: React.FC = () => {
       servicesPrice: 0,
       status: true,
       imageServices: [],
+      imageFiles: [], // Khởi tạo imageFiles array
       clinicID: 1, // Default to 1
       managerID: managerID, // From logged-in user
       serviceType: 0 // Default to consultation
@@ -125,7 +127,8 @@ const ServiceManagement: React.FC = () => {
       ...service,
       clinicID: service.clinicID || 1,
       managerID: service.managerID || managerID,
-      serviceType: service.serviceType !== undefined ? service.serviceType : 0
+      serviceType: service.serviceType !== undefined ? service.serviceType : 0,
+      imageFiles: service.imageFiles || [] // Khởi tạo imageFiles nếu chưa có
     };
     setCurrentService(serviceToEdit);
     setIsEditing(true);
@@ -140,7 +143,8 @@ const ServiceManagement: React.FC = () => {
       ...service,
       clinicID: service.clinicID || 1,
       managerID: service.managerID || managerID,
-      serviceType: service.serviceType !== undefined ? service.serviceType : 0
+      serviceType: service.serviceType !== undefined ? service.serviceType : 0,
+      imageFiles: service.imageFiles || [] // Khởi tạo imageFiles nếu chưa có
     };
     setCurrentService(serviceToView);
     setIsEditing(false);
@@ -167,7 +171,7 @@ const ServiceManagement: React.FC = () => {
         ServicesPrice: currentService.servicesPrice,
         ServiceType: currentService.serviceType !== undefined ? currentService.serviceType : 0,
         Status: currentService.status,
-        Images: currentService.imageServices.filter(img => img !== '')
+        Images: currentService.imageFiles || [] // Sử dụng file objects thay vì URLs
       };
       
       console.log('Sending data to API:', serviceData);
@@ -175,7 +179,7 @@ const ServiceManagement: React.FC = () => {
       if (!isAddingNew) {
         // Update existing service
         const response = await serviceAPI.updateService(
-          currentService.servicesID.toString(), 
+          currentService.servicesID, 
           serviceData
         );
         
@@ -225,7 +229,7 @@ const ServiceManagement: React.FC = () => {
       
       // Call API to update status
       const response = await serviceAPI.updateService(
-        id.toString(),
+        id,
         { status: !service.status }
       );
       
@@ -312,10 +316,11 @@ const ServiceManagement: React.FC = () => {
       // Tạo URL tạm thời để hiển thị preview
       const previewUrl = URL.createObjectURL(file);
       
-      // Lưu file thực tế vào state để sau này gửi lên server
+      // Lưu cả preview URL và file object
       setCurrentService({
         ...currentService,
-        imageServices: [...currentService.imageServices, previewUrl]
+        imageServices: [...currentService.imageServices, previewUrl],
+        imageFiles: [...(currentService.imageFiles || []), file]
       });
       
     } catch (err) {
@@ -336,17 +341,23 @@ const ServiceManagement: React.FC = () => {
     if (!currentService) return;
     
     const newImages = [...currentService.imageServices];
+    const newFiles = [...(currentService.imageFiles || [])];
     
     // If the image is an object URL, revoke it to prevent memory leaks
     if (newImages[index].startsWith('blob:')) {
       URL.revokeObjectURL(newImages[index]);
     }
     
+    // Remove từ cả hai arrays
     newImages.splice(index, 1);
+    if (newFiles.length > index) {
+      newFiles.splice(index, 1);
+    }
     
     setCurrentService({
       ...currentService,
-      imageServices: newImages
+      imageServices: newImages,
+      imageFiles: newFiles
     });
   };
 
