@@ -227,14 +227,17 @@ const ServiceManagement: React.FC = () => {
       const service = services.find(s => s.servicesID === id);
       if (!service) return;
       
-      // Call API to update status
-      const response = await serviceAPI.updateService(
-        id,
-        { status: !service.status }
-      );
+      // Call API to update status (provide full service data to match UpdateServiceRequest schema)
+      const response = await serviceAPI.updateService(id, {
+        servicesName: service.servicesName,
+        description: service.description,
+        servicesPrice: service.servicesPrice,
+        serviceType: service.serviceType || 0,
+        status: !service.status
+      });
       
       if (response.statusCode === 200 && response.data) {
-    setServices(prevServices => 
+        setServices(prevServices => 
           prevServices.map(s => 
             s.servicesID === id ? response.data : s
           )
@@ -250,28 +253,7 @@ const ServiceManagement: React.FC = () => {
     }
   };
 
-  // Handle deleting a service
-  const handleDeleteService = async (id: number) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa dịch vụ này không?')) {
-      try {
-        setLoading(true);
-        
-        // Call API to delete service
-        const response = await serviceAPI.deleteService(id.toString());
-        
-        if (response.statusCode === 200) {
-      setServices(prevServices => prevServices.filter(service => service.servicesID !== id));
-        } else {
-          setError('Không thể xóa dịch vụ. Vui lòng thử lại sau.');
-        }
-      } catch (err) {
-        console.error('Error deleting service:', err);
-        setError('Đã xảy ra lỗi khi xóa dịch vụ.');
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
+
 
   // Upload image to server and get URL
   const uploadImage = async (file: File): Promise<string> => {
@@ -478,15 +460,7 @@ const ServiceManagement: React.FC = () => {
                       </svg>
                     )}
                   </button>
-                  <button 
-                    className="delete-button" 
-                    onClick={() => handleDeleteService(service.servicesID)}
-                    title="Xóa"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
+
                 </td>
               </tr>
             ))}
