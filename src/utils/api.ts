@@ -562,29 +562,25 @@ export const serviceAPI = {
   /**
    * Cập nhật dịch vụ (dành cho Manager)
    * @param serviceId - ID của dịch vụ
-   * @param serviceData - Thông tin dịch vụ cần cập nhật hoặc chỉ status để toggle
+   * @param serviceData - Thông tin dịch vụ cần cập nhật
    */
   updateService: async (serviceId: number, serviceData: any): Promise<ApiResponse<any>> => {
-    const url = `/api/Service/UpdateService?serviceID=${serviceId}`;
-    
-    // Tạo request body theo UpdateServiceRequest schema
-    const updateRequest: any = {
+    // Theo swagger UpdateServiceRequest schema, chỉ hỗ trợ các fields:
+    // servicesID, servicesName, description, servicesPrice, serviceType, status
+    // KHÔNG hỗ trợ categoryID
+    const updateData = {
       servicesID: serviceId,
+      servicesName: serviceData.servicesName,
+      description: serviceData.description,
+      servicesPrice: serviceData.servicesPrice,
+      serviceType: serviceData.serviceType,
+      status: serviceData.status
+      // Note: categoryID không được hỗ trợ trong UpdateService API
     };
-
-    // Chỉ thêm các fields nếu có trong serviceData
-    if (serviceData.servicesName !== undefined) updateRequest.servicesName = serviceData.servicesName;
-    if (serviceData.ServicesName !== undefined) updateRequest.servicesName = serviceData.ServicesName;
-    if (serviceData.description !== undefined) updateRequest.description = serviceData.description;
-    if (serviceData.Description !== undefined) updateRequest.description = serviceData.Description;
-    if (serviceData.servicesPrice !== undefined) updateRequest.servicesPrice = serviceData.servicesPrice;
-    if (serviceData.ServicesPrice !== undefined) updateRequest.servicesPrice = serviceData.ServicesPrice;
-    if (serviceData.serviceType !== undefined) updateRequest.serviceType = serviceData.serviceType;
-    if (serviceData.ServiceType !== undefined) updateRequest.serviceType = serviceData.ServiceType;
-    if (serviceData.status !== undefined) updateRequest.status = serviceData.status;
-    if (serviceData.Status !== undefined) updateRequest.status = serviceData.Status;
     
-    return apiRequest<any>(url, 'PUT', updateRequest);
+    console.log('UpdateService payload:', updateData);
+    
+    return apiRequest<any>(`/api/Service/UpdateService?serviceID=${serviceId}`, 'PUT', updateData);
   }
 };
 
