@@ -352,14 +352,126 @@ export const serviceAPI = {
    * Tạo dịch vụ mới (dành cho Manager)
    */
   createService: async (serviceData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/api/Service/CreateService', 'POST', serviceData);
+    // Tạo query parameters từ serviceData
+    const queryParams = new URLSearchParams();
+    
+    // Map từ camelCase sang PascalCase và thêm vào query params
+    if (serviceData.ClinicID) queryParams.append('ClinicID', serviceData.ClinicID.toString());
+    if (serviceData.CategoryID) queryParams.append('CategoryID', serviceData.CategoryID.toString());
+    if (serviceData.ManagerID) queryParams.append('ManagerID', serviceData.ManagerID.toString());
+    if (serviceData.ServicesName) queryParams.append('ServicesName', serviceData.ServicesName);
+    if (serviceData.Description) queryParams.append('Description', serviceData.Description);
+    if (serviceData.ServicesPrice) queryParams.append('ServicesPrice', serviceData.ServicesPrice.toString());
+    if (serviceData.ServiceType !== undefined) queryParams.append('ServiceType', serviceData.ServiceType.toString());
+    if (serviceData.Status !== undefined) queryParams.append('Status', serviceData.Status.toString());
+    
+    // Tạo URL với query parameters
+    const url = `/api/Service/CreateService?${queryParams.toString()}`;
+    
+    // Xử lý images nếu có
+    if (serviceData.Images && serviceData.Images.length > 0) {
+      const formData = new FormData();
+      
+      // Thêm các tham số khác vào formData nếu API yêu cầu
+      for (const [key, value] of queryParams.entries()) {
+        formData.append(key, value);
+      }
+      
+      // Xử lý từng hình ảnh
+      for (let i = 0; i < serviceData.Images.length; i++) {
+        const image = serviceData.Images[i];
+        
+        // Nếu là File hoặc Blob
+        if (image instanceof File || image instanceof Blob) {
+          formData.append('Images', image);
+        }
+        // Nếu là URL từ blob (preview)
+        else if (typeof image === 'string' && image.startsWith('blob:')) {
+          try {
+            const response = await fetch(image);
+            const blob = await response.blob();
+            formData.append('Images', blob, `image${i}.png`);
+          } catch (error) {
+            console.error('Error converting blob URL to file:', error);
+          }
+        }
+        // Nếu là URL thông thường
+        else if (typeof image === 'string') {
+          formData.append('Images', image);
+        }
+      }
+      
+      // Gửi request với formData nếu có hình ảnh
+      if (formData.has('Images')) {
+        return apiRequest<any>('/api/Service/CreateService', 'POST', formData);
+      }
+    }
+    
+    // Nếu không có images, gửi request chỉ với query parameters
+    return apiRequest<any>(url, 'POST');
   },
 
   /**
    * Cập nhật dịch vụ (dành cho Manager)
    */
   updateService: async (serviceId: string, serviceData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/Service/UpdateService/${serviceId}`, 'PUT', serviceData);
+    // Tạo query parameters từ serviceData
+    const queryParams = new URLSearchParams();
+    
+    // Map từ camelCase sang PascalCase và thêm vào query params
+    if (serviceData.ClinicID) queryParams.append('ClinicID', serviceData.ClinicID.toString());
+    if (serviceData.CategoryID) queryParams.append('CategoryID', serviceData.CategoryID.toString());
+    if (serviceData.ManagerID) queryParams.append('ManagerID', serviceData.ManagerID.toString());
+    if (serviceData.ServicesName) queryParams.append('ServicesName', serviceData.ServicesName);
+    if (serviceData.Description) queryParams.append('Description', serviceData.Description);
+    if (serviceData.ServicesPrice) queryParams.append('ServicesPrice', serviceData.ServicesPrice.toString());
+    if (serviceData.ServiceType !== undefined) queryParams.append('ServiceType', serviceData.ServiceType.toString());
+    if (serviceData.Status !== undefined) queryParams.append('Status', serviceData.Status.toString());
+    
+    // Tạo URL với query parameters
+    const url = `/api/Service/UpdateService/${serviceId}?${queryParams.toString()}`;
+    
+    // Xử lý images nếu có
+    if (serviceData.Images && serviceData.Images.length > 0) {
+      const formData = new FormData();
+      
+      // Thêm các tham số khác vào formData nếu API yêu cầu
+      for (const [key, value] of queryParams.entries()) {
+        formData.append(key, value);
+      }
+      
+      // Xử lý từng hình ảnh
+      for (let i = 0; i < serviceData.Images.length; i++) {
+        const image = serviceData.Images[i];
+        
+        // Nếu là File hoặc Blob
+        if (image instanceof File || image instanceof Blob) {
+          formData.append('Images', image);
+        }
+        // Nếu là URL từ blob (preview)
+        else if (typeof image === 'string' && image.startsWith('blob:')) {
+          try {
+            const response = await fetch(image);
+            const blob = await response.blob();
+            formData.append('Images', blob, `image${i}.png`);
+          } catch (error) {
+            console.error('Error converting blob URL to file:', error);
+          }
+        }
+        // Nếu là URL thông thường
+        else if (typeof image === 'string') {
+          formData.append('Images', image);
+        }
+      }
+      
+      // Gửi request với formData nếu có hình ảnh
+      if (formData.has('Images')) {
+        return apiRequest<any>(`/api/Service/UpdateService/${serviceId}`, 'PUT', formData);
+      }
+    }
+    
+    // Nếu không có images, gửi request chỉ với query parameters
+    return apiRequest<any>(url, 'PUT');
   },
 
   /**
@@ -380,13 +492,6 @@ export const categoryAPI = {
   },
   
   /**
-   * Lấy danh mục theo ID
-   */
-  getCategoryById: async (categoryId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/Category/GetCategoryById/${categoryId}`, 'GET');
-  },
-
-  /**
    * Tạo danh mục mới (dành cho Manager)
    */
   createCategory: async (categoryData: any): Promise<ApiResponse<any>> => {
@@ -397,7 +502,7 @@ export const categoryAPI = {
    * Cập nhật danh mục (dành cho Manager)
    */
   updateCategory: async (categoryId: string, categoryData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/Category/UpdateCategory/${categoryId}`, 'PUT', categoryData);
+    return apiRequest<any>(`/api/Category/UpdateCategory?id=${categoryId}`, 'PUT', categoryData);
   },
 
   /**
