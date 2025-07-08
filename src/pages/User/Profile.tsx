@@ -250,21 +250,36 @@ const Profile = () => {
         const parsedUser = JSON.parse(userData);
         // Ưu tiên sử dụng customerID, nếu không có thì dùng userID
         const customerId = parsedUser.customerID || parsedUser.userID;
+        console.log('🔍 Debug - Parsed User:', parsedUser);
+        console.log('🔍 Debug - Customer ID extracted:', customerId);
+        
         if (customerId) {
+          console.log('📡 Making API call to get appointments...');
+          console.log('📡 API URL will be: /api/appointment/GetAppointmentByCustomerID/' + customerId);
+          
           const appointmentsResponse = await appointmentAPI.getAppointmentsByCustomerId(customerId);
-          console.log("Reloaded appointments:", appointmentsResponse);
-          if (appointmentsResponse.data) {
+          console.log("✅ Reloaded appointments response:", appointmentsResponse);
+          
+          if (appointmentsResponse.statusCode === 200 && appointmentsResponse.data) {
             setAppointments(appointmentsResponse.data);
+            console.log('✅ Successfully set appointments:', appointmentsResponse.data);
           } else {
-            setError("Không tìm thấy dữ liệu cuộc hẹn.");
+            console.warn('⚠️ Response not successful or no data:', appointmentsResponse);
+            setError(`API trả về không thành công: ${appointmentsResponse.message || 'Không có dữ liệu'}`);
           }
         } else {
+          console.error('❌ No customer ID found');
           setError("Không tìm thấy ID khách hàng. Vui lòng thiết lập ID mẫu trước.");
         }
       }
     } catch (error) {
-      console.error("Error reloading data:", error);
-      setError("Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.");
+      console.error("❌ Error reloading data:", error);
+      console.error("❌ Error details:", {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        response: error
+      });
+      setError(`Có lỗi xảy ra khi tải dữ liệu: ${error instanceof Error ? error.message : 'Lỗi không xác định'}`);
     } finally {
       setLoading(false);
     }
@@ -280,7 +295,7 @@ const Profile = () => {
         if (userData) {
           const parsedUser = JSON.parse(userData);
           setUser(parsedUser);
-          console.log("User data from localStorage:", parsedUser);
+          console.log("🔍 Debug - User data from localStorage:", parsedUser);
           
           setForm({
             name: parsedUser.name || '',
@@ -292,33 +307,54 @@ const Profile = () => {
           // Fetch appointments using customer ID from localStorage
           // Ưu tiên sử dụng customerID, nếu không có thì dùng userID
           const customerId = parsedUser.customerID || parsedUser.userID;
-          console.log("Customer ID from localStorage:", customerId);
+          console.log("🔍 Debug - Customer ID from localStorage:", customerId);
+          console.log("🔍 Debug - customerID field exists:", 'customerID' in parsedUser);
+          console.log("🔍 Debug - userID field exists:", 'userID' in parsedUser);
           
           if (customerId) {
             try {
-              console.log("Fetching appointments for customerId:", customerId);
+              console.log("📡 Fetching appointments for customerId:", customerId);
+              console.log('📡 API endpoint will be: /api/appointment/GetAppointmentByCustomerID/' + customerId);
+              
               const appointmentsResponse = await appointmentAPI.getAppointmentsByCustomerId(customerId);
-              console.log("Appointments API response:", appointmentsResponse);
-              if (appointmentsResponse.data) {
+              console.log("📦 Appointments API response:", appointmentsResponse);
+              console.log("📦 Response status code:", appointmentsResponse.statusCode);
+              console.log("📦 Response message:", appointmentsResponse.message);
+              console.log("📦 Response data:", appointmentsResponse.data);
+              
+              if (appointmentsResponse.statusCode === 200 && appointmentsResponse.data) {
                 setAppointments(appointmentsResponse.data);
+                console.log('✅ Successfully loaded appointments:', appointmentsResponse.data.length, 'appointments');
               } else {
-                console.warn("No appointment data found in response");
-                setError("Không tìm thấy dữ liệu cuộc hẹn cho tài khoản này.");
+                console.warn("⚠️ API response indicates no data or error");
+                console.warn("⚠️ Status code:", appointmentsResponse.statusCode);
+                console.warn("⚠️ Message:", appointmentsResponse.message);
+                setError(`API không trả về dữ liệu hợp lệ. Status: ${appointmentsResponse.statusCode}, Message: ${appointmentsResponse.message || 'Không có thông báo'}`);
               }
             } catch (userIdError) {
-              console.error("Error fetching with customer ID:", userIdError);
-              setError("Có lỗi khi lấy dữ liệu cuộc hẹn. Vui lòng thử lại sau.");
+              console.error("❌ Error fetching with customer ID:", userIdError);
+              console.error("❌ Error type:", typeof userIdError);
+              console.error("❌ Error instanceof Error:", userIdError instanceof Error);
+              console.error("❌ Error message:", userIdError instanceof Error ? userIdError.message : 'Unknown error type');
+              console.error("❌ Full error object:", userIdError);
+              setError(`Có lỗi khi lấy dữ liệu cuộc hẹn: ${userIdError instanceof Error ? userIdError.message : 'Lỗi không xác định'}`);
             }
           } else {
-            console.warn("No customerID found in localStorage");
+            console.warn("⚠️ No customerID found in localStorage");
+            console.warn("⚠️ Available fields in user data:", Object.keys(parsedUser));
             setError("Không tìm thấy ID khách hàng. Vui lòng thiết lập ID mẫu để xem dữ liệu.");
           }
         } else {
+          console.error("❌ No user data found in localStorage");
           setError("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.");
         }
       } catch (error) {
-        console.error('Error fetching user data:', error);
-        setError("Có lỗi xảy ra. Vui lòng thử lại sau.");
+        console.error('❌ Error fetching user data:', error);
+        console.error('❌ Error details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined
+        });
+        setError(`Có lỗi xảy ra: ${error instanceof Error ? error.message : 'Lỗi không xác định'}`);
       } finally {
         setLoading(false);
       }
@@ -475,121 +511,99 @@ const Profile = () => {
           )}
         </div>
       )}
-      {/* Tab Booking History */}
+      {/* Tab History with Debug Panel */}
       {tab === 'history' && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-            <h2 style={{ fontSize: 24, fontWeight: 700, color: '#111827', margin: 0 }}>Lịch Sử Đặt Lịch</h2>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button 
-                onClick={reloadData} 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 8, 
-                  background: '#3b82f6', 
-                  color: '#fff', 
-                  border: 'none', 
-                  borderRadius: 8, 
-                  padding: '8px 16px', 
-                  fontWeight: 600, 
-                  fontSize: 14, 
-                  cursor: 'pointer' 
-                }}
-              >
-                <FaSync /> Tải lại dữ liệu
-              </button>
-              <Link 
-                to="/booking"
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 8, 
-                  background: '#10b981', 
-                  color: '#fff', 
-                  border: 'none', 
-                  borderRadius: 8, 
-                  padding: '8px 16px', 
-                  fontWeight: 600, 
-                  fontSize: 14, 
-                  textDecoration: 'none',
-                  cursor: 'pointer' 
-                }}
-              >
-                <FaClock /> Đặt lịch khám
-              </Link>
-            </div>
-          </div>
-          
-          {error && (
-            <div style={{ 
-              background: '#fee2e2', 
-              color: '#b91c1c', 
-              padding: '12px 16px', 
-              borderRadius: 8, 
-              marginBottom: 24,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
-            }}>
-              <FaTimesCircle />
-              <p style={{ margin: 0, fontSize: 16 }}>{error}</p>
+        <div style={{ padding: 24, background: 'linear-gradient(90deg,#f0f7ff 60%,#f3f4f6 100%)', borderRadius: 18, boxShadow: '0 2px 8px #e3e8f0' }}>
+          <h2 style={{ marginBottom: 24, fontSize: 24, color: '#2563eb', letterSpacing: 1, textAlign: 'center', fontWeight: 700 }}>Lịch Sử Đặt Khám</h2>
+
+          {loading && (
+            <div style={{ textAlign: 'center', padding: 32, color: '#666' }}>
+              <div style={{ fontSize: 18, marginBottom: 8 }}>🔄 Đang tải lịch sử đặt khám...</div>
+              <div style={{ fontSize: 14 }}>Vui lòng chờ trong giây lát</div>
             </div>
           )}
 
-          {appointments.length > 0 ? (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 16 }}>
-                <thead>
-                  <tr style={{ background: '#f3f4f6' }}>
-                    <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Mã</th>
-                    <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Ngày</th>
-                    <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Giờ</th>
-                    <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Tư vấn viên</th>
-                    <th style={{ padding: 16, textAlign: 'center', borderBottom: '1px solid #e5e7eb' }}>Loại</th>
-                    <th style={{ padding: 16, textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Tổng tiền</th>
-                    <th style={{ padding: 16, textAlign: 'center', borderBottom: '1px solid #e5e7eb' }}>Trạng thái</th>
-                    <th style={{ padding: 16, textAlign: 'center', borderBottom: '1px solid #e5e7eb' }}>Thanh toán</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {appointments.map(appointment => (
-                    <tr key={appointment.appointmentID}>
-                      <td style={{ padding: 16, border: '1px solid #eee', fontSize: 16 }}>#{appointment.appointmentID}</td>
-                      <td style={{ padding: 16, border: '1px solid #eee', fontSize: 16 }}>{formatDate(appointment.appointmentDate)}</td>
-                      <td style={{ padding: 16, border: '1px solid #eee', fontSize: 16 }}>
-                        {formatTime(appointment.slot.startTime)} - {formatTime(appointment.slot.endTime)}
-                      </td>
-                      <td style={{ padding: 16, border: '1px solid #eee', fontSize: 16 }}>{appointment.consultant.name}</td>
-                      <td style={{ padding: 16, border: '1px solid #eee', fontSize: 16, textAlign: 'center' }}>
-                        <AppointmentTypeBadge type={appointment.appointmentType} />
-                      </td>
-                      <td style={{ padding: 16, border: '1px solid #eee', fontSize: 16 }}>
-                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(appointment.totalAmount)}
-                      </td>
-                      <td style={{ padding: 16, border: '1px solid #eee', fontSize: 16, textAlign: 'center' }}>
-                        <AppointmentStatusBadge status={appointment.status} />
-                      </td>
-                      <td style={{ padding: 16, border: '1px solid #eee', fontSize: 16, textAlign: 'center' }}>
-                        <PaymentStatusBadge status={appointment.paymentStatus} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
+          {error && (
             <div style={{ 
-              padding: '32px 0', 
-              textAlign: 'center', 
-              color: '#6b7280',
-              background: '#f9fafb',
-              borderRadius: 8,
-              border: '1px dashed #d1d5db'
+              background: '#f8d7da', 
+              color: '#721c24', 
+              padding: 16, 
+              borderRadius: 8, 
+              marginBottom: 24,
+              border: '1px solid #f5c6cb'
             }}>
-              <FaFileAlt style={{ fontSize: 48, color: '#9ca3af', marginBottom: 16 }} />
-              <p style={{ fontSize: 18, fontWeight: 500, margin: 0 }}>Không có lịch sử đặt lịch</p>
-              <p style={{ fontSize: 14, margin: '8px 0 0' }}>Các cuộc hẹn của bạn sẽ xuất hiện ở đây</p>
+              <strong>❌ Lỗi:</strong> {error}
+            </div>
+          )}
+
+          {!loading && !error && appointments.length === 0 && (
+            <div style={{ textAlign: 'center', padding: 32, color: '#666' }}>
+              <div style={{ fontSize: 18, marginBottom: 8 }}>📅 Chưa có lịch hẹn nào</div>
+              <div style={{ fontSize: 14 }}>Bạn chưa đặt lịch khám nào hoặc chưa có dữ liệu trong hệ thống</div>
+            </div>
+          )}
+
+          {!loading && appointments.length > 0 && (
+            <div>
+              <div style={{ marginBottom: 16, fontSize: 16, fontWeight: 600, color: '#2563eb' }}>
+                📊 Tìm thấy {appointments.length} lịch hẹn
+              </div>
+              <div style={{ display: 'grid', gap: 20 }}>
+                {appointments.map((appointment, index) => (
+                  <div key={appointment.appointmentID || index} style={{ 
+                    background: '#fff', 
+                    borderRadius: 12, 
+                    padding: 20, 
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    border: '1px solid #e3e8f0'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                      <div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: '#2563eb', marginBottom: 4 }}>
+                          Mã lịch hẹn: {appointment.appointmentID || 'N/A'}
+                        </div>
+                        <div style={{ fontSize: 14, color: '#666' }}>
+                          Ngày tạo: {appointment.createAt ? formatDate(appointment.createAt) : 'N/A'}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, flexDirection: 'column', alignItems: 'flex-end' }}>
+                        <AppointmentStatusBadge status={appointment.status || 0} />
+                        <PaymentStatusBadge status={appointment.paymentStatus || 0} />
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                      <div>
+                        <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>📅 Ngày hẹn:</div>
+                        <div>{appointment.appointmentDate ? formatDate(appointment.appointmentDate) : 'Chưa xác định'}</div>
+                      </div>
+                      
+                      {appointment.slot && (
+                        <div>
+                          <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>⏰ Thời gian:</div>
+                          <div>
+                            {formatTime(appointment.slot.startTime)} - {formatTime(appointment.slot.endTime)}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div>
+                        <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>💰 Tổng tiền:</div>
+                        <div style={{ color: '#059669', fontWeight: 600 }}>
+                          {appointment.totalAmount?.toLocaleString('vi-VN')} VNĐ
+                        </div>
+                      </div>
+                      
+                      {appointment.consultant && (
+                        <div>
+                          <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>👨‍⚕️ Tư vấn viên:</div>
+                          <div>{appointment.consultant.name || 'Chưa phân công'}</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

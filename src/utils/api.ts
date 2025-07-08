@@ -118,6 +118,10 @@ const apiRequest = async <T>(
 ): Promise<ApiResponse<T>> => {
   const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
   
+  console.log(`🔄 API Request: ${method} ${endpoint}`);
+  console.log('🔑 Token exists:', !!token);
+  console.log('📦 Request body:', body);
+  
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -138,18 +142,29 @@ const apiRequest = async <T>(
     options.body = typeof body === 'string' ? body : JSON.stringify(body);
   }
   
+  const fullUrl = `${API.BASE_URL}${endpoint}`;
+  console.log('🌐 Full URL:', fullUrl);
+  console.log('📋 Request options:', options);
+  
   try {
-    const response = await fetch(`${API.BASE_URL}${endpoint}`, options);
+    console.log('📡 Sending request...');
+    const response = await fetch(fullUrl, options);
+    
+    console.log('📊 Response status:', response.status);
+    console.log('📋 Response headers:', Object.fromEntries(response.headers.entries()));
     
     // Handle 401 Unauthorized - Token hết hạn
     if (response.status === 401 && retry) {
+      console.log('🔒 Unauthorized, attempting token refresh...');
       // Try to refresh the token
       const refreshed = await refreshAuthToken();
       
       if (refreshed) {
+        console.log('✅ Token refreshed, retrying request...');
         // Retry the original request with the new token
         return apiRequest<T>(endpoint, method, body, customHeaders, false);
       } else {
+        console.log('❌ Token refresh failed, redirecting to login...');
         // Clear local storage and redirect to login
         localStorage.removeItem(STORAGE_KEYS.TOKEN);
         localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
@@ -161,10 +176,17 @@ const apiRequest = async <T>(
       }
     }
     
-    return handleResponse<T>(response);
+    console.log('✅ Processing response...');
+    const result = await handleResponse<T>(response);
+    console.log('📦 Final result:', result);
+    return result;
   } catch (error) {
     // Log the error for debugging
-    console.error(`API Request Error (${method} ${endpoint}):`, error);
+    console.error(`❌ API Request Error (${method} ${endpoint}):`, error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     throw error;
   }
 };

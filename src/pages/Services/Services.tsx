@@ -45,26 +45,50 @@ const Services = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        setError(null);
 
-        // Fetch services
-        const serviceResponse = await serviceAPI.getServices();
+        console.log('Fetching services and categories...');
 
-        // Fetch categories
-        const categoryResponse = await categoryAPI.getCategories();
+        // Fetch services and categories in parallel
+        const [serviceResponse, categoryResponse] = await Promise.allSettled([
+          serviceAPI.getServices(),
+          categoryAPI.getCategories()
+        ]);
 
-        if (serviceResponse.statusCode === 200 && serviceResponse.data) {
-          // Use only the data from the API without adding default values
-          setServices(serviceResponse.data);
+        // Handle services response
+        if (serviceResponse.status === 'fulfilled') {
+          console.log('Service response:', serviceResponse.value);
+          if (serviceResponse.value.statusCode === 200 && serviceResponse.value.data) {
+            setServices(serviceResponse.value.data);
+            console.log('Services loaded successfully:', serviceResponse.value.data.length, 'services');
+          } else {
+            console.error('Service API error:', serviceResponse.value);
+            setError(`Lỗi tải dịch vụ: ${serviceResponse.value.message || 'Unknown error'}`);
+          }
         } else {
-          setError('Failed to fetch services');
+          console.error('Service API failed:', serviceResponse.reason);
+          setError(`Không thể kết nối đến API dịch vụ: ${serviceResponse.reason.message}`);
         }
 
-        if (categoryResponse.statusCode === 200 && categoryResponse.data) {
-          setCategories(categoryResponse.data);
+        // Handle categories response
+        if (categoryResponse.status === 'fulfilled') {
+          console.log('Category response:', categoryResponse.value);
+          if (categoryResponse.value.statusCode === 200 && categoryResponse.value.data) {
+            setCategories(categoryResponse.value.data);
+            console.log('Categories loaded successfully:', categoryResponse.value.data.length, 'categories');
+          } else {
+            console.error('Category API error:', categoryResponse.value);
+            // Don't set error for categories, just log it
+            console.warn('Failed to load categories, continuing without category filter');
+          }
+        } else {
+          console.error('Category API failed:', categoryResponse.reason);
+          console.warn('Failed to load categories, continuing without category filter');
         }
-      } catch (err) {
-        setError('Error fetching data');
-        console.error(err);
+
+      } catch (err: any) {
+        console.error('Unexpected error in fetchData:', err);
+        setError(`Lỗi không mong muốn: ${err.message || 'Unknown error'}`);
       } finally {
         setLoading(false);
       }
@@ -121,6 +145,8 @@ const Services = () => {
       .format(price)
       .replace('₫', 'VNĐ');
   };
+
+
 
   return (
     <div className="services-container">
