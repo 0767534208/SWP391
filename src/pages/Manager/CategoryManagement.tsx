@@ -117,9 +117,8 @@ const CategoryManagement: React.FC = () => {
       
       if (isEditing) {
         // Update existing category with both name and status
-        // Note: API uses id as a query parameter, not in the body
         const response = await categoryAPI.updateCategory(
-          currentCategory.categoryID.toString(),
+          currentCategory.categoryID,
           { 
             name: currentCategory.name, 
             status: currentCategory.status 
@@ -133,12 +132,13 @@ const CategoryManagement: React.FC = () => {
           setError('Không thể cập nhật danh mục. Vui lòng thử lại sau.');
         }
       } else {
-        // Add new category with clinicID=1, without status
-        const response = await categoryAPI.createCategory(
-          { clinicID: 1, name: currentCategory.name }
-        );
+        // Add new category with clinicID=1
+        const response = await categoryAPI.createCategory({
+          clinicID: 1, 
+          name: currentCategory.name
+        });
         
-        if (response.statusCode === 201) {
+        if (response.statusCode === 200 || response.statusCode === 201) {
           // Refresh categories after successful creation
           await fetchCategories();
         } else {
@@ -165,7 +165,7 @@ const CategoryManagement: React.FC = () => {
       const updatedStatus = !category.status;
       
       const response = await categoryAPI.updateCategory(
-        categoryId.toString(),
+        categoryId,
         { name: category.name, status: updatedStatus }
       );
       
@@ -181,24 +181,7 @@ const CategoryManagement: React.FC = () => {
     }
   };
 
-  // Handle deleting a category
-  const handleDeleteCategory = async (categoryId: number) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa danh mục này không?')) {
-      try {
-        const response = await categoryAPI.deleteCategory(categoryId.toString());
-        
-        if (response.statusCode === 200) {
-          // Refresh categories after successful deletion
-          await fetchCategories();
-        } else {
-          setError('Không thể xóa danh mục. Vui lòng thử lại sau.');
-        }
-      } catch (err) {
-        console.error('Error deleting category:', err);
-        setError('Đã xảy ra lỗi khi xóa danh mục.');
-      }
-    }
-  };
+
 
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -399,15 +382,6 @@ const CategoryManagement: React.FC = () => {
                             </svg>
                           )}
                         </button>
-                        <button 
-                          className="delete-button" 
-                          title="Xóa"
-                          onClick={() => handleDeleteCategory(category.categoryID)}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
                       </div>
                     </td>
                   </tr>
@@ -419,7 +393,7 @@ const CategoryManagement: React.FC = () => {
             {filteredCategories.length > 0 && (
               <div className="pagination">
                 <div className="pagination-info">
-                  Hiển thị {indexOfFirstItem ==0?indexOfFirstItem + 1:indexOfFirstItem + 2}-{Math.min(indexOfLastItem, filteredCategories.length)+1} trên {filteredCategories.length+1} danh mục
+                  Hiển thị {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredCategories.length)} trên {filteredCategories.length} danh mục
                 </div>
                 <div className="pagination-controls">
                   {renderPaginationButtons()}
