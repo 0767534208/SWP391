@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './ServiceManagement.css';
+import { serviceAPI, categoryAPI } from '../../utils/api';
+import { authService } from '../../services';
 
 interface Service {
   servicesID: number;
@@ -12,6 +14,17 @@ interface Service {
   servicesPrice: number;
   status: boolean;
   imageServices: string[];
+  clinicID?: number; // Default to 1
+  managerID?: string; // From logged-in user
+  serviceType?: number; // 0: Tư vấn, 1: Xét nghiệm
+}
+
+interface Category {
+  categoryID: number;
+  name: string;
+  createAt: string;
+  updateAt: string;
+  status: boolean;
 }
 
 const ServiceManagement: React.FC = () => {
@@ -21,87 +34,51 @@ const ServiceManagement: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [currentService, setCurrentService] = useState<Service | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [categories, setCategories] = useState<{categoryID: number, name: string}[]>([]);
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [managerID, setManagerID] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Mock data for services - in a real application, this would come from an API
+  // Fetch services and categories from API
   useEffect(() => {
-    // Simulating API call to fetch services
-    const mockCategories = [
-      { categoryID: 1, name: "Xét nghiệm HIV" },
-      { categoryID: 2, name: "Xét nghiệm STI" },
-      { categoryID: 3, name: "Tư vấn" },
-      { categoryID: 4, name: "Khám sức khỏe" },
-      { categoryID: 5, name: "Tiêm chủng" },
-    ];
-    
-    const mockServices: Service[] = [
-      {
-        servicesID: 1,
-        categoryID: 1,
-        category: null,
-        servicesName: "Xét nghiệm & Tư vấn HIV",
-        description: "Dịch vụ xét nghiệm HIV của chúng tôi cung cấp một môi trường an toàn, riêng tư và không phán xét để xét nghiệm HIV. Bao gồm tư vấn trước và sau xét nghiệm với các chuyên gia có chuyên môn.",
-        createAt: "2023-06-21T01:14:16.582",
-        updateAt: "2023-06-21T01:14:16.582",
-        servicesPrice: 300000,
-        status: true,
-        imageServices: ["https://hips.hearstapps.com/hmg-prod/images/young-man-taking-blood-test-royalty-free-image-1674046843.jpg"]
-      },
-      {
-        servicesID: 2,
-        categoryID: 2,
-        category: null,
-        servicesName: "Kiểm tra STI toàn diện",
-        description: "Gói kiểm tra STI toàn diện của chúng tôi bao gồm xét nghiệm cho tất cả các bệnh lây truyền qua đường tình dục chính bao gồm HIV, Giang mai, Lậu, Chlamydia, Herpes và Viêm gan B&C.",
-        createAt: "2023-06-21T01:14:16.582",
-        updateAt: "2023-06-21T01:14:16.582",
-        servicesPrice: 850000,
-        status: true,
-        imageServices: ["https://madisonwomenshealth.com/wp-content/uploads/2023/10/getting-tested-for-stis-1030x687.jpg"]
-      },
-      {
-        servicesID: 3,
-        categoryID: 3,
-        category: null,
-        servicesName: "Tư vấn sức khỏe tình dục",
-        description: "Phiên tư vấn riêng tư với các chuyên gia của chúng tôi cung cấp một không gian an toàn để thảo luận về mọi lo ngại về sức khỏe tình dục của bạn, từ vấn đề STI đến sức khỏe sinh sản và nhiều hơn nữa.",
-        createAt: "2023-06-21T01:14:16.582",
-        updateAt: "2023-06-21T01:14:16.582",
-        servicesPrice: 400000,
-        status: true,
-        imageServices: ["https://i0.wp.com/post.psychcentral.com/wp-content/uploads/sites/4/2021/12/female-therapy-session-crop-1294016090-1296x729-header-1.jpg"]
-      },
-      {
-        servicesID: 4,
-        categoryID: 4,
-        category: null,
-        servicesName: "Gói khám sức khỏe sinh sản",
-        description: "Gói khám sức khỏe sinh sản toàn diện giúp phát hiện sớm các vấn đề về sinh sản và cung cấp tư vấn chuyên sâu về sức khỏe sinh sản, kế hoạch hóa gia đình và các biện pháp phòng ngừa.",
-        createAt: "2023-06-21T01:14:16.582",
-        updateAt: "2023-06-21T01:14:16.582",
-        servicesPrice: 1200000,
-        status: true,
-        imageServices: ["https://www.shutterstock.com/image-photo/gynecologist-doctor-consulting-female-patient-600nw-2060612575.jpg"]
-      },
-      {
-        servicesID: 5,
-        categoryID: 5,
-        category: null,
-        servicesName: "Tiêm vắc-xin HPV",
-        description: "Vắc-xin HPV giúp bảo vệ chống lại các chủng virus HPV nguy cơ cao có thể gây ung thư cổ tử cung, âm hộ, âm đạo, hậu môn và các bệnh lây truyền qua đường tình dục khác.",
-        createAt: "2023-06-21T01:14:16.582",
-        updateAt: "2023-06-21T01:14:16.582",
-        servicesPrice: 1500000,
-        status: false,
-        imageServices: ["https://images.ctfassets.net/n5vgw6ikgq17/2iJzGTNdl6KSMgkMoKw2S2/3a064db7c7059048d2bf379cfed0dc0c/hpv-injection-pic-landscape.jpg"]
+    // Get manager ID from localStorage
+    const currentUser = authService.getCurrentUser();
+    if (currentUser && currentUser.userID) {
+      setManagerID(currentUser.userID);
+    }
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch services
+        const serviceResponse = await serviceAPI.getServices();
+        
+        // Fetch categories
+        const categoryResponse = await categoryAPI.getCategories();
+        
+        if (serviceResponse.statusCode === 200 && serviceResponse.data) {
+          setServices(serviceResponse.data);
+        } else {
+          setError('Không thể tải danh sách dịch vụ. Vui lòng thử lại sau.');
+        }
+        
+        if (categoryResponse.statusCode === 200 && categoryResponse.data) {
+          setCategories(categoryResponse.data);
+        } else {
+          setError('Không thể tải danh sách danh mục. Vui lòng thử lại sau.');
+        }
+      } catch (err) {
+        setError('Đã xảy ra lỗi khi tải dữ liệu.');
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
-    ];
-    
-    setCategories(mockCategories);
-    setServices(mockServices);
-    setLoading(false);
+    };
+
+    fetchData();
   }, []);
 
   // Format price to VND
@@ -122,8 +99,8 @@ const ServiceManagement: React.FC = () => {
   // Handle adding a new service
   const handleAddService = () => {
     setCurrentService({
-      servicesID: services.length > 0 ? Math.max(...services.map(s => s.servicesID)) + 1 : 1,
-      categoryID: 1,
+      servicesID: 0, // ID sẽ được tạo bởi server
+      categoryID: categories.length > 0 ? categories[0].categoryID : 1,
       category: null,
       servicesName: '',
       description: '',
@@ -131,78 +108,227 @@ const ServiceManagement: React.FC = () => {
       updateAt: new Date().toISOString(),
       servicesPrice: 0,
       status: true,
-      imageServices: []
+      imageServices: [],
+      clinicID: 1, // Default to 1
+      managerID: managerID, // From logged-in user
+      serviceType: 0 // Default to consultation
     });
-    setIsEditing(false);
+    setIsEditing(true);
+    setIsAddingNew(true);
     setShowModal(true);
   };
 
   // Handle editing a service
   const handleEditService = (service: Service) => {
-    setCurrentService({...service});
+    // Ensure service has the required fields
+    const serviceToEdit = {
+      ...service,
+      clinicID: service.clinicID || 1,
+      managerID: service.managerID || managerID,
+      serviceType: service.serviceType !== undefined ? service.serviceType : 0
+    };
+    setCurrentService(serviceToEdit);
     setIsEditing(true);
+    setIsAddingNew(false);
+    setShowModal(true);
+  };
+
+  // Handle viewing service details
+  const handleViewService = (service: Service) => {
+    // Ensure service has the required fields
+    const serviceToView = {
+      ...service,
+      clinicID: service.clinicID || 1,
+      managerID: service.managerID || managerID,
+      serviceType: service.serviceType !== undefined ? service.serviceType : 0
+    };
+    setCurrentService(serviceToView);
+    setIsEditing(false);
+    setIsAddingNew(false);
     setShowModal(true);
   };
 
   // Handle saving a service (add or edit)
-  const handleSaveService = (e: React.FormEvent) => {
+  const handleSaveService = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!currentService) return;
     
-    if (isEditing) {
-      // Update existing service
-      setServices(prevServices => 
-        prevServices.map(service => 
-          service.servicesID === currentService.servicesID ? currentService : service
-        )
-      );
-    } else {
-      // Add new service
-      setServices(prevServices => [...prevServices, currentService]);
+    try {
+      setLoading(true);
+      
+      // Chuẩn bị dữ liệu theo đúng định dạng API yêu cầu
+      const serviceData = {
+        ClinicID: currentService.clinicID || 1,
+        CategoryID: currentService.categoryID,
+        ManagerID: currentService.managerID || managerID,
+        ServicesName: currentService.servicesName,
+        Description: currentService.description,
+        ServicesPrice: currentService.servicesPrice,
+        ServiceType: currentService.serviceType !== undefined ? currentService.serviceType : 0,
+        Status: currentService.status,
+        Images: currentService.imageServices.filter(img => img !== '')
+      };
+      
+      console.log('Sending data to API:', serviceData);
+      
+      if (!isAddingNew) {
+        // Update existing service
+        const response = await serviceAPI.updateService(
+          currentService.servicesID.toString(), 
+          serviceData
+        );
+        
+        if (response.statusCode === 200 || response.statusCode === 201) {
+          setServices(prevServices => 
+            prevServices.map(service => 
+              service.servicesID === currentService.servicesID ? response.data : service
+            )
+          );
+          setShowModal(false);
+          setCurrentService(null);
+        } else {
+          setError('Không thể cập nhật dịch vụ. Vui lòng thử lại sau.');
+          console.error('API response error:', response);
+        }
+      } else {
+        // Add new service
+        const response = await serviceAPI.createService(serviceData);
+        
+        console.log('Create service response:', response);
+        
+        if (response.statusCode === 200 || response.statusCode === 201) {
+          setServices(prevServices => [...prevServices, response.data]);
+          setShowModal(false);
+          setCurrentService(null);
+        } else {
+          setError('Không thể tạo dịch vụ mới. Vui lòng thử lại sau.');
+          console.error('API response error:', response);
+        }
+      }
+    } catch (err) {
+      console.error('Error saving service:', err);
+      setError('Đã xảy ra lỗi khi lưu dịch vụ.');
+    } finally {
+      setLoading(false);
     }
-    
-    setShowModal(false);
-    setCurrentService(null);
   };
 
   // Handle toggling service active status
-  const handleToggleActive = (id: number) => {
+  const handleToggleActive = async (id: number) => {
+    try {
+      setLoading(true);
+      
+      // Find the service to toggle
+      const service = services.find(s => s.servicesID === id);
+      if (!service) return;
+      
+      // Call API to update status
+      const response = await serviceAPI.updateService(
+        id.toString(),
+        { status: !service.status }
+      );
+      
+      if (response.statusCode === 200 && response.data) {
     setServices(prevServices => 
-      prevServices.map(service => 
-        service.servicesID === id ? {...service, status: !service.status} : service
-      )
-    );
-  };
-
-  // Handle deleting a service
-  const handleDeleteService = (id: number) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa dịch vụ này không?')) {
-      setServices(prevServices => prevServices.filter(service => service.servicesID !== id));
+          prevServices.map(s => 
+            s.servicesID === id ? response.data : s
+          )
+        );
+      } else {
+        setError('Không thể cập nhật trạng thái dịch vụ. Vui lòng thử lại sau.');
+      }
+    } catch (err) {
+      console.error('Error toggling service status:', err);
+      setError('Đã xảy ra lỗi khi cập nhật trạng thái dịch vụ.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handle adding an image URL
-  const handleAddImage = () => {
-    if (!currentService) return;
-    
-    setCurrentService({
-      ...currentService,
-      imageServices: [...currentService.imageServices, '']
-    });
+  // Handle deleting a service
+  const handleDeleteService = async (id: number) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa dịch vụ này không?')) {
+      try {
+        setLoading(true);
+        
+        // Call API to delete service
+        const response = await serviceAPI.deleteService(id.toString());
+        
+        if (response.statusCode === 200) {
+      setServices(prevServices => prevServices.filter(service => service.servicesID !== id));
+        } else {
+          setError('Không thể xóa dịch vụ. Vui lòng thử lại sau.');
+        }
+      } catch (err) {
+        console.error('Error deleting service:', err);
+        setError('Đã xảy ra lỗi khi xóa dịch vụ.');
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
-  // Handle updating an image URL
-  const handleImageChange = (index: number, value: string) => {
-    if (!currentService) return;
+  // Upload image to server and get URL
+  const uploadImage = async (file: File): Promise<string> => {
+    try {
+      // Create form data
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Sử dụng endpoint thực tế để upload ảnh
+      const response = await fetch('/api/Service/UploadImage', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          // Không cần set Content-Type khi dùng FormData
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to upload image');
+      }
+      
+      const result = await response.json();
+      // Giả định rằng API trả về URL của ảnh đã tải lên
+      return result.imageUrl || '';
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw error;
+    }
+  };
+
+  // Handle file selection for image upload
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files.length || !currentService) return;
     
-    const newImages = [...currentService.imageServices];
-    newImages[index] = value;
-    
-    setCurrentService({
-      ...currentService,
-      imageServices: newImages
-    });
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const file = e.target.files[0];
+      
+      // Tạo URL tạm thời để hiển thị preview
+      const previewUrl = URL.createObjectURL(file);
+      
+      // Lưu file thực tế vào state để sau này gửi lên server
+      setCurrentService({
+        ...currentService,
+        imageServices: [...currentService.imageServices, previewUrl]
+      });
+      
+    } catch (err) {
+      console.error('Error handling file:', err);
+      setError('Đã xảy ra lỗi khi xử lý hình ảnh.');
+    } finally {
+      setLoading(false);
+      
+      // Reset the file input so the same file can be selected again if needed
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   // Handle removing an image URL
@@ -210,11 +336,27 @@ const ServiceManagement: React.FC = () => {
     if (!currentService) return;
     
     const newImages = [...currentService.imageServices];
+    
+    // If the image is an object URL, revoke it to prevent memory leaks
+    if (newImages[index].startsWith('blob:')) {
+      URL.revokeObjectURL(newImages[index]);
+    }
+    
     newImages.splice(index, 1);
     
     setCurrentService({
       ...currentService,
       imageServices: newImages
+    });
+  };
+
+  // Handle service type change
+  const handleServiceTypeChange = (value: number) => {
+    if (!currentService) return;
+    
+    setCurrentService({
+      ...currentService,
+      serviceType: value
     });
   };
 
@@ -269,6 +411,7 @@ const ServiceManagement: React.FC = () => {
               <th>ID</th>
               <th>Tên dịch vụ</th>
               <th>Danh mục</th>
+              <th>Loại dịch vụ</th>
               <th>Giá</th>
               <th>Ngày cập nhật</th>
               <th>Trạng thái</th>
@@ -281,6 +424,7 @@ const ServiceManagement: React.FC = () => {
                 <td>{service.servicesID}</td>
                 <td>{service.servicesName}</td>
                 <td>{categories.find(c => c.categoryID === service.categoryID)?.name || 'Không xác định'}</td>
+                <td>{service.serviceType === 0 ? 'Tư vấn' : 'Xét nghiệm'}</td>
                 <td>{formatPrice(service.servicesPrice)}</td>
                 <td>{new Date(service.updateAt).toLocaleDateString('vi-VN')}</td>
                 <td>
@@ -291,11 +435,7 @@ const ServiceManagement: React.FC = () => {
                 <td className="actions">
                   <button 
                     className="view-details-button" 
-                    onClick={() => {
-                      setCurrentService(service);
-                      setIsEditing(false);
-                      setShowModal(true);
-                    }}
+                    onClick={() => handleViewService(service)}
                     title="Xem chi tiết"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
@@ -341,7 +481,7 @@ const ServiceManagement: React.FC = () => {
             ))}
             {filteredServices.length === 0 && (
               <tr>
-                <td colSpan={7} className="no-services">
+                <td colSpan={8} className="no-services">
                   Không tìm thấy dịch vụ nào
                 </td>
               </tr>
@@ -355,7 +495,11 @@ const ServiceManagement: React.FC = () => {
         <div className="modal-overlay">
           <div className="service-modal">
             <div className="modal-header">
-              <h2>{isEditing ? 'Chỉnh sửa dịch vụ' : (currentService.servicesName ? 'Chi tiết dịch vụ' : 'Thêm dịch vụ mới')}</h2>
+              <h2>
+                {isAddingNew 
+                  ? 'Thêm dịch vụ mới' 
+                  : (isEditing ? 'Chỉnh sửa dịch vụ' : 'Chi tiết dịch vụ')}
+              </h2>
               <button className="close-btn" onClick={() => setShowModal(false)}>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
                   <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -373,7 +517,7 @@ const ServiceManagement: React.FC = () => {
                     value={currentService.servicesName}
                     onChange={(e) => setCurrentService({...currentService, servicesName: e.target.value})}
                     required
-                    readOnly={!isEditing && currentService.servicesName !== ''}
+                    readOnly={!isEditing}
                   />
                 </div>
                 
@@ -384,13 +528,27 @@ const ServiceManagement: React.FC = () => {
                     value={currentService.categoryID}
                     onChange={(e) => setCurrentService({...currentService, categoryID: Number(e.target.value)})}
                     required
-                    disabled={!isEditing && currentService.servicesName !== ''}
+                    disabled={!isEditing}
                   >
                     {categories.map(category => (
                       <option key={category.categoryID} value={category.categoryID}>
                         {category.name}
                       </option>
                     ))}
+                  </select>
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="serviceType">Loại dịch vụ</label>
+                  <select
+                    id="serviceType"
+                    value={currentService.serviceType}
+                    onChange={(e) => handleServiceTypeChange(Number(e.target.value))}
+                    required
+                    disabled={!isEditing}
+                  >
+                    <option value={0}>Tư vấn</option>
+                    <option value={1}>Xét nghiệm</option>
                   </select>
                 </div>
                 
@@ -402,7 +560,7 @@ const ServiceManagement: React.FC = () => {
                     value={currentService.servicesPrice}
                     onChange={(e) => setCurrentService({...currentService, servicesPrice: Number(e.target.value)})}
                     required
-                    readOnly={!isEditing && currentService.servicesName !== ''}
+                    readOnly={!isEditing}
                   />
                 </div>
                 
@@ -413,53 +571,60 @@ const ServiceManagement: React.FC = () => {
                     value={currentService.description}
                     onChange={(e) => setCurrentService({...currentService, description: e.target.value})}
                     required
-                    readOnly={!isEditing && currentService.servicesName !== ''}
+                    readOnly={!isEditing}
                     rows={4}
                   />
                 </div>
                 
                 <div className="form-group full-width">
                   <label>Hình ảnh</label>
+                  <div className="image-gallery">
                   {currentService.imageServices.map((image, index) => (
-                    <div key={index} className="array-input-group">
-                      <input
-                        type="text"
-                        value={image}
-                        onChange={(e) => handleImageChange(index, e.target.value)}
-                        readOnly={!isEditing && currentService.servicesName !== ''}
-                        placeholder="URL hình ảnh"
+                      <div key={index} className="image-item">
+                        {image && (
+                          <>
+                            <img 
+                              src={image} 
+                              alt={`Hình ảnh ${index + 1}`} 
+                              className="image-thumbnail" 
                       />
-                      {(isEditing || currentService.servicesName === '') && (
+                            {isEditing && (
                         <button 
                           type="button" 
                           onClick={() => handleRemoveImage(index)}
-                          className="remove-item-btn"
+                                className="remove-image-btn"
+                                title="Xóa ảnh"
                         >
-                          <i className="fas fa-minus-circle"></i>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
                         </button>
+                            )}
+                          </>
                       )}
                     </div>
                   ))}
-                  {(isEditing || currentService.servicesName === '') && (
-                    <button 
-                      type="button" 
-                      onClick={handleAddImage}
-                      className="add-item-btn"
-                    >
-                      <i className="fas fa-plus-circle"></i> Thêm hình ảnh
-                    </button>
-                  )}
-                </div>
-                
-                {/* Image preview */}
-                {currentService.imageServices.length > 0 && currentService.imageServices[0] && (
-                  <div className="form-group full-width">
-                    <label>Xem trước hình ảnh</label>
-                    <div className="image-preview">
-                      <img src={currentService.imageServices[0]} alt={currentService.servicesName} />
+                    
+                    {isEditing && (
+                      <div className="image-upload-container">
+                        <input 
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={handleFileSelect}
+                          accept="image/*"
+                          id="image-upload"
+                          className="hidden-file-input"
+                        />
+                        <label htmlFor="image-upload" className="file-upload-label">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="24" height="24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                          Thêm ảnh
+                        </label>
                     </div>
+                    )}
                   </div>
-                )}
+                </div>
                 
                 <div className="form-group full-width status-toggle">
                   <label>Trạng thái</label>
@@ -469,7 +634,7 @@ const ServiceManagement: React.FC = () => {
                       id="status"
                       checked={currentService.status}
                       onChange={(e) => setCurrentService({...currentService, status: e.target.checked})}
-                      disabled={!isEditing && currentService.servicesName !== ''}
+                      disabled={!isEditing}
                     />
                     <label htmlFor="status" className="toggle-label">
                       {currentService.status ? 'Hoạt động' : 'Không hoạt động'}
@@ -479,7 +644,7 @@ const ServiceManagement: React.FC = () => {
               </div>
               
               <div className="modal-footer">
-                {(isEditing || currentService.servicesName === '') ? (
+                {isEditing ? (
                   <>
                     <button type="button" className="cancel-btn" onClick={() => setShowModal(false)}>Hủy</button>
                     <button type="submit" className="save-btn">Lưu</button>
@@ -501,6 +666,79 @@ const ServiceManagement: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Add CSS for the new image upload UI */}
+      <style>
+        {`
+        .image-gallery {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-top: 10px;
+        }
+        
+        .image-item {
+          position: relative;
+          width: 100px;
+          height: 100px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          overflow: hidden;
+        }
+        
+        .image-thumbnail {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        
+        .remove-image-btn {
+          position: absolute;
+          top: 5px;
+          right: 5px;
+          background: rgba(255, 255, 255, 0.8);
+          border: none;
+          border-radius: 50%;
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: #ff4d4f;
+        }
+        
+        .hidden-file-input {
+          display: none;
+        }
+        
+        .image-upload-container {
+          width: 100px;
+          height: 100px;
+          border: 2px dashed #ddd;
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .file-upload-label {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          width: 100%;
+          height: 100%;
+          color: #666;
+          font-size: 12px;
+        }
+        
+        .file-upload-label svg {
+          margin-bottom: 5px;
+        }
+        `}
+      </style>
     </div>
   );
 };

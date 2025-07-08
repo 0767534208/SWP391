@@ -45,20 +45,20 @@ const Services = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch services
         const serviceResponse = await serviceAPI.getServices();
-        
+
         // Fetch categories
         const categoryResponse = await categoryAPI.getCategories();
-        
+
         if (serviceResponse.statusCode === 200 && serviceResponse.data) {
           // Use only the data from the API without adding default values
           setServices(serviceResponse.data);
         } else {
           setError('Failed to fetch services');
         }
-        
+
         if (categoryResponse.statusCode === 200 && categoryResponse.data) {
           setCategories(categoryResponse.data);
         }
@@ -75,11 +75,11 @@ const Services = () => {
 
   // Filter services based on search query and category
   const filteredServices = services.filter(service => {
-    const matchesSearch = service.servicesName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          service.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = filterCategory === 'all' || 
-                           service.categoryID.toString() === filterCategory;
-    
+    const matchesSearch = service.servicesName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      service.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = filterCategory === 'all' ||
+      service.categoryID.toString() === filterCategory;
+
     return matchesSearch && matchesCategory;
   });
 
@@ -147,7 +147,7 @@ const Services = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
-        
+
         <div className="category-filter">
           {categoryOptions.map((category, index) => (
             <button
@@ -182,12 +182,12 @@ const Services = () => {
             filteredServices.map((service) => (
               <div key={service.servicesID} className="service-card">
                 <div className="service-card-image">
-                  <img 
-                    src={service.imageServices && service.imageServices.length > 0 
-                      ? service.imageServices[0] 
-                      : "https://madisonwomenshealth.com/wp-content/uploads/2023/10/getting-tested-for-stis-1030x687.jpg"} 
-                    alt={service.servicesName} 
-                  />
+                  {service.imageServices && service.imageServices.length > 0 && (
+                    <img
+                      src={service.imageServices[0]}
+                      alt={service.servicesName}
+                    />
+                  )}
                   <div className="service-card-category">
                     {getCategoryName(service.categoryID)}
                   </div>
@@ -200,13 +200,13 @@ const Services = () => {
                   </div>
                 </div>
                 <div className="service-card-actions">
-                  <button 
+                  <button
                     className="service-action-button book-button"
                     onClick={() => handleBookService(service.servicesID)}
                   >
                     Đặt lịch
                   </button>
-                  <button 
+                  <button
                     className="service-action-button menu-button"
                     onClick={() => handleViewDetails(service)}
                   >
@@ -235,22 +235,22 @@ const Services = () => {
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
             </button>
-            
+
             <div className="service-modal-header">
-              <img 
-                src={selectedService.imageServices && selectedService.imageServices.length > 0 
-                  ? selectedService.imageServices[0] 
-                  : "https://madisonwomenshealth.com/wp-content/uploads/2023/10/getting-tested-for-stis-1030x687.jpg"} 
-                alt={selectedService.servicesName} 
-              />
+              {selectedService.imageServices && selectedService.imageServices.length > 0 && (
+                <img
+                  src={selectedService.imageServices[0]}
+                  alt={selectedService.servicesName}
+                />
+              )}
               <div className="service-modal-badge">
                 {getCategoryName(selectedService.categoryID)}
               </div>
             </div>
-            
+
             <div className="service-modal-body">
               <h2 className="service-modal-title">{selectedService.servicesName}</h2>
-              
+
               <div className="service-modal-meta">
                 <div className="service-meta-item">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -259,14 +259,14 @@ const Services = () => {
                   <span>{formatPrice(selectedService.servicesPrice)}</span>
                 </div>
               </div>
-              
+
               <div className="service-modal-description">
                 <h3>Mô tả</h3>
                 <p>{selectedService.description}</p>
               </div>
-              
+
               <div className="service-modal-actions">
-                <button 
+                <button
                   className="service-modal-book-button"
                   onClick={() => {
                     handleCloseModal();
