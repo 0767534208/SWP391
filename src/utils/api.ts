@@ -562,29 +562,29 @@ export const serviceAPI = {
   /**
    * Cập nhật dịch vụ (dành cho Manager)
    * @param serviceId - ID của dịch vụ
-   * @param serviceData - Thông tin dịch vụ cần cập nhật
+   * @param serviceData - Thông tin dịch vụ cần cập nhật hoặc chỉ status để toggle
    */
   updateService: async (serviceId: number, serviceData: any): Promise<ApiResponse<any>> => {
     const url = `/api/Service/UpdateService?serviceID=${serviceId}`;
     
     // Tạo request body theo UpdateServiceRequest schema
-    const updateRequest = {
+    const updateRequest: any = {
       servicesID: serviceId,
-      servicesName: serviceData.ServicesName || serviceData.servicesName,
-      description: serviceData.Description || serviceData.description,
-      servicesPrice: serviceData.ServicesPrice || serviceData.servicesPrice,
-      serviceType: serviceData.ServiceType !== undefined ? serviceData.ServiceType : serviceData.serviceType,
-      status: serviceData.Status !== undefined ? serviceData.Status : serviceData.status
     };
+
+    // Chỉ thêm các fields nếu có trong serviceData
+    if (serviceData.servicesName !== undefined) updateRequest.servicesName = serviceData.servicesName;
+    if (serviceData.ServicesName !== undefined) updateRequest.servicesName = serviceData.ServicesName;
+    if (serviceData.description !== undefined) updateRequest.description = serviceData.description;
+    if (serviceData.Description !== undefined) updateRequest.description = serviceData.Description;
+    if (serviceData.servicesPrice !== undefined) updateRequest.servicesPrice = serviceData.servicesPrice;
+    if (serviceData.ServicesPrice !== undefined) updateRequest.servicesPrice = serviceData.ServicesPrice;
+    if (serviceData.serviceType !== undefined) updateRequest.serviceType = serviceData.serviceType;
+    if (serviceData.ServiceType !== undefined) updateRequest.serviceType = serviceData.ServiceType;
+    if (serviceData.status !== undefined) updateRequest.status = serviceData.status;
+    if (serviceData.Status !== undefined) updateRequest.status = serviceData.Status;
     
     return apiRequest<any>(url, 'PUT', updateRequest);
-  },
-
-  /**
-   * Xóa dịch vụ (dành cho Manager)
-   */
-  deleteService: async (serviceId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/Service/DeleteService/${serviceId}`, 'DELETE');
   }
 };
 
@@ -1006,16 +1006,20 @@ export const categoryAPI = {
   
   /**
    * Tạo danh mục mới (dành cho Manager)
+   * @param categoryData - {clinicID: number, name: string}
    */
-  createCategory: async (categoryData: any): Promise<ApiResponse<any>> => {
+  createCategory: async (categoryData: {clinicID: number, name: string}): Promise<ApiResponse<any>> => {
     return apiRequest<any>('/api/category/CreateCategory', 'POST', categoryData);
   },
 
   /**
    * Cập nhật danh mục (dành cho Manager)
+   * @param categoryId - ID của danh mục
+   * @param categoryData - {name: string, status: boolean}
    */
-  updateCategory: async (categoryData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/api/category/UpdateCategory', 'PUT', categoryData);
+  updateCategory: async (categoryId: number, categoryData: {name: string, status: boolean}): Promise<ApiResponse<any>> => {
+    const url = `/api/category/UpdateCategory?id=${categoryId}`;
+    return apiRequest<any>(url, 'PUT', categoryData);
   }
 };
 
