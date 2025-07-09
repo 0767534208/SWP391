@@ -153,6 +153,15 @@ const apiRequest = async <T>(
     console.log('📊 Response status:', response.status);
     console.log('📋 Response headers:', Object.fromEntries(response.headers.entries()));
     
+    // Thêm debug cho PUT request
+    if (method === 'PUT') {
+      console.log('🔍 PUT Request details:', {
+        url: fullUrl,
+        headers: options.headers,
+        body: options.body
+      });
+    }
+    
     // Handle 401 Unauthorized - Token hết hạn
     if (response.status === 401 && retry) {
       console.log('🔒 Unauthorized, attempting token refresh...');
@@ -177,6 +186,15 @@ const apiRequest = async <T>(
     }
     
     console.log('✅ Processing response...');
+    // Clone the response to log the raw body for debugging
+    const clonedResponse = response.clone();
+    try {
+      const rawText = await clonedResponse.text();
+      console.log('📦 Raw response body:', rawText);
+    } catch (e) {
+      console.log('⚠️ Could not log raw response body:', e);
+    }
+    
     const result = await handleResponse<T>(response);
     console.log('📦 Final result:', result);
     return result;

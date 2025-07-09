@@ -1,60 +1,85 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './ConsultantProfile.css';
+import { consultantService } from '../../services';
+import { toast } from 'react-hot-toast';
+import { FaEdit, FaUser, FaGraduationCap, FaBriefcase, FaClock, FaPlus, FaTrash } from 'react-icons/fa';
+import type { ConsultantProfileRequest } from '../../types';
+import { useNavigate } from 'react-router-dom';
 
-// Định nghĩa kiểu dữ liệu cho lịch làm việc
-type TimeSlot = {
-  start: string;
-  end: string;
-};
+// Define interfaces for data structures
+interface ConsultantProfileData {
+  accountId?: string;
+  name: string;
+  title: string;
+  email: string;
+  phone: string;
+  gender: string;
+  birthDate: string;
+  specialty: string;
+  experience: string;
+  education: string;
+  languages: string[];
+  about: string;
+  avatar: string;
+  certificates?: {
+    id: number;
+    name: string;
+    issuer: string;
+    year: number;
+    file: string;
+  }[];
+  experiences?: {
+    id: number;
+    title: string;
+    organization: string;
+    location: string;
+    startDate: string;
+    endDate: string | null;
+    description: string;
+  }[];
+  schedule?: {
+    [key: string]: { start: string; end: string }[];
+  };
+  isActive?: boolean;
+  consultantProfileID?: number;
+}
 
-type DaySchedule = TimeSlot[];
+const ConsultantProfile: React.FC = () => {
+  // State management
+  const [activeTab, setActiveTab] = useState<string>('profile');
+  const [editMode, setEditMode] = useState<boolean>(false);
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const [modalType, setModalType] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
 
-type ScheduleType = {
-  [key: string]: DaySchedule;
-};
-
-const ConsultantProfile = () => {
-  const [activeTab, setActiveTab] = useState('profile');
-  const [editMode, setEditMode] = useState(false);
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadType, setUploadType] = useState('');
-  const [scheduleEditMode, setScheduleEditMode] = useState(false);
-
-  // Mock profile data
-  const [profile, setProfile] = useState({
-    name: 'BS. Nguyễn Văn A',
-    title: 'Chuyên gia sức khỏe sinh sản',
-    email: 'nguyenvana@example.com',
-    phone: '(+84) 901-234-567',
-    gender: 'Nam',
-    birthDate: '1985-04-15',
-    specialty: 'Sức khỏe sinh sản',
-    experience: 'Hơn 10 năm kinh nghiệm',
-    education: 'Bác sĩ chuyên khoa, Đại học Y Hà Nội',
-    languages: ['Tiếng Việt', 'Tiếng Anh'],
-    about: 'BS. Nguyễn Văn A là bác sĩ chuyên khoa được chứng nhận về sức khỏe sinh sản với hơn 10 năm kinh nghiệm. Ông chuyên về chăm sóc sức khỏe tình dục toàn diện, tư vấn về biện pháp tránh thai và phòng chống, điều trị các bệnh lây qua đường tình dục. BS. Nguyễn tiếp cận toàn diện trong chăm sóc bệnh nhân, đảm bảo rằng mỗi cá nhân đều nhận được sự quan tâm đặc biệt và kế hoạch điều trị phù hợp với nhu cầu cụ thể của họ.',
-    avatar: 'https://randomuser.me/api/portraits/men/4.jpg',
-    certificates: [
-      { id: 1, name: 'Chứng chỉ chuyên khoa Sức khỏe sinh sản', issuer: 'Bộ Y tế Việt Nam', year: 2015, file: 'cert1.pdf' },
-      { id: 2, name: 'Chứng chỉ Sức khỏe sinh sản nâng cao', issuer: 'Hội Y học Việt Nam', year: 2018, file: 'cert2.pdf' }
-    ],
-    experiences: [
-      { id: 1, title: 'Tư vấn viên cao cấp', organization: 'Phòng khám Sức khỏe sinh sản TP.HCM', location: 'TP. Hồ Chí Minh', startDate: '2018-01', endDate: null, description: 'Tư vấn viên chính cho các dịch vụ sức khỏe sinh sản và tình dục' },
-      { id: 2, title: 'Bác sĩ chuyên khoa Sức khỏe sinh sản', organization: 'Bệnh viện Trung ương', location: 'Hà Nội', startDate: '2013-03', endDate: '2017-12', description: 'Chuyên về tư vấn biện pháp tránh thai và điều trị các bệnh lây qua đường tình dục' },
-      { id: 3, title: 'Nghiên cứu viên', organization: 'Viện Y học sinh sản', location: 'Singapore', startDate: '2011-06', endDate: '2013-02', description: 'Nghiên cứu về giáo dục sức khỏe tình dục và chiến lược phòng ngừa' }
-    ],
+  // Profile data state
+  const [profile, setProfile] = useState<ConsultantProfileData>({
+    name: '',
+    title: '',
+    email: '',
+    phone: '',
+    gender: '',
+    birthDate: '',
+    specialty: '',
+    experience: '',
+    education: '',
+    languages: [],
+    about: '',
+    avatar: '',
+    certificates: [],
+    experiences: [],
     schedule: {
-      monday: [{ start: '09:00', end: '12:00' }, { start: '13:30', end: '17:00' }],
-      tuesday: [{ start: '09:00', end: '12:00' }, { start: '13:30', end: '17:00' }],
-      wednesday: [{ start: '09:00', end: '12:00' }],
-      thursday: [{ start: '09:00', end: '12:00' }, { start: '13:30', end: '17:00' }],
-      friday: [{ start: '09:00', end: '12:00' }, { start: '13:30', end: '17:00' }],
-      saturday: [{ start: '09:00', end: '12:00' }],
+      monday: [],
+      tuesday: [],
+      wednesday: [],
+      thursday: [],
+      friday: [],
+      saturday: [],
       sunday: []
-    } as ScheduleType
+    }
   });
 
-  // Add new state for certificate upload
+  // Form states for certificates and experience
   const [newCertificate, setNewCertificate] = useState({
     name: '',
     issuer: '',
@@ -71,77 +96,360 @@ const ConsultantProfile = () => {
     description: ''
   });
 
-  // Update profile
-  const handleProfileUpdate = (updatedProfile: typeof profile) => {
-    setProfile(updatedProfile);
-    setEditMode(false);
+  const [newLanguage, setNewLanguage] = useState<string>('');
+
+  // Fetch consultant profile data on component mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+        
+        // Kiểm tra xem có dữ liệu đã lưu trong localStorage không
+        const savedProfile = localStorage.getItem('consultantProfile');
+        if (savedProfile) {
+          try {
+            const parsedProfile = JSON.parse(savedProfile);
+            console.log("Loaded profile from localStorage:", parsedProfile);
+            setProfile(parsedProfile);
+            setLoading(false);
+            return;
+          } catch (e) {
+            console.error("Error parsing saved profile:", e);
+            // Nếu có lỗi khi parse, tiếp tục lấy dữ liệu từ API
+          }
+        }
+        
+        // Get consultant ID from local storage
+        const consultantId = localStorage.getItem('userId') || localStorage.getItem('AccountID');
+        
+        if (!consultantId) {
+          toast.error('Không tìm thấy thông tin người dùng');
+          return;
+        }
+
+        // Fetch consultant profile from API
+        const response = await consultantService.getConsultantById(consultantId);
+        console.log("Raw API response for consultant profile:", response);
+        
+        if (response.statusCode === 200 && response.data) {
+          // Transform API data to match our component state structure
+          const profileData = response.data;
+          console.log("Profile data from API:", profileData);
+          
+          // Tìm consultantProfileID từ response
+          let consultantProfileID;
+          if (profileData.consultantProfileID) {
+            consultantProfileID = profileData.consultantProfileID;
+          } else if (profileData.id) {
+            consultantProfileID = profileData.id;
+          } else if (profileData.consultant && profileData.consultant.id) {
+            consultantProfileID = profileData.consultant.id;
+          }
+          
+          console.log("Found consultantProfileID:", consultantProfileID);
+          
+          // Extract data and set default values if any field is missing
+          const formattedProfile: ConsultantProfileData = {
+            accountId: profileData.accountId || profileData.consultantID || consultantId,
+            name: profileData.consultant?.name || profileData.name || '',
+            title: profileData.title || 'Tư vấn viên',
+            email: profileData.consultant?.email || profileData.email || '',
+            phone: profileData.consultant?.phone || profileData.phone || '',
+            gender: profileData.consultant?.gender || profileData.gender || '',
+            birthDate: profileData.consultant?.dateOfBirth || profileData.birthDate || '',
+            specialty: profileData.specialty || '',
+            experience: profileData.experience || '',
+            education: profileData.education || '',
+            languages: profileData.languages || [],
+            about: profileData.description || profileData.about || '',
+            avatar: profileData.avatar || 'https://via.placeholder.com/150',
+            certificates: profileData.certificates || [],
+            experiences: profileData.experiences || [],
+            schedule: profileData.schedule || {
+              monday: [],
+              tuesday: [],
+              wednesday: [],
+              thursday: [],
+              friday: [],
+              saturday: [],
+              sunday: []
+            },
+            isActive: profileData.consultant?.status || profileData.isActive,
+            consultantProfileID: consultantProfileID
+          };
+          
+          setProfile(formattedProfile);
+          console.log('Formatted profile data:', formattedProfile);
+          
+          // Lưu profile vào localStorage để tránh mất dữ liệu khi refresh trang
+          localStorage.setItem('consultantProfile', JSON.stringify(formattedProfile));
+        } else {
+          toast.error('Không thể tải thông tin hồ sơ');
+        }
+      } catch (error) {
+        console.error('Error fetching consultant profile:', error);
+        toast.error('Có lỗi khi tải dữ liệu hồ sơ, vui lòng thử lại sau');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  // Toggle edit mode
+  const toggleEditMode = () => {
+    setEditMode(!editMode);
   };
 
-  // Add certificate
-  const handleAddCertificate = (certificate: { name: string, issuer: string, year: number, file: string }) => {
-    setProfile({
-      ...profile,
-      certificates: [...profile.certificates, { id: profile.certificates.length + 1, ...certificate }]
-    });
-    setShowUploadModal(false);
-  };
-
-  // Add experience
-  const handleAddExperience = (experience: { title: string, organization: string, location: string, startDate: string, endDate: string | null, description: string }) => {
-    setProfile({
-      ...profile,
-      experiences: [...profile.experiences, { id: profile.experiences.length + 1, ...experience }]
-    });
-    setShowUploadModal(false);
-  };
-
-  // Update schedule
-  const handleUpdateSchedule = () => {
-    setScheduleEditMode(false);
-  };
-
-  // Open upload modal for certificate or experience
-  const openUploadModal = (type: 'certificate' | 'experience') => {
-    setUploadType(type);
-    setShowUploadModal(true);
-  };
-  
-  // Handle certificate form change
-  const handleCertificateFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  // Handle profile form changes
+  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setNewCertificate({
-      ...newCertificate,
-      [name]: name === 'year' ? parseInt(value) : value
-    });
-  };
-  
-  // Handle experience form change
-  const handleExperienceFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setNewExperience({
-      ...newExperience,
+    setProfile(prev => ({
+      ...prev,
       [name]: value
-    });
+    }));
+  };
+
+  // Add a language to the profile
+  const handleAddLanguage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newLanguage.trim()) {
+      setProfile(prev => ({
+        ...prev,
+        languages: [...prev.languages, newLanguage.trim()]
+      }));
+      setNewLanguage('');
+    }
+  };
+
+  // Remove a language from the profile
+  const handleRemoveLanguage = (language: string) => {
+    setProfile(prev => ({
+      ...prev,
+      languages: prev.languages.filter(lang => lang !== language)
+    }));
+  };
+
+  // Save profile changes
+  const handleSaveProfile = async () => {
+    try {
+      console.log("Saving profile data:", profile);
+      console.log("consultantProfileID available:", profile.consultantProfileID);
+      
+      // Chỉ gửi các trường dữ liệu theo đúng định dạng API trong swagger
+      const profileData: ConsultantProfileRequest & { consultantProfileID?: number } = {
+        description: profile.about,
+        specialty: profile.specialty,
+        experience: profile.experience,
+        consultantPrice: 0, // Giá trị mặc định nếu không có
+        consultantProfileID: profile.consultantProfileID // Thêm consultantProfileID nếu có
+      };
+      
+      console.log("Sending profile data to API:", profileData);
+      
+      // Show loading toast
+      toast.loading('Đang cập nhật hồ sơ...', { id: 'profile-update' });
+      
+      const response = await consultantService.updateConsultantProfile(profileData);
+      console.log("API response:", response);
+      
+      if (response && response.statusCode === 200) {
+        setEditMode(false);
+        toast.success('Hồ sơ đã được cập nhật thành công', { id: 'profile-update' });
+        
+        // Refresh the profile data to ensure we have the latest data
+        const consultantId = localStorage.getItem('userId') || localStorage.getItem('AccountID');
+        if (consultantId) {
+          try {
+            const refreshResponse = await consultantService.getConsultantById(consultantId);
+            console.log("Refresh response:", refreshResponse);
+            
+            if (refreshResponse.statusCode === 200 && refreshResponse.data) {
+              // Update local state with refreshed data
+              const refreshedData = refreshResponse.data;
+              
+              // Tìm consultantProfileID từ response
+              let consultantProfileID;
+              if (refreshedData.consultantProfileID) {
+                consultantProfileID = refreshedData.consultantProfileID;
+              } else if (refreshedData.id) {
+                consultantProfileID = refreshedData.id;
+              } else if (refreshedData.consultant && refreshedData.consultant.id) {
+                consultantProfileID = refreshedData.consultant.id;
+              }
+              
+              console.log("Found consultantProfileID after refresh:", consultantProfileID);
+              
+              // Create a new profile object with the refreshed data but keep existing data that might not be in the response
+              const updatedProfile = {
+                ...profile,
+                accountId: refreshedData.userId || consultantId,
+                name: refreshedData.user?.name || profile.name,
+                title: profile.title,
+                specialty: refreshedData.specialization || profile.specialty,
+                experience: refreshedData.experience?.toString() || profile.experience,
+                education: profile.education,
+                languages: profile.languages,
+                about: refreshedData.bio || refreshedData.description || profile.about,
+                certificates: profile.certificates || [],
+                experiences: profile.experiences || [],
+                avatar: refreshedData.avatar || profile.avatar,
+                consultantProfileID: consultantProfileID // Lưu consultantProfileID từ response
+              };
+              
+              console.log("Updated profile:", updatedProfile);
+              setProfile(updatedProfile);
+              
+              // Lưu profile vào localStorage để tránh mất dữ liệu khi refresh trang
+              localStorage.setItem('consultantProfile', JSON.stringify(updatedProfile));
+            }
+          } catch (refreshError) {
+            console.error('Error refreshing profile data:', refreshError);
+          }
+        }
+      } else {
+        toast.error(`Không thể cập nhật hồ sơ: ${response?.message || 'Lỗi không xác định'}`, { id: 'profile-update' });
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Có lỗi khi cập nhật hồ sơ, vui lòng thử lại sau', { id: 'profile-update' });
+    }
+  };
+
+  // Delete a certificate
+  const handleDeleteCertificate = async (certificateId: number) => {
+    try {
+      if (!window.confirm('Bạn có chắc chắn muốn xóa chứng chỉ này không?')) {
+        return;
+      }
+      
+      // Show loading toast
+      toast.loading('Đang xóa chứng chỉ...', { id: 'certificate-delete' });
+      
+      const updatedCertificates = profile.certificates?.filter(cert => cert.id !== certificateId) || [];
+      
+      // Chỉ gửi các trường dữ liệu theo đúng định dạng API trong swagger
+      const profileData: ConsultantProfileRequest = {
+        description: profile.about,
+        specialty: profile.specialty,
+        experience: profile.experience,
+        consultantPrice: 0
+      };
+      
+      // Update profile with removed certificate
+      const response = await consultantService.updateConsultantProfile(profileData);
+      
+      if (response.statusCode === 200) {
+        // Update local state
+        setProfile(prev => ({
+          ...prev,
+          certificates: updatedCertificates
+        }));
+        
+        toast.success('Đã xóa chứng chỉ thành công', { id: 'certificate-delete' });
+        
+        // Refresh profile data
+        const consultantId = localStorage.getItem('userId') || localStorage.getItem('AccountID');
+        if (consultantId) {
+          try {
+            const refreshResponse = await consultantService.getConsultantById(consultantId);
+            if (refreshResponse.statusCode === 200 && refreshResponse.data) {
+              // Update certificates with refreshed data
+              if (refreshResponse.data.certificates) {
+                setProfile(prev => ({
+                  ...prev,
+                  certificates: refreshResponse.data.certificates
+                }));
+              }
+            }
+          } catch (refreshError) {
+            console.error('Error refreshing profile data:', refreshError);
+          }
+        }
+      } else {
+        toast.error(`Không thể xóa chứng chỉ: ${response.message || 'Lỗi không xác định'}`, { id: 'certificate-delete' });
+      }
+    } catch (error) {
+      console.error('Error deleting certificate:', error);
+      toast.error('Có lỗi khi xóa chứng chỉ, vui lòng thử lại sau', { id: 'certificate-delete' });
+    }
   };
   
-  // Handle certificate form submit
-  const handleCertificateSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    handleAddCertificate(newCertificate);
+  // Delete an experience
+  const handleDeleteExperience = async (experienceId: number) => {
+    try {
+      if (!window.confirm('Bạn có chắc chắn muốn xóa kinh nghiệm làm việc này không?')) {
+        return;
+      }
+      
+      // Show loading toast
+      toast.loading('Đang xóa kinh nghiệm làm việc...', { id: 'experience-delete' });
+      
+      const updatedExperiences = profile.experiences?.filter(exp => exp.id !== experienceId) || [];
+      
+      // Chỉ gửi các trường dữ liệu theo đúng định dạng API trong swagger
+      const profileData: ConsultantProfileRequest = {
+        description: profile.about,
+        specialty: profile.specialty,
+        experience: profile.experience,
+        consultantPrice: 0
+      };
+      
+      // Update profile with removed experience
+      const response = await consultantService.updateConsultantProfile(profileData);
+      
+      if (response.statusCode === 200) {
+        // Update local state
+        setProfile(prev => ({
+          ...prev,
+          experiences: updatedExperiences
+        }));
+        
+        toast.success('Đã xóa kinh nghiệm làm việc thành công', { id: 'experience-delete' });
+        
+        // Refresh profile data
+        const consultantId = localStorage.getItem('userId') || localStorage.getItem('AccountID');
+        if (consultantId) {
+          try {
+            const refreshResponse = await consultantService.getConsultantById(consultantId);
+            if (refreshResponse.statusCode === 200 && refreshResponse.data) {
+              // Update experiences with refreshed data
+              if (refreshResponse.data.experiences) {
+                setProfile(prev => ({
+                  ...prev,
+                  experiences: refreshResponse.data.experiences
+                }));
+              }
+            }
+          } catch (refreshError) {
+            console.error('Error refreshing profile data:', refreshError);
+          }
+        }
+      } else {
+        toast.error(`Không thể xóa kinh nghiệm làm việc: ${response.message || 'Lỗi không xác định'}`, { id: 'experience-delete' });
+      }
+    } catch (error) {
+      console.error('Error deleting experience:', error);
+      toast.error('Có lỗi khi xóa kinh nghiệm làm việc, vui lòng thử lại sau', { id: 'experience-delete' });
+    }
+  };
+
+  // Open modal for adding certificate or experience
+  const openModal = (type: string) => {
+    setModalType(type);
+    setShowModal(true);
+  };
+
+  // Close modal
+  const closeModal = () => {
+    setShowModal(false);
+    // Reset form values
     setNewCertificate({
       name: '',
       issuer: '',
       year: new Date().getFullYear(),
       file: ''
-    });
-  };
-  
-  // Handle experience form submit
-  const handleExperienceSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    handleAddExperience({
-      ...newExperience,
-      endDate: newExperience.endDate || null
     });
     setNewExperience({
       title: '',
@@ -153,705 +461,896 @@ const ConsultantProfile = () => {
     });
   };
 
-  // Translate day name from English to Vietnamese
-  const translateDayName = (day: string): string => {
-    const dayTranslations: Record<string, string> = {
-      'monday': 'Thứ Hai',
-      'tuesday': 'Thứ Ba',
-      'wednesday': 'Thứ Tư',
-      'thursday': 'Thứ Năm',
-      'friday': 'Thứ Sáu',
-      'saturday': 'Thứ Bảy',
-      'sunday': 'Chủ Nhật'
-    };
-    return dayTranslations[day] || capitalizeFirstLetter(day);
+  // Handle certificate form changes
+  const handleCertificateChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setNewCertificate(prev => ({
+      ...prev,
+      [name]: name === 'year' ? parseInt(value) : value
+    }));
   };
 
-  // Render the right content based on active tab
+  // Handle experience form changes
+  const handleExperienceChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setNewExperience(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Add a new certificate
+  const handleAddCertificate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      // Show loading toast
+      toast.loading('Đang thêm chứng chỉ...', { id: 'certificate-add' });
+      
+      // Handle file upload if a file was selected
+      let fileUrl = newCertificate.file;
+      const fileInput = document.getElementById('certificate-file') as HTMLInputElement;
+      
+      if (fileInput && fileInput.files && fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const uploadResponse = await consultantService.uploadProfilePicture(file);
+        
+        if (uploadResponse.statusCode === 200 && uploadResponse.data) {
+          fileUrl = uploadResponse.data.fileUrl;
+        } else {
+          toast.error('Không thể tải lên tệp chứng chỉ', { id: 'certificate-add' });
+          return;
+        }
+      }
+      
+      // Create updated certificate list
+      const newCertificateWithFile = {
+        ...newCertificate,
+        file: fileUrl
+      };
+      
+      const updatedCertificates = [
+        ...(profile.certificates || []),
+        {
+          id: (profile.certificates?.length || 0) + 1,
+          ...newCertificateWithFile
+        }
+      ];
+      
+      // Chỉ gửi các trường dữ liệu theo đúng định dạng API trong swagger
+      const profileData: ConsultantProfileRequest = {
+        description: profile.about,
+        specialty: profile.specialty,
+        experience: profile.experience,
+        consultantPrice: 0
+      };
+      
+      // Update profile with new certificate
+      const response = await consultantService.updateConsultantProfile(profileData);
+      
+      if (response.statusCode === 200) {
+        // Update local state
+        setProfile(prev => ({
+          ...prev,
+          certificates: updatedCertificates
+        }));
+        
+        closeModal();
+        toast.success('Chứng chỉ đã được thêm thành công', { id: 'certificate-add' });
+        
+        // Refresh profile data
+        const consultantId = localStorage.getItem('userId') || localStorage.getItem('AccountID');
+        if (consultantId) {
+          try {
+            const refreshResponse = await consultantService.getConsultantById(consultantId);
+            if (refreshResponse.statusCode === 200 && refreshResponse.data) {
+              // Update certificates with refreshed data
+              if (refreshResponse.data.certificates) {
+                setProfile(prev => ({
+                  ...prev,
+                  certificates: refreshResponse.data.certificates
+                }));
+              }
+            }
+          } catch (refreshError) {
+            console.error('Error refreshing profile data:', refreshError);
+          }
+        }
+      } else {
+        toast.error(`Không thể thêm chứng chỉ: ${response.message || 'Lỗi không xác định'}`, { id: 'certificate-add' });
+      }
+    } catch (error) {
+      console.error('Error adding certificate:', error);
+      toast.error('Có lỗi khi thêm chứng chỉ, vui lòng thử lại sau', { id: 'certificate-add' });
+    }
+  };
+
+  // Add a new experience
+  const handleAddExperience = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      // Show loading toast
+      toast.loading('Đang thêm kinh nghiệm làm việc...', { id: 'experience-add' });
+      
+      const updatedExperiences = [
+        ...(profile.experiences || []),
+        {
+          id: (profile.experiences?.length || 0) + 1,
+          ...newExperience,
+          endDate: newExperience.endDate || null
+        }
+      ];
+      
+      // Chỉ gửi các trường dữ liệu theo đúng định dạng API trong swagger
+      const profileData: ConsultantProfileRequest = {
+        description: profile.about,
+        specialty: profile.specialty,
+        experience: profile.experience,
+        consultantPrice: 0
+      };
+      
+      // Update profile with new experience
+      const response = await consultantService.updateConsultantProfile(profileData);
+      
+      if (response.statusCode === 200) {
+        // Update local state
+        setProfile(prev => ({
+          ...prev,
+          experiences: updatedExperiences
+        }));
+        
+        closeModal();
+        toast.success('Kinh nghiệm làm việc đã được thêm thành công', { id: 'experience-add' });
+        
+        // Refresh profile data to ensure we have the latest from the server
+        const consultantId = localStorage.getItem('userId') || localStorage.getItem('AccountID');
+        if (consultantId) {
+          try {
+            const refreshResponse = await consultantService.getConsultantById(consultantId);
+            if (refreshResponse.statusCode === 200 && refreshResponse.data) {
+              // Update experiences with refreshed data
+              if (refreshResponse.data.experiences) {
+                setProfile(prev => ({
+                  ...prev,
+                  experiences: refreshResponse.data.experiences
+                }));
+              }
+            }
+          } catch (refreshError) {
+            console.error('Error refreshing profile data:', refreshError);
+          }
+        }
+      } else {
+        toast.error(`Không thể thêm kinh nghiệm làm việc: ${response.message || 'Lỗi không xác định'}`, { id: 'experience-add' });
+      }
+    } catch (error) {
+      console.error('Error adding experience:', error);
+      toast.error('Có lỗi khi thêm kinh nghiệm làm việc, vui lòng thử lại sau', { id: 'experience-add' });
+    }
+  };
+
+  // Translate English day names to Vietnamese
+  const translateDayName = (day: string): string => {
+    const translations: Record<string, string> = {
+      monday: 'Thứ 2',
+      tuesday: 'Thứ 3',
+      wednesday: 'Thứ 4',
+      thursday: 'Thứ 5',
+      friday: 'Thứ 6',
+      saturday: 'Thứ 7',
+      sunday: 'Chủ nhật'
+    };
+    return translations[day] || day;
+  };
+
+  // Format date to display
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return '';
+    
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('vi-VN');
+    } catch (error) {
+      return dateString;
+    }
+  };
+  
+  // Handle avatar upload
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      try {
+        toast.loading('Đang tải ảnh lên...', { id: 'avatar-upload' });
+        
+        // Upload the file
+        const response = await consultantService.uploadProfilePicture(file);
+        
+        if (response.statusCode === 200 && response.data) {
+          // Update profile with new avatar URL
+          const avatarUrl = response.data.fileUrl;
+          
+          // Chỉ gửi các trường dữ liệu theo đúng định dạng API trong swagger
+          const profileData: ConsultantProfileRequest = {
+            description: profile.about,
+            specialty: profile.specialty,
+            experience: profile.experience,
+            consultantPrice: 0
+          };
+          
+          const updateResponse = await consultantService.updateConsultantProfile(profileData);
+          
+          if (updateResponse.statusCode === 200) {
+            // Update local state
+            setProfile(prev => ({
+              ...prev,
+              avatar: avatarUrl
+            }));
+            
+            toast.success('Cập nhật ảnh đại diện thành công', { id: 'avatar-upload' });
+            
+            // Refresh profile data
+            const consultantId = localStorage.getItem('userId') || localStorage.getItem('AccountID');
+            if (consultantId) {
+              try {
+                const refreshResponse = await consultantService.getConsultantById(consultantId);
+                if (refreshResponse.statusCode === 200 && refreshResponse.data) {
+                  // Update avatar with refreshed data
+                  if (refreshResponse.data.avatar) {
+                    setProfile(prev => ({
+                      ...prev,
+                      avatar: refreshResponse.data.avatar
+                    }));
+                  }
+                }
+              } catch (refreshError) {
+                console.error('Error refreshing profile data:', refreshError);
+              }
+            }
+          } else {
+            toast.error('Không thể cập nhật ảnh đại diện', { id: 'avatar-upload' });
+          }
+        } else {
+          toast.error('Không thể tải ảnh lên', { id: 'avatar-upload' });
+        }
+      } catch (error) {
+        console.error('Error uploading avatar:', error);
+        toast.error('Có lỗi khi tải ảnh lên', { id: 'avatar-upload' });
+      }
+    }
+  };
+  
+  // Set active tab and close any open modals when changing tabs
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    // Close modal when changing tabs
+    if (showModal) {
+      setShowModal(false);
+      setModalType('');
+    }
+  };
+
+  // Render profile content based on active tab
   const renderContent = () => {
-    switch(activeTab) {
+    switch (activeTab) {
       case 'profile':
         return (
-          <div className="profile-section">
-            {!editMode ? (
-              <div className="profile-view">
-                <div className="profile-header">
-                  <h2>Thông tin cá nhân</h2>
-                  <button 
-                    className="edit-button"
-                    onClick={() => setEditMode(true)}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                    </svg>
-                    Chỉnh sửa hồ sơ
-                  </button>
+          <div className="profile-content">
+            <div className="profile-avatar">
+              <div className="avatar-container">
+                <img 
+                  src={profile.avatar && profile.avatar !== '' ? profile.avatar : '/logo.png'} 
+                  alt={profile.name} 
+                  className="avatar-image" 
+                />
+                {editMode && (
+                  <div className="avatar-upload">
+                    <input
+                      type="file"
+                      id="avatar-upload"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={handleAvatarChange}
+                    />
+                    <label htmlFor="avatar-upload" className="avatar-edit-icon">
+                      <FaEdit />
+                    </label>
                 </div>
-                
-                <div className="info-group">
-                  <label>Họ và Tên</label>
-                  <p>{profile.name}</p>
-                </div>
-                
-                <div className="info-group">
-                  <label>Chức Danh</label>
-                  <p>{profile.title}</p>
-                </div>
-                
-                <div className="info-grid">
-                  <div className="info-group">
-                    <label>Email</label>
-                    <p>{profile.email}</p>
-                  </div>
-                  
-                  <div className="info-group">
-                    <label>Điện Thoại</label>
-                    <p>{profile.phone}</p>
-                  </div>
-                </div>
-                
-                <div className="info-grid">
-                  <div className="info-group">
-                    <label>Giới Tính</label>
-                    <p>{profile.gender}</p>
-                  </div>
-                  
-                  <div className="info-group">
-                    <label>Ngày Sinh</label>
-                    <p>{new Date(profile.birthDate).toLocaleDateString()}</p>
-                  </div>
-                </div>
-                
-                <div className="info-grid">
-                  <div className="info-group">
-                    <label>Chuyên Khoa</label>
-                    <p>{profile.specialty}</p>
-                  </div>
-                  
-                  <div className="info-group">
-                    <label>Kinh Nghiệm</label>
-                    <p>{profile.experience}</p>
-                  </div>
-                </div>
-                
-                <div className="info-group">
-                  <label>Học Vấn</label>
-                  <p>{profile.education}</p>
-                </div>
-                
-                <div className="info-group">
-                  <label>Ngôn Ngữ</label>
-                  <p>{profile.languages.join(', ')}</p>
-                </div>
-                
-                <div className="info-group about-section">
-                  <label>Giới Thiệu</label>
-                  <p>{profile.about}</p>
-                </div>
+                )}
               </div>
-            ) : (
-              <div className="profile-edit">
-                <div className="profile-header">
-                  <h2>Chỉnh Sửa Hồ Sơ</h2>
+              <h3 className="profile-name">{profile.name}</h3>
+              <p className="profile-title">{profile.title}</p>
+              <span className={`profile-status ${profile.isActive ? 'active' : 'inactive'}`}>
+                {profile.isActive ? 'Đang hoạt động' : 'Không hoạt động'}
+              </span>
                 </div>
                 
-                <div className="form-group">
-                  <label htmlFor="name">Họ và Tên</label>
-                  <input 
-                    type="text" 
-                    id="name"
-                    value={profile.name}
-                    onChange={(e) => setProfile({...profile, name: e.target.value})}
-                    required
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="title">Chức Danh</label>
-                  <input 
-                    type="text" 
-                    id="title"
-                    value={profile.title}
-                    onChange={(e) => setProfile({...profile, title: e.target.value})}
-                    required
-                  />
-                </div>
+            <div className="profile-section">
+              <h3 className="section-title">
+                <FaUser className="icon" /> Thông tin cá nhân
+              </h3>
                 
                 <div className="info-grid">
-                  <div className="form-group">
-                    <label htmlFor="email">Email</label>
+                <div className="info-item">
+                  <span className="info-label">Họ tên</span>
+                  {editMode ? (
+                  <input 
+                    type="text" 
+                      name="name" 
+                    value={profile.name}
+                      onChange={handleProfileChange}
+                      className="form-input"
+                  />
+                  ) : (
+                    <span className="info-value">{profile.name || 'Chưa cập nhật'}</span>
+                  )}
+                </div>
+                
+                <div className="info-item">
+                  <span className="info-label">Chức danh</span>
+                  {editMode ? (
+                  <input 
+                    type="text" 
+                      name="title" 
+                    value={profile.title}
+                      onChange={handleProfileChange}
+                      className="form-input"
+                  />
+                  ) : (
+                    <span className="info-value">{profile.title || 'Chưa cập nhật'}</span>
+                  )}
+                </div>
+                
+                <div className="info-item">
+                  <span className="info-label">Email</span>
+                  {editMode ? (
                     <input 
                       type="email" 
-                      id="email"
+                      name="email" 
                       value={profile.email}
-                      onChange={(e) => setProfile({...profile, email: e.target.value})}
-                      required
+                      onChange={handleProfileChange}
+                      className="form-input"
                     />
+                  ) : (
+                    <span className="info-value">{profile.email || 'Chưa cập nhật'}</span>
+                  )}
                   </div>
                   
-                  <div className="form-group">
-                    <label htmlFor="phone">Điện Thoại</label>
+                <div className="info-item">
+                  <span className="info-label">Số điện thoại</span>
+                  {editMode ? (
                     <input 
                       type="tel" 
-                      id="phone"
+                      name="phone" 
                       value={profile.phone}
-                      onChange={(e) => setProfile({...profile, phone: e.target.value})}
-                      required
+                      onChange={handleProfileChange}
+                      className="form-input"
+                      placeholder="Nhập số điện thoại"
                     />
-                  </div>
+                  ) : (
+                    <span className="info-value">{profile.phone || 'Chưa cập nhật'}</span>
+                  )}
                 </div>
                 
-                <div className="info-grid">
-                  <div className="form-group">
-                    <label htmlFor="gender">Giới Tính</label>
+                <div className="info-item">
+                  <span className="info-label">Giới tính</span>
+                  {editMode ? (
                     <select 
-                      id="gender"
+                      name="gender"
                       value={profile.gender}
-                      onChange={(e) => setProfile({...profile, gender: e.target.value})}
-                      required
+                      onChange={handleProfileChange}
+                      className="form-input"
                     >
+                      <option value="">Chọn giới tính</option>
                       <option value="Nam">Nam</option>
                       <option value="Nữ">Nữ</option>
                       <option value="Khác">Khác</option>
                     </select>
+                  ) : (
+                    <span className="info-value">{profile.gender || 'Chưa cập nhật'}</span>
+                  )}
                   </div>
                   
-                  <div className="form-group">
-                    <label htmlFor="birthDate">Ngày Sinh</label>
+                <div className="info-item">
+                  <span className="info-label">Ngày sinh</span>
+                  {editMode ? (
                     <input 
                       type="date" 
-                      id="birthDate"
-                      value={profile.birthDate}
-                      onChange={(e) => setProfile({...profile, birthDate: e.target.value})}
-                      required
+                      name="birthDate" 
+                      value={profile.birthDate ? profile.birthDate.split('T')[0] : ''}
+                      onChange={handleProfileChange}
+                      className="form-input"
                     />
+                  ) : (
+                    <span className="info-value">{formatDate(profile.birthDate) || 'Chưa cập nhật'}</span>
+                  )}
+                </div>
                   </div>
                 </div>
+
+            <div className="profile-section">
+              <h3 className="section-title">
+                <FaGraduationCap className="icon" /> Chuyên môn
+              </h3>
                 
                 <div className="info-grid">
-                  <div className="form-group">
-                    <label htmlFor="specialty">Chuyên Khoa</label>
+                <div className="info-item">
+                  <span className="info-label">Chuyên ngành</span>
+                  {editMode ? (
                     <input 
                       type="text" 
-                      id="specialty"
+                      name="specialty" 
                       value={profile.specialty}
-                      onChange={(e) => setProfile({...profile, specialty: e.target.value})}
-                      required
+                      onChange={handleProfileChange}
+                      className="form-input"
                     />
+                  ) : (
+                    <span className="info-value">{profile.specialty || 'Chưa cập nhật'}</span>
+                  )}
                   </div>
                   
-                  <div className="form-group">
-                    <label htmlFor="experience">Kinh Nghiệm</label>
+                <div className="info-item">
+                  <span className="info-label">Kinh nghiệm</span>
+                  {editMode ? (
                     <input 
                       type="text" 
-                      id="experience"
+                      name="experience" 
                       value={profile.experience}
-                      onChange={(e) => setProfile({...profile, experience: e.target.value})}
-                      required
+                      onChange={handleProfileChange}
+                      className="form-input"
                     />
-                  </div>
+                  ) : (
+                    <span className="info-value">{profile.experience || 'Chưa cập nhật'}</span>
+                  )}
                 </div>
                 
-                <div className="form-group">
-                  <label htmlFor="education">Học Vấn</label>
+                <div className="info-item">
+                  <span className="info-label">Học vấn</span>
+                  {editMode ? (
                   <input 
                     type="text" 
-                    id="education"
+                      name="education" 
                     value={profile.education}
-                    onChange={(e) => setProfile({...profile, education: e.target.value})}
-                    required
+                      onChange={handleProfileChange}
+                      className="form-input"
                   />
+                  ) : (
+                    <span className="info-value">{profile.education || 'Chưa cập nhật'}</span>
+                  )}
                 </div>
                 
-                <div className="form-group">
-                  <label htmlFor="languages">Ngôn Ngữ (phân cách bằng dấu phẩy)</label>
+                <div className="info-item">
+                  <span className="info-label">Ngôn ngữ</span>
+                  {editMode ? (
+                    <>
+                      <div className="tag-list">
+                        {profile.languages.map((language, index) => (
+                          <span key={index} className="tag">
+                            {language}
+                            <span 
+                              className="tag-remove" 
+                              onClick={() => handleRemoveLanguage(language)}
+                            >
+                              &times;
+                            </span>
+                          </span>
+                        ))}
+                      </div>
+                      <form onSubmit={handleAddLanguage} className="tag-input-container">
                   <input 
                     type="text" 
-                    id="languages"
-                    value={profile.languages.join(', ')}
-                    onChange={(e) => setProfile({...profile, languages: e.target.value.split(',').map(lang => lang.trim())})}
-                    required
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="about">Giới Thiệu</label>
-                  <textarea 
-                    id="about"
-                    rows={5}
-                    value={profile.about}
-                    onChange={(e) => setProfile({...profile, about: e.target.value})}
-                    required
-                  ></textarea>
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="avatar">Ảnh Đại Diện</label>
-                  <input 
-                    type="file" 
-                    id="avatar"
-                    accept="image/*"
-                    onChange={(e) => {
-                      if (e.target.files?.length) {
-                        setProfile({...profile, avatar: URL.createObjectURL(e.target.files[0])});
+                          value={newLanguage}
+                          onChange={e => setNewLanguage(e.target.value)}
+                          placeholder="Thêm ngôn ngữ..."
+                          className="tag-input"
+                        />
+                        <button type="submit" className="add-tag-button">Thêm</button>
+                      </form>
+                    </>
+                  ) : (
+                    <span className="info-value">
+                      {profile.languages.length > 0 
+                        ? profile.languages.join(', ') 
+                        : 'Chưa cập nhật'
                       }
-                    }}
-                  />
+                    </span>
+                  )}
+                </div>
                 </div>
                 
+              <div className="section-divider"></div>
+              
+              <div className="info-item">
+                <span className="info-label">Giới thiệu</span>
+                {editMode ? (
+                  <textarea 
+                    name="about" 
+                    value={profile.about}
+                    onChange={handleProfileChange}
+                    className="form-input"
+                    rows={5}
+                  />
+                ) : (
+                  <p className="info-value">
+                    {profile.about || 'Chưa có thông tin giới thiệu.'}
+                  </p>
+                )}
+                </div>
+                
+              {editMode && (
                 <div className="form-actions">
-                  <button 
-                    className="cancel-button"
-                    onClick={() => setEditMode(false)}
-                  >
+                  <button className="btn btn-secondary" onClick={() => setEditMode(false)}>
                     Hủy
                   </button>
-                  <button 
-                    className="save-button"
-                    onClick={() => handleProfileUpdate(profile)}
-                  >
-                    Lưu Thay Đổi
+                  <button className="btn btn-primary" onClick={handleSaveProfile}>
+                    Lưu thông tin
                   </button>
-                </div>
               </div>
             )}
+            </div>
           </div>
         );
         
-      case 'qualifications':
+      case 'certificates':
         return (
-          <div className="qualifications-section">
+          <div className="profile-content">
+            <div className="profile-section">
             <div className="section-header">
-              <h2>Kinh Nghiệm & Chứng Chỉ</h2>
-              <div className="action-buttons">
-                <button 
-                  className="add-button"
-                  onClick={() => openUploadModal('experience')}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                  </svg>
-                  Thêm Kinh Nghiệm
+                <h3 className="section-title">
+                  <FaGraduationCap className="icon" /> Chứng chỉ & Bằng cấp
+                </h3>
+                <button className="btn btn-primary" onClick={() => openModal('certificate')}>
+                  <FaPlus /> Thêm chứng chỉ
                 </button>
-                <button 
-                  className="add-button"
-                  onClick={() => openUploadModal('certificate')}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                  </svg>
-                  Thêm Chứng Chỉ
+            </div>
+            
+              <div className="certificate-grid">
+                {profile.certificates && profile.certificates.length > 0 ? (
+                  profile.certificates.map((cert, index) => (
+                    <div className="certificate-card" key={index}>
+                      <h4 className="certificate-title">{cert.name}</h4>
+                      <p className="certificate-issuer">{cert.issuer}</p>
+                      <p className="certificate-year">Năm: {cert.year}</p>
+                      <div className="certificate-actions">
+                        <button className="btn btn-secondary" onClick={() => handleDeleteCertificate(cert.id)}>
+                          <FaTrash /> Xóa
                 </button>
               </div>
             </div>
-            
-            <div className="qualifications-content">
-              <div className="experiences-section">
-                <h3 className="qualifications-subtitle">Kinh Nghiệm Làm Việc</h3>
-                
-                {profile.experiences.map(experience => (
-                  <div className="experience-card" key={experience.id}>
-                    <div className="experience-title">{experience.title}</div>
-                    <div className="experience-org">{experience.organization}</div>
-                    <div className="experience-period">{formatYearMonth(experience.startDate)} - {experience.endDate ? formatYearMonth(experience.endDate) : 'Hiện tại'}</div>
-                    <div className="experience-location">{experience.location}</div>
-                    <div className="experience-description">{experience.description}</div>
+                  ))
+                ) : (
+                  <p>Chưa có chứng chỉ nào được thêm.</p>
+                )}
                   </div>
-                ))}
+              </div>
+          </div>
+        );
+        
+      case 'experiences':
+        return (
+          <div className="profile-content">
+            <div className="profile-section">
+              <div className="section-header">
+                <h3 className="section-title">
+                  <FaBriefcase className="icon" /> Kinh nghiệm làm việc
+                </h3>
+                <button className="btn btn-primary" onClick={() => openModal('experience')}>
+                  <FaPlus /> Thêm kinh nghiệm
+                </button>
               </div>
               
-              <div className="certificates-section">
-                <h3 className="qualifications-subtitle">Chứng Chỉ Chuyên Môn</h3>
-                
-                {profile.certificates.map(certificate => (
-                  <div className="certificate-card" key={certificate.id}>
-                    <div className="certificate-title">{certificate.name}</div>
-                    <div className="certificate-issuer">Cấp bởi: {certificate.issuer}</div>
-                    <div className="certificate-year">Năm: {certificate.year}</div>
-                    <div className="certificate-actions">
-                      {certificate.file && (
-                        <button className="view-button">Xem Chứng Chỉ</button>
-                      )}
+              {profile.experiences && profile.experiences.length > 0 ? (
+                profile.experiences.map((exp, index) => (
+                  <div className="experience-item" key={index}>
+                    <div className="experience-period">
+                      <div className="experience-marker"></div>
+                      {formatDate(exp.startDate)} - {exp.endDate ? formatDate(exp.endDate) : 'Hiện tại'}
                     </div>
+                    <h4 className="experience-title">{exp.title}</h4>
+                    <p className="experience-organization">{exp.organization}</p>
+                    <p className="experience-location">{exp.location}</p>
+                    <p className="experience-description">{exp.description}</p>
+                    <div className="experience-actions">
+                      <button className="btn btn-secondary" onClick={() => handleDeleteExperience(exp.id)}>
+                        <FaTrash /> Xóa
+                      </button>
                   </div>
-                ))}
               </div>
+                ))
+              ) : (
+                <p>Chưa có kinh nghiệm làm việc nào được thêm.</p>
+              )}
             </div>
           </div>
         );
 
       case 'schedule':
         return (
-          <div className="schedule-section">
+          <div className="profile-content">
+            <div className="profile-section">
             <div className="section-header">
-              <h2>Lịch Làm Việc</h2>
-              <button 
-                className="edit-button"
-                onClick={() => setScheduleEditMode(true)}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                </svg>
-                Chỉnh Sửa Lịch
-              </button>
+                <h3 className="section-title">
+                  <FaClock className="icon" /> Lịch làm việc
+                </h3>
             </div>
             
-            {!scheduleEditMode ? (
-              <div className="schedule-grid">
-                {Object.entries(profile.schedule).map(([day, slots]) => (
-                  <div key={day} className="day-schedule">
-                    <h3>{translateDayName(day)}</h3>
-                    {slots.length > 0 ? (
+              <div className="schedule-section">
+                {Object.entries(profile.schedule || {}).map(([day, slots]) => (
+                  <div className="day-schedule" key={day}>
+                    <div className="day-header">
+                      <span>{translateDayName(day)}</span>
+                    </div>
+                    
                       <div className="time-slots">
-                        {slots.map((slot, index) => (
-                          <div key={index} className="time-slot">
+                      {slots && slots.length > 0 ? (
+                        slots.map((slot, idx) => (
+                          <div className="time-slot" key={idx}>
                             {slot.start} - {slot.end}
                           </div>
-                        ))}
-                      </div>
+                        ))
                     ) : (
-                      <div className="no-schedule">Không làm việc</div>
+                        <p>Không có ca làm việc</p>
                     )}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="schedule-edit">
-                {Object.entries(profile.schedule).map(([day, slots]) => (
-                  <div key={day} className="day-schedule-edit">
-                    <h3>{translateDayName(day)}</h3>
-                    <div className="time-slots-edit">
-                      {slots.map((slot, index) => (
-                        <div key={index} className="time-slot-edit">
-                          <div className="time-input-group">
-                            <input
-                              type="time"
-                              value={slot.start}
-                              onChange={(e) => {
-                                const newSchedule = {...profile.schedule};
-                                newSchedule[day][index].start = e.target.value;
-                                setProfile({...profile, schedule: newSchedule});
-                              }}
-                            />
-                            <span>-</span>
-                            <input
-                              type="time"
-                              value={slot.end}
-                              onChange={(e) => {
-                                const newSchedule = {...profile.schedule};
-                                newSchedule[day][index].end = e.target.value;
-                                setProfile({...profile, schedule: newSchedule});
-                              }}
-                            />
-                          </div>
-                          <button 
-                            className="remove-time-slot"
-                            onClick={() => {
-                              const newSchedule = {...profile.schedule};
-                              newSchedule[day] = slots.filter((_, i) => i !== index);
-                              setProfile({...profile, schedule: newSchedule});
-                            }}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                          </button>
                         </div>
                       ))}
-                      <button 
-                        className="add-time-slot"
-                        onClick={() => {
-                          const newSchedule = {...profile.schedule};
-                          newSchedule[day] = [...slots, { start: '09:00', end: '17:00' }];
-                          setProfile({...profile, schedule: newSchedule});
-                        }}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                        </svg>
-                        Thêm Khung Giờ
-                      </button>
                     </div>
-                  </div>
-                ))}
-                
-                <div className="form-actions">
-                  <button 
-                    className="cancel-button"
-                    onClick={() => setScheduleEditMode(false)}
-                  >
-                    Hủy
-                  </button>
-                  <button 
-                    className="save-button"
-                    onClick={() => {
-                      handleUpdateSchedule();
-                    }}
-                  >
-                    Lưu Thay Đổi
-                  </button>
+              
+              <p className="info-value">
+                Để đăng ký lịch làm việc, vui lòng liên hệ với quản lý để được hỗ trợ.
+              </p>
                 </div>
-              </div>
-            )}
           </div>
         );
 
       default:
-        return <div>Vui lòng chọn tab để xem thông tin</div>;
+        return <div>Không có dữ liệu</div>;
     }
   };
 
-  // Helper functions for formatting
-  const formatYearMonth = (dateString: string) => {
-    const [year, month] = dateString.split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
-  };
-
-  const capitalizeFirstLetter = (string: string) => {
-    return string.charAt(0).toUpperCase() + string.slice(1);
-  };
-
-  // Render upload modals
-  const renderUploadModal = () => {
-    if (!showUploadModal) return null;
-    
-    return (
-      <div className="upload-modal-overlay">
-        <div className="upload-modal">
-          <div className="upload-modal-header">
-            <h3>{uploadType === 'certificate' ? 'Thêm Chứng Chỉ' : 'Thêm Kinh Nghiệm'}</h3>
-            <button 
-              className="close-button"
-              onClick={() => setShowUploadModal(false)}
-            >
-              &times;
-            </button>
+  // Render add certificate modal
+  const renderCertificateModal = () => (
+    <div className="modal">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h3 className="modal-title">Thêm chứng chỉ mới</h3>
+          <button className="modal-close" onClick={closeModal}>&times;</button>
           </div>
           
-          <div className="upload-modal-content">
-            {uploadType === 'certificate' ? (
-              <form onSubmit={handleCertificateSubmit} className="upload-form">
+        <form onSubmit={handleAddCertificate}>
                 <div className="form-group">
-                  <label htmlFor="name">Tên Chứng Chỉ</label>
+            <label className="form-label">Tên chứng chỉ</label>
                   <input 
                     type="text" 
-                    id="name"
                     name="name"
                     value={newCertificate.name}
-                    onChange={handleCertificateFormChange}
+              onChange={handleCertificateChange}
+              className="form-input"
                     required
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label htmlFor="issuer">Tổ Chức Cấp</label>
+            <label className="form-label">Đơn vị cấp</label>
                   <input 
                     type="text" 
-                    id="issuer"
                     name="issuer"
                     value={newCertificate.issuer}
-                    onChange={handleCertificateFormChange}
+              onChange={handleCertificateChange}
+              className="form-input"
                     required
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label htmlFor="year">Năm Cấp</label>
+            <label className="form-label">Năm cấp</label>
                   <input 
                     type="number" 
-                    id="year"
                     name="year"
+              value={newCertificate.year}
+              onChange={handleCertificateChange}
+              className="form-input"
                     min="1950"
                     max={new Date().getFullYear()}
-                    value={newCertificate.year}
-                    onChange={handleCertificateFormChange}
                     required
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label htmlFor="file">Tệp Chứng Chỉ</label>
+            <label className="form-label">Tài liệu đính kèm</label>
+            <div className="file-input-container">
                   <input 
                     type="file" 
-                    id="file"
+                id="certificate-file"
                     name="file"
-                    onChange={(e) => {
-                      if (e.target.files?.length) {
-                        setNewCertificate({
-                          ...newCertificate,
-                          file: URL.createObjectURL(e.target.files[0])
-                        });
-                      }
-                    }}
+                className="file-input"
                     accept=".pdf,.jpg,.jpeg,.png"
                   />
-                  <small>Chấp nhận PDF, JPG, PNG</small>
+              <label htmlFor="certificate-file" className="file-input-label">
+                Chọn tệp
+              </label>
+              {newCertificate.file && (
+                <div className="file-name">{newCertificate.file}</div>
+              )}
+            </div>
                 </div>
                 
                 <div className="form-actions">
-                  <button 
-                    type="button"
-                    className="cancel-button"
-                    onClick={() => setShowUploadModal(false)}
-                  >
+            <button type="button" className="btn btn-secondary" onClick={closeModal}>
                     Hủy
                   </button>
-                  <button 
-                    type="submit"
-                    className="submit-button"
-                  >
-                    Thêm Chứng Chỉ
+            <button type="submit" className="btn btn-primary">
+              Thêm chứng chỉ
                   </button>
                 </div>
               </form>
-            ) : (
-              <form onSubmit={handleExperienceSubmit} className="upload-form">
+      </div>
+    </div>
+  );
+
+  // Render add experience modal
+  const renderExperienceModal = () => (
+    <div className="modal">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h3 className="modal-title">Thêm kinh nghiệm làm việc</h3>
+          <button className="modal-close" onClick={closeModal}>&times;</button>
+        </div>
+        
+        <form onSubmit={handleAddExperience}>
                 <div className="form-group">
-                  <label htmlFor="title">Chức Danh</label>
+            <label className="form-label">Chức danh</label>
                   <input 
                     type="text" 
-                    id="title"
                     name="title"
                     value={newExperience.title}
-                    onChange={handleExperienceFormChange}
+              onChange={handleExperienceChange}
+              className="form-input"
                     required
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label htmlFor="organization">Tổ Chức</label>
+            <label className="form-label">Tổ chức / Công ty</label>
                   <input 
                     type="text" 
-                    id="organization"
                     name="organization"
                     value={newExperience.organization}
-                    onChange={handleExperienceFormChange}
+              onChange={handleExperienceChange}
+              className="form-input"
                     required
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label htmlFor="location">Địa Điểm</label>
+            <label className="form-label">Địa điểm</label>
                   <input 
                     type="text" 
-                    id="location"
                     name="location"
                     value={newExperience.location}
-                    onChange={handleExperienceFormChange}
+              onChange={handleExperienceChange}
+              className="form-input"
                     required
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label htmlFor="startDate">Ngày Bắt Đầu</label>
+            <label className="form-label">Ngày bắt đầu</label>
                   <input 
-                    type="month" 
-                    id="startDate"
+              type="date"
                     name="startDate"
                     value={newExperience.startDate}
-                    onChange={handleExperienceFormChange}
+              onChange={handleExperienceChange}
+              className="form-input"
                     required
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label htmlFor="endDate">Ngày Kết Thúc</label>
+            <label className="form-label">Ngày kết thúc (để trống nếu vẫn đang làm việc)</label>
                   <input 
-                    type="month" 
-                    id="endDate"
+              type="date"
                     name="endDate"
                     value={newExperience.endDate}
-                    onChange={handleExperienceFormChange}
+              onChange={handleExperienceChange}
+              className="form-input"
                   />
-                  <small>Để trống nếu là vị trí hiện tại</small>
                 </div>
                 
                 <div className="form-group">
-                  <label htmlFor="description">Mô Tả</label>
+            <label className="form-label">Mô tả công việc</label>
                   <textarea 
-                    id="description"
                     name="description"
-                    rows={3}
                     value={newExperience.description}
-                    onChange={handleExperienceFormChange}
+              onChange={handleExperienceChange}
+              className="form-input"
+              rows={4}
                     required
-                  ></textarea>
+            />
                 </div>
                 
                 <div className="form-actions">
-                  <button 
-                    type="button"
-                    className="cancel-button"
-                    onClick={() => setShowUploadModal(false)}
-                  >
+            <button type="button" className="btn btn-secondary" onClick={closeModal}>
                     Hủy
                   </button>
-                  <button 
-                    type="submit"
-                    className="submit-button"
-                  >
-                    Thêm Kinh Nghiệm
+            <button type="submit" className="btn btn-primary">
+              Thêm kinh nghiệm
                   </button>
                 </div>
               </form>
-            )}
-          </div>
         </div>
       </div>
     );
+
+  // Cleanup function to handle logout
+  const cleanupOnLogout = () => {
+    // Listen for storage events
+    window.addEventListener('storage', (event) => {
+      // Check if token was removed (logout)
+      if (event.key === 'token' && !event.newValue) {
+        // Clear consultant profile data
+        localStorage.removeItem('consultantProfile');
+      }
+    });
+    
+    // Check if user is logged out when component mounts
+    if (!localStorage.getItem('token')) {
+      localStorage.removeItem('consultantProfile');
+    }
   };
+
+  // Call cleanup function
+  cleanupOnLogout();
 
   return (
     <div className="consultant-profile-container">
-      <div className="profile-sidebar">
-        <div className="profile-avatar-section">
-          <img src={profile.avatar} alt={profile.name} className="profile-avatar" />
-          <div className="profile-basic-info">
-            <h1>{profile.name}</h1>
-            <p className="profile-title">{profile.title}</p>
+      {loading ? (
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Đang tải thông tin hồ sơ...</p>
           </div>
-        </div>
-        
-        <div className="profile-nav">
+      ) : (
+        <>
+          <div className="profile-header">
+            <div className="profile-tabs">
           <button 
-            className={`profile-nav-item ${activeTab === 'profile' ? 'active' : ''}`}
-            onClick={() => setActiveTab('profile')}
+                className={`tab-button ${activeTab === 'profile' ? 'active' : ''}`} 
+                onClick={() => handleTabChange('profile')}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-            </svg>
-            Hồ Sơ
+                Thông tin cá nhân
           </button>
-          
           <button 
-            className={`profile-nav-item ${activeTab === 'qualifications' ? 'active' : ''}`}
-            onClick={() => setActiveTab('qualifications')}
+                className={`tab-button ${activeTab === 'certificates' ? 'active' : ''}`} 
+                onClick={() => handleTabChange('certificates')}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zm9.3 7.176A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
-            </svg>
-            Kinh Nghiệm & Chứng Chỉ
+                Chứng chỉ & Bằng cấp
           </button>
-          
           <button 
-            className={`profile-nav-item ${activeTab === 'schedule' ? 'active' : ''}`}
-            onClick={() => setActiveTab('schedule')}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-            </svg>
-            Lịch Làm Việc
+                className={`tab-button ${activeTab === 'experiences' ? 'active' : ''}`} 
+                onClick={() => handleTabChange('experiences')}
+              >
+                Kinh nghiệm làm việc
+              </button>
+              <button 
+                className={`tab-button ${activeTab === 'schedule' ? 'active' : ''}`} 
+                onClick={() => handleTabChange('schedule')}
+              >
+                Lịch làm việc
           </button>
         </div>
+            
+            {activeTab === 'profile' && !editMode && (
+              <button className="edit-button" onClick={toggleEditMode}>
+                <FaEdit /> Chỉnh sửa
+              </button>
+            )}
       </div>
       
-      <div className="profile-content">
         {renderContent()}
-      </div>
-
-      {/* Add the upload modal */}
-      {renderUploadModal()}
+          
+          {/* Render modals only when showModal is true and we're on the correct tab */}
+          {showModal && modalType === 'certificate' && activeTab === 'certificates' && renderCertificateModal()}
+          {showModal && modalType === 'experience' && activeTab === 'experiences' && renderExperienceModal()}
+        </>
+      )}
     </div>
   );
 };

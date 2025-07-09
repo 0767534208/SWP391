@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FaSearch, FaEye, FaDownload, FaPrint, FaTimes, FaFilter } from 'react-icons/fa';
+import { FaSearch, FaTimes, FaEye, FaDownload, FaPrint } from 'react-icons/fa';
 import './TestResultConsultant.css';
+import { testResultService } from '../../services';
+import { toast } from 'react-hot-toast';
 
 interface TestResult {
   id: string;
@@ -49,16 +51,16 @@ interface DetailedTestResult {
 }
 
 const TestResultConsultant: React.FC = () => {
+  // States
+  const [testResults, setTestResults] = useState<TestResult[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterDateRange, setFilterDateRange] = useState<{ 
-    startDate: string; 
-    endDate: string;
-  }>({
+  const [filterDateRange, setFilterDateRange] = useState({
     startDate: '',
     endDate: ''
   });
-  const [selectedResult, setSelectedResult] = useState<TestResult | null>(null);
   const [showDetailModal, setShowDetailModal] = useState<boolean>(false);
   const [detailedResult, setDetailedResult] = useState<DetailedTestResult | null>(null);
   const [summaryStats, setSummaryStats] = useState({
@@ -69,224 +71,265 @@ const TestResultConsultant: React.FC = () => {
     critical: 0
   });
 
-  // Mock data for test results
-  const [testResults, setTestResults] = useState<TestResult[]>([
-    {
-      id: 'TR-1001',
-      patientName: 'Nguyễn Văn A',
-      patientId: 'BN-5023',
-      testType: 'STI Screening',
-      date: '2023-06-25',
-      status: 'normal',
-      viewed: true,
-      notes: '5/6/2025'
-    },
-    {
-      id: 'TR-1002',
-      patientName: 'Trần Thị B',
-      patientId: 'BN-5045',
-      testType: 'HIV & Hepatitis Panel',
-      date: '2023-06-26',
-      status: 'abnormal',
-      viewed: true,
-      notes: '5/6/2025'
-    },
-    {
-      id: 'TR-1003',
-      patientName: 'Lê Văn C',
-      patientId: 'BN-5078',
-      testType: 'Complete STI Panel',
-      date: '2023-06-27',
-      status: 'normal',
-      viewed: false,
-      notes: '5/6/2025'
-    },
-    {
-      id: 'TR-1004',
-      patientName: 'Phạm Thị D',
-      patientId: 'BN-5102',
-      testType: 'HPV Testing',
-      date: '2023-06-28',
-      status: 'critical',
-      viewed: false,
-      notes: '5/6/2025'
-    },
-    {
-      id: 'TR-1005',
-      patientName: 'Hoàng Văn E',
-      patientId: 'BN-5134',
-      testType: 'STI & Reproductive Health Panel',
-      date: '2023-06-29',
-      status: 'abnormal',
-      viewed: false,
-      notes: '5/6/2025'
-    }
-  ]);
-
-  // Calculate summary statistics
+  // Fetch test results
   useEffect(() => {
-    const stats = {
-      total: testResults.length,
-      unread: testResults.filter(r => !r.viewed).length,
-      normal: testResults.filter(r => r.status === 'normal').length,
-      abnormal: testResults.filter(r => r.status === 'abnormal').length,
-      critical: testResults.filter(r => r.status === 'critical').length
+    const fetchTestResults = async () => {
+      setLoading(true);
+      try {
+        const consultantId = localStorage.getItem('userId') || localStorage.getItem('AccountID');
+        
+        if (!consultantId) {
+          toast.error('Không tìm thấy thông tin người dùng');
+          setLoading(false);
+          return;
+        }
+        
+        // Fetch lab tests for the consultant's treatments
+        const response = await testResultService.getAllTestResults();
+        
+        if (response.statusCode === 200 && response.data) {
+          // Transform API data to match our component's expected format
+          const transformedResults = response.data.items.map(item => ({
+            id: item.id,
+            patientName: item.user?.name || 'Không xác định',
+            patientId: item.userId,
+            testType: item.testType,
+            date: item.testDate,
+            status: determineTestStatus(item),
+            viewed: item.viewed || false,
+            notes: item.notes
+          }));
+          
+          setTestResults(transformedResults);
+          
+          // Calculate summary stats
+          const stats = {
+            total: transformedResults.length,
+            unread: transformedResults.filter(result => !result.viewed).length,
+            normal: transformedResults.filter(result => result.status === 'normal').length,
+            abnormal: transformedResults.filter(result => result.status === 'abnormal').length,
+            critical: transformedResults.filter(result => result.status === 'critical').length
+          };
+          setSummaryStats(stats);
+          
+          console.log('Test results loaded:', transformedResults);
+        } else {
+          toast.error(`Có lỗi khi tải dữ liệu: ${response.message}`);
+          setError(`Có lỗi khi tải dữ liệu: ${response.message}`);
+        }
+      } catch (err) {
+        console.error('Error fetching test results:', err);
+        toast.error('Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.');
+        setError('Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.');
+      } finally {
+        setLoading(false);
+      }
     };
-    setSummaryStats(stats);
-  }, [testResults]);
+
+    fetchTestResults();
+  }, []);
+
+  // Determine test status
+  const determineTestStatus = (testResult: any): 'normal' | 'abnormal' | 'critical' => {
+    if (!testResult) return 'normal';
+    
+    // Extract result from the test result data
+    // This is just an example - adapt based on your actual API response structure
+    const resultValue = testResult.result?.toLowerCase();
+    
+    if (resultValue?.includes('positive') || resultValue?.includes('dương tính')) {
+      return 'abnormal';
+    } else if (resultValue?.includes('critical') || resultValue?.includes('nguy hiểm')) {
+      return 'critical';
+    } else {
+      return 'normal';
+    }
+  };
 
   // Filter test results based on search query and filters
-  const filteredResults = testResults.filter((result) => {
-    // Search filter - search across multiple fields
-    const searchFields = [
-      result.patientName.toLowerCase(),
-      result.patientId.toLowerCase(),
-      result.testType.toLowerCase(),
-      result.id.toLowerCase()
-    ];
-    const matchesSearch = searchQuery === '' || 
-      searchFields.some(field => field.includes(searchQuery.toLowerCase()));
-
+  const filteredResults = testResults.filter(result => {
+    // Search filter
+    const matchesSearch = 
+      searchQuery === '' || 
+      result.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      result.patientId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      result.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (result.notes && result.notes.toLowerCase().includes(searchQuery.toLowerCase()));
+    
     // Status filter
-    const matchesStatus = filterStatus === 'all' || result.status === filterStatus;
-
-    // Date range filter
-    let matchesDateRange = true;
-    if (filterDateRange.startDate && filterDateRange.endDate) {
-      const testDate = new Date(result.date);
-      const startDate = new Date(filterDateRange.startDate);
-      const endDate = new Date(filterDateRange.endDate);
-      matchesDateRange = testDate >= startDate && testDate <= endDate;
-    }
-
-    return matchesSearch && matchesStatus && matchesDateRange;
+    const matchesStatus = 
+      filterStatus === 'all' || 
+      result.status === filterStatus;
+    
+    // Date filter
+    const resultDate = new Date(result.date);
+    const matchesStartDate = 
+      !filterDateRange.startDate || 
+      resultDate >= new Date(filterDateRange.startDate);
+    const matchesEndDate = 
+      !filterDateRange.endDate || 
+      resultDate <= new Date(filterDateRange.endDate + 'T23:59:59');
+    
+    return matchesSearch && matchesStatus && matchesStartDate && matchesEndDate;
   });
 
-  // Mark result as viewed
-  const markAsViewed = (id: string) => {
-    setTestResults(
-      testResults.map((result) =>
-        result.id === id ? { ...result, viewed: true } : result
-      )
-    );
+  // Mark a test result as viewed
+  const markAsViewed = async (id: string) => {
+    try {
+      // Call API to mark the result as viewed
+      await testResultService.markTestResultAsViewed(id);
+      
+      // Update local state
+      setTestResults(prev => 
+        prev.map(result => 
+          result.id === id ? { ...result, viewed: true } : result
+        )
+      );
+      
+      // Update summary stats
+      setSummaryStats(prev => ({
+        ...prev,
+        unread: prev.unread - 1
+      }));
+      
+      toast.success('Đã đánh dấu đã đọc');
+    } catch (err) {
+      console.error('Error marking test result as viewed:', err);
+      toast.error('Có lỗi khi cập nhật trạng thái, vui lòng thử lại sau');
+    }
   };
 
   // Fetch detailed test result
-  const fetchDetailedTestResult = (resultId: string) => {
-    // In a real application, this would be an API call
-    // Here we're simulating the API response with mock data
-    const detailedData: DetailedTestResult = {
-      id: resultId,
-      patientInfo: {
-        id: selectedResult?.patientId || '',
-        name: selectedResult?.patientName || '',
-        dob: '15/05/1992',
-        gender: 'Nam',
-        email: 'patient@example.com',
-        phone: '0912345678'
-      },
-      testDate: selectedResult?.date || '',
-      reportDate: selectedResult?.date || '',
-      sampleType: 'Máu, Dịch niệu đạo',
-      collectionDate: `${selectedResult?.date || ''} 09:49 AM`,
-      receivedDate: `${selectedResult?.date || ''} 10:05 AM`,
-      labId: 'LAB' + Math.floor(10000 + Math.random() * 90000),
-      categories: [
-        {
-          name: 'SINH HÓA',
-          results: [
+  const fetchDetailedTestResult = async (resultId: string) => {
+    try {
+      // Fetch the detailed test result from API
+      const response = await testResultService.getTestResult(resultId);
+      
+      if (response.statusCode === 200 && response.data) {
+        // Transform API data to match our component's expected format
+        const testResult = response.data;
+        
+        // This is a simplified transformation - adjust based on actual API response
+        const detailedData: DetailedTestResult = {
+          id: testResult.id,
+          patientInfo: {
+            id: testResult.userId,
+            name: testResult.user?.name || 'Không xác định',
+            dob: testResult.user?.dateOfBirth || '',
+            gender: testResult.user?.gender || 'Không xác định',
+            email: testResult.user?.email,
+            phone: testResult.user?.phone
+          },
+          testDate: testResult.testDate,
+          reportDate: testResult.testDate, // Assuming same date for simplicity
+          sampleType: testResult.testType,
+          collectionDate: testResult.testDate,
+          receivedDate: testResult.testDate,
+          labId: testResult.id,
+          categories: [
             {
-              name: 'Rapid Plasma Reagin (RPR - Kháng thể không đặc hiệu giang mai)',
-              value: '0.00',
-              referenceRange: '< 1',
-              unit: 'RU',
-              status: 'normal'
+              name: 'KẾT QUẢ XÉT NGHIỆM',
+              results: [
+                {
+                  name: testResult.testType,
+                  value: testResult.result,
+                  status: determineTestStatus(testResult)
+                }
+              ]
             }
-          ]
-        },
-        {
-          name: 'MIỄN DỊCH',
-          results: [
-            {
-              name: 'HIV Combo Ag + Ab',
-              value: '0.05',
-              referenceRange: '< 1',
-              unit: 'S/CO',
-              status: 'normal'
-            },
-            {
-              name: 'Syphilis',
-              value: selectedResult?.status === 'abnormal' ? '1.11' : '0.11',
-              referenceRange: 'Âm Tính: < 1.00\nDương Tính: ≥ 1.00',
-              unit: 'S/CO',
-              status: selectedResult?.status === 'abnormal' ? 'abnormal' : 'normal'
-            }
-          ]
-        },
-        {
-          name: 'SINH HỌC PHÂN TỬ',
-          description: 'Bộ STIs / STDs 13 Realtime PCR (Định Tính - CE-IVD)',
-          results: [
-            { name: 'Chlamydia trachomatis', value: selectedResult?.status === 'critical' ? 'Dương Tính' : 'Âm Tính', status: selectedResult?.status === 'critical' ? 'critical' : 'normal' },
-            { name: 'Candida albicans', value: 'Âm Tính', status: 'normal' },
-            { name: 'Treponema pallidum', value: 'Âm Tính', status: 'normal' },
-            { name: 'Herpes Simplex Virus 1', value: 'Âm Tính', status: 'normal' },
-            { name: 'Herpes Simplex Virus 2', value: 'Âm Tính', status: 'normal' },
-            { name: 'Ureaplasma parvum', value: 'Âm Tính', status: 'normal' },
-            { name: 'Trichomonas vaginalis', value: 'Âm Tính', status: 'normal' },
-            { name: 'Mycoplasma genitalium', value: selectedResult?.status === 'abnormal' ? 'Dương Tính' : 'Âm Tính', status: selectedResult?.status === 'abnormal' ? 'abnormal' : 'normal' },
-            { name: 'Mycoplasma hominis', value: 'Âm Tính', status: 'normal' },
-            { name: 'Neisseria gonorrhoeae', value: 'Âm Tính', status: 'normal' },
-            { name: 'Ureaplasma urealyticum', value: 'Âm Tính', status: 'normal' },
-            { name: 'Haemophilus ducreyi', value: 'Âm Tính', status: 'normal' },
-            { name: 'Gardnerella vaginalis', value: 'Âm Tính', status: 'normal' }
-          ]
-        }
-      ],
-      notes: 'Kết quả xét nghiệm chỉ có giá trị tại thời điểm lấy mẫu.',
-      doctorName: 'BS. Trần Văn B'
-    };
-
-    setDetailedResult(detailedData);
+          ],
+          notes: testResult.notes,
+          doctorName: 'BS. Tư vấn'
+        };
+        
+        return detailedData;
+      } else {
+        toast.error(`Không thể tải chi tiết kết quả: ${response.message}`);
+        return null;
+      }
+    } catch (err) {
+      console.error('Error fetching detailed test result:', err);
+      toast.error('Có lỗi khi tải chi tiết kết quả, vui lòng thử lại sau');
+      return null;
+    }
   };
 
   // View test result details
-  const viewResultDetails = (result: TestResult) => {
-    setSelectedResult(result);
-    fetchDetailedTestResult(result.id);
-    setShowDetailModal(true);
-    markAsViewed(result.id);
+  const viewResultDetails = async (result: TestResult) => {
+    const detailedResult = await fetchDetailedTestResult(result.id);
+    if (detailedResult) {
+      setDetailedResult(detailedResult);
+      setShowDetailModal(true);
+      
+      if (!result.viewed) {
+        markAsViewed(result.id);
+      }
+    }
   };
 
+  // Close detail modal
   const closeDetailModal = () => {
     setShowDetailModal(false);
-    setSelectedResult(null);
     setDetailedResult(null);
   };
 
-  // Clear filters
+  // Clear all filters
   const clearFilters = () => {
     setSearchQuery('');
     setFilterStatus('all');
     setFilterDateRange({ startDate: '', endDate: '' });
   };
 
-  // Handle printing
+  // Handle print
   const handlePrint = () => {
     window.print();
+  };
+
+  // Get status badge class
+  const getStatusBadgeClass = (status: 'normal' | 'abnormal' | 'critical'): string => {
+    switch (status) {
+      case 'normal':
+        return 'status-badge normal';
+      case 'abnormal':
+        return 'status-badge abnormal';
+      case 'critical':
+        return 'status-badge critical';
+      default:
+        return 'status-badge';
+    }
+  };
+
+  // Translate status
+  const translateStatus = (status: 'normal' | 'abnormal' | 'critical'): string => {
+    switch (status) {
+      case 'normal':
+        return 'Bình thường';
+      case 'abnormal':
+        return 'Bất thường';
+      case 'critical':
+        return 'Nguy hiểm';
+      default:
+        return status;
+    }
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN');
   };
 
   return (
     <div className="test-results-consultant">
       {/* Header */}
       <div className="results-header">
-        <div className="header-left">
+        <div>
           <h1>Kết quả xét nghiệm</h1>
-          <p>Quản lý và xem kết quả xét nghiệm bệnh nhân</p>
+          <p>Quản lý và theo dõi kết quả xét nghiệm của bệnh nhân</p>
         </div>
       </div>
 
-      {/* Summary statistics */}
+      {/* Summary Cards */}
       <div className="test-results-summary">
         <div className="summary-card">
           <div className="summary-value">{summaryStats.total}</div>
@@ -306,7 +349,7 @@ const TestResultConsultant: React.FC = () => {
         </div>
         <div className="summary-card">
           <div className="summary-value">{summaryStats.critical}</div>
-          <div className="summary-label critical">Cần chú ý</div>
+          <div className="summary-label critical">Nguy hiểm</div>
         </div>
       </div>
 
@@ -316,62 +359,78 @@ const TestResultConsultant: React.FC = () => {
           <FaSearch className="search-icon" />
           <input
             type="text"
-            className="search-input"
-            placeholder="Tìm kiếm theo tên bệnh nhân, ID, loại xét nghiệm..."
+            placeholder="Tìm kiếm theo tên, mã bệnh nhân, mã xét nghiệm..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            className="search-input"
           />
         </div>
+        
         <div className="filter-controls">
           <div className="filter-group">
-            <label>Trạng thái kết quả</label>
+            <label>Trạng thái</label>
             <select
-              className="filter-select"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
+              className="filter-select"
             >
-              <option value="all">Tất cả kết quả</option>
+              <option value="all">Tất cả</option>
               <option value="normal">Bình thường</option>
               <option value="abnormal">Bất thường</option>
-              <option value="critical">Cần chú ý</option>
+              <option value="critical">Nguy hiểm</option>
             </select>
           </div>
+          
           <div className="filter-group">
             <label>Từ ngày</label>
             <input
               type="date"
-              className="date-input"
               value={filterDateRange.startDate}
-              onChange={(e) =>
-                setFilterDateRange({ ...filterDateRange, startDate: e.target.value })
-              }
+              onChange={(e) => setFilterDateRange({...filterDateRange, startDate: e.target.value})}
+              className="date-input"
             />
           </div>
+          
           <div className="filter-group">
             <label>Đến ngày</label>
             <input
               type="date"
-              className="date-input"
               value={filterDateRange.endDate}
-              onChange={(e) =>
-                setFilterDateRange({ ...filterDateRange, endDate: e.target.value })
-              }
+              onChange={(e) => setFilterDateRange({...filterDateRange, endDate: e.target.value})}
+              className="date-input"
             />
           </div>
+          
           <button className="clear-filters-button" onClick={clearFilters}>
-            <FaFilter className="icon-left" /> Xóa bộ lọc
+            <FaTimes className="icon-left" />
+            Xóa bộ lọc
           </button>
         </div>
       </div>
 
-      {/* Results list */}
-      <div className="results-list">
-        {filteredResults.length > 0 ? (
+      {/* Results Table */}
+      {loading ? (
+        <div className="loading">
+          <div className="loading-spinner"></div>
+          <p>Đang tải dữ liệu...</p>
+        </div>
+      ) : error ? (
+        <div className="error-container">
+          <p>{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="btn-retry"
+          >
+            Tải lại
+          </button>
+        </div>
+      ) : filteredResults.length > 0 ? (
+        <div className="results-list">
           <table className="results-table">
             <thead>
               <tr>
-                <th>ID xét nghiệm</th>
-                <th>Bệnh nhân</th>
+                <th>Mã xét nghiệm</th>
+                <th>Tên bệnh nhân</th>
                 <th>Loại xét nghiệm</th>
                 <th>Ngày xét nghiệm</th>
                 <th>Trạng thái</th>
@@ -389,23 +448,25 @@ const TestResultConsultant: React.FC = () => {
                     </div>
                   </td>
                   <td>{result.testType}</td>
-                  <td>{new Date(result.date).toLocaleDateString('vi-VN')}</td>
+                  <td>{formatDate(result.date)}</td>
                   <td>
-                    <span className={`status-badge ${result.status}`}>
-                      {result.status === 'normal' && 'Bình thường'}
-                      {result.status === 'abnormal' && 'Bất thường'}
-                      {result.status === 'critical' && 'Cần chú ý'}
+                    <span className={getStatusBadgeClass(result.status)}>
+                      {translateStatus(result.status)}
                     </span>
                   </td>
                   <td>
                     <div className="action-buttons">
-                      <button className="view-button" onClick={() => viewResultDetails(result)} title="Xem chi tiết">
+                      <button 
+                        className="view-button" 
+                        onClick={() => viewResultDetails(result)}
+                        title="Xem chi tiết"
+                      >
                         <FaEye />
                       </button>
-                      <button className="print-button" onClick={handlePrint} title="In kết quả">
-                        <FaPrint />
-                      </button>
-                      <button className="download-button" title="Tải PDF">
+                      <button 
+                        className="download-button"
+                        title="Tải xuống PDF"
+                      >
                         <FaDownload />
                       </button>
                     </div>
@@ -414,22 +475,20 @@ const TestResultConsultant: React.FC = () => {
               ))}
             </tbody>
           </table>
-        ) : (
-          <div className="no-results">
-            <p>Không tìm thấy kết quả phù hợp với bộ lọc đã chọn.</p>
-            <button onClick={clearFilters}>Xóa bộ lọc</button>
-          </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="no-results">
+          <p>Không tìm thấy kết quả phù hợp</p>
+          <button onClick={clearFilters}>Xóa bộ lọc</button>
+        </div>
+      )}
 
-      {/* Detailed result modal */}
+      {/* Detailed Result Modal */}
       {showDetailModal && detailedResult && (
         <div className="modal-overlay">
           <div className="result-detail-modal">
             <div className="modal-header">
-              <h2>
-                Kết quả xét nghiệm #{detailedResult.id}
-              </h2>
+              <h2>Chi tiết kết quả xét nghiệm - {detailedResult.id}</h2>
               <div className="modal-actions">
                 <button className="print-button" onClick={handlePrint}>
                   <FaPrint /> In kết quả
@@ -438,7 +497,7 @@ const TestResultConsultant: React.FC = () => {
                   <FaDownload /> Tải PDF
                 </button>
                 <button className="close-button" onClick={closeDetailModal}>
-                  <FaTimes />
+                  ×
                 </button>
               </div>
             </div>
@@ -449,28 +508,28 @@ const TestResultConsultant: React.FC = () => {
                   <h3>Thông tin bệnh nhân</h3>
                   <div className="info-grid">
                     <div className="info-item">
-                      <span className="info-label">Họ tên</span>
-                      <span className="info-value">{detailedResult.patientInfo.name}</span>
+                      <div className="info-label">Họ tên</div>
+                      <div className="info-value">{detailedResult.patientInfo.name}</div>
                     </div>
                     <div className="info-item">
-                      <span className="info-label">Mã bệnh nhân</span>
-                      <span className="info-value">{detailedResult.patientInfo.id}</span>
+                      <div className="info-label">Mã bệnh nhân</div>
+                      <div className="info-value">{detailedResult.patientInfo.id}</div>
                     </div>
                     <div className="info-item">
-                      <span className="info-label">Ngày sinh</span>
-                      <span className="info-value">{detailedResult.patientInfo.dob}</span>
+                      <div className="info-label">Ngày sinh</div>
+                      <div className="info-value">{detailedResult.patientInfo.dob ? formatDate(detailedResult.patientInfo.dob) : 'N/A'}</div>
                     </div>
                     <div className="info-item">
-                      <span className="info-label">Giới tính</span>
-                      <span className="info-value">{detailedResult.patientInfo.gender}</span>
+                      <div className="info-label">Giới tính</div>
+                      <div className="info-value">{detailedResult.patientInfo.gender}</div>
                     </div>
                     <div className="info-item">
-                      <span className="info-label">Email</span>
-                      <span className="info-value">{detailedResult.patientInfo.email || 'N/A'}</span>
+                      <div className="info-label">Số điện thoại</div>
+                      <div className="info-value">{detailedResult.patientInfo.phone || 'N/A'}</div>
                     </div>
                     <div className="info-item">
-                      <span className="info-label">Điện thoại</span>
-                      <span className="info-value">{detailedResult.patientInfo.phone || 'N/A'}</span>
+                      <div className="info-label">Email</div>
+                      <div className="info-value">{detailedResult.patientInfo.email || 'N/A'}</div>
                     </div>
                   </div>
                 </div>
@@ -479,28 +538,28 @@ const TestResultConsultant: React.FC = () => {
                   <h3>Thông tin mẫu xét nghiệm</h3>
                   <div className="info-grid">
                     <div className="info-item">
-                      <span className="info-label">Mã xét nghiệm</span>
-                      <span className="info-value">{detailedResult.id}</span>
+                      <div className="info-label">Mã xét nghiệm</div>
+                      <div className="info-value">{detailedResult.id}</div>
                     </div>
                     <div className="info-item">
-                      <span className="info-label">Mã phòng lab</span>
-                      <span className="info-value">{detailedResult.labId}</span>
+                      <div className="info-label">Mã phòng lab</div>
+                      <div className="info-value">{detailedResult.labId}</div>
                     </div>
                     <div className="info-item">
-                      <span className="info-label">Loại mẫu</span>
-                      <span className="info-value">{detailedResult.sampleType}</span>
+                      <div className="info-label">Loại mẫu</div>
+                      <div className="info-value">{detailedResult.sampleType}</div>
                     </div>
                     <div className="info-item">
-                      <span className="info-label">Ngày lấy mẫu</span>
-                      <span className="info-value">{detailedResult.collectionDate}</span>
+                      <div className="info-label">Ngày lấy mẫu</div>
+                      <div className="info-value">{formatDate(detailedResult.collectionDate)}</div>
                     </div>
                     <div className="info-item">
-                      <span className="info-label">Ngày nhận mẫu</span>
-                      <span className="info-value">{detailedResult.receivedDate}</span>
+                      <div className="info-label">Ngày nhận mẫu</div>
+                      <div className="info-value">{formatDate(detailedResult.receivedDate)}</div>
                     </div>
                     <div className="info-item">
-                      <span className="info-label">Ngày báo cáo</span>
-                      <span className="info-value">{detailedResult.reportDate}</span>
+                      <div className="info-label">Ngày báo cáo</div>
+                      <div className="info-value">{formatDate(detailedResult.reportDate)}</div>
                     </div>
                   </div>
                 </div>
@@ -509,31 +568,35 @@ const TestResultConsultant: React.FC = () => {
               <div className="test-results-section">
                 <h3>Kết quả xét nghiệm</h3>
                 
-                {detailedResult.categories.map((category, categoryIndex) => (
-                  <div key={categoryIndex} className="result-category">
+                {detailedResult.categories.map((category, index) => (
+                  <div key={index} className="result-category">
                     <h4>{category.name}</h4>
                     {category.description && (
                       <div className="category-description">{category.description}</div>
                     )}
+                    
                     <table className="results-detail-table">
                       <thead>
                         <tr>
-                          <th>Xét nghiệm</th>
+                          <th>Tên xét nghiệm</th>
                           <th>Kết quả</th>
                           <th>Đơn vị</th>
                           <th>Giá trị tham chiếu</th>
+                          <th>Đánh giá</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {category.results.map((result, resultIndex) => (
-                          <tr 
-                            key={resultIndex} 
-                            className={`result-row ${result.status !== 'normal' ? result.status : ''}`}
-                          >
+                        {category.results.map((result, idx) => (
+                          <tr key={idx} className={`result-row ${result.status !== 'normal' ? result.status : ''}`}>
                             <td>{result.name}</td>
                             <td className="result-value">{result.value}</td>
                             <td>{result.unit || '-'}</td>
                             <td className="reference-range">{result.referenceRange || '-'}</td>
+                            <td>
+                              <span className={getStatusBadgeClass(result.status)}>
+                                {translateStatus(result.status)}
+                              </span>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -547,12 +610,16 @@ const TestResultConsultant: React.FC = () => {
                   </div>
                 )}
                 
-                {detailedResult.doctorName && (
-                  <div className="doctor-signature">
-                    <p>Bác sĩ phụ trách</p>
-                    <div className="doctor-name">{detailedResult.doctorName}</div>
-                  </div>
-                )}
+                <div className="doctor-signature">
+                  <p>Bác sĩ phụ trách</p>
+                  <div className="doctor-name">{detailedResult.doctorName || 'N/A'}</div>
+                </div>
+              </div>
+              
+              <div className="consultant-actions">
+                <button className="contact-patient">Liên hệ bệnh nhân</button>
+                <button className="schedule-followup">Đặt lịch tái khám</button>
+                <button className="add-notes">Thêm ghi chú</button>
               </div>
             </div>
             

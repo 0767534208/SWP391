@@ -1,5 +1,6 @@
 import api from '../utils/api';
-import type { ApiResponse, TestResult, PaginatedResponse, PaginationParams } from '../types';
+import { uploadFile } from '../utils/api';
+import type { ApiResponse, TestResult, PaginatedResponse, PaginationParams, CreateTestResultRequest } from '../types';
 
 const testResultService = {
   /**
@@ -15,8 +16,7 @@ const testResultService = {
       if (params.searchTerm) queryParams.append('searchTerm', params.searchTerm);
     }
     
-    const endpoint = `/test-results?${queryParams.toString()}`;
-    return api.get<PaginatedResponse<TestResult>>(endpoint);
+    return api.get<PaginatedResponse<TestResult>>(`/api/LabTest?${queryParams.toString()}`);
   },
   
   /**
@@ -32,8 +32,7 @@ const testResultService = {
       if (params.searchTerm) queryParams.append('searchTerm', params.searchTerm);
     }
     
-    const endpoint = `/test-results/user/${userId}?${queryParams.toString()}`;
-    return api.get<PaginatedResponse<TestResult>>(endpoint);
+    return api.get<PaginatedResponse<TestResult>>(`/api/LabTest/customer/${userId}?${queryParams.toString()}`);
   },
   
   /**
@@ -49,8 +48,9 @@ const testResultService = {
       if (params.searchTerm) queryParams.append('searchTerm', params.searchTerm);
     }
     
-    const endpoint = `/test-results/my-results?${queryParams.toString()}`;
-    return api.get<PaginatedResponse<TestResult>>(endpoint);
+    // We need to get the user ID from localStorage
+    const userId = localStorage.getItem('userId') || localStorage.getItem('AccountID');
+    return api.get<PaginatedResponse<TestResult>>(`/api/LabTest/customer/${userId}?${queryParams.toString()}`);
   },
   
   /**
@@ -66,43 +66,85 @@ const testResultService = {
       if (params.searchTerm) queryParams.append('searchTerm', params.searchTerm);
     }
     
-    const endpoint = `/test-results/staff-created?${queryParams.toString()}`;
-    return api.get<PaginatedResponse<TestResult>>(endpoint);
+    const staffId = localStorage.getItem('userId') || localStorage.getItem('AccountID');
+    return api.get<PaginatedResponse<TestResult>>(`/api/LabTest/staff/${staffId}?${queryParams.toString()}`);
+  },
+
+  /**
+   * Get test results for a specific appointment
+   */
+  getAppointmentTestResults: async (appointmentId: string): Promise<ApiResponse<TestResult[]>> => {
+    return api.get<TestResult[]>(`/api/LabTest/treatment/${appointmentId}`);
+  },
+  
+  /**
+   * Get test results by date range
+   */
+  getTestResultsByDateRange: async (startDate: string, endDate: string): Promise<ApiResponse<TestResult[]>> => {
+    return api.get<TestResult[]>(`/api/LabTest/date-range?startDate=${startDate}&endDate=${endDate}`);
+  },
+
+  /**
+   * Search test results
+   */
+  searchTestResults: async (searchTerm: string): Promise<ApiResponse<TestResult[]>> => {
+    return api.get<TestResult[]>(`/api/LabTest/search?query=${searchTerm}`);
   },
   
   /**
    * Get a specific test result by ID
-   
+   */
   getTestResult: async (testResultId: string): Promise<ApiResponse<TestResult>> => {
-    return api.get<TestResult>(`/test-results/${testResultId}`);
+    return api.get<TestResult>(`/api/LabTest/${testResultId}`);
   },
   
   /**
    * Create a new test result (staff only)
-   
-  createTestResult: async (testResultData: TestResultRequest): Promise<ApiResponse<TestResult>> => {
-    return api.post<TestResult>('/test-results', testResultData);
+   */
+  createTestResult: async (testResultData: CreateTestResultRequest): Promise<ApiResponse<TestResult>> => {
+    return api.post<TestResult>('/api/LabTest', testResultData);
   },
   
   /**
    * Update a test result (staff only)
-   
-  updateTestResult: async (testResultId: string, testResultData: Partial<TestResultRequest>): Promise<ApiResponse<TestResult>> => {
-    return api.put<TestResult>(`/test-results/${testResultId}`, testResultData);
+   */
+  updateTestResult: async (testResultId: string, testResultData: Partial<TestResult>): Promise<ApiResponse<TestResult>> => {
+    return api.put<TestResult>(`/api/LabTest/${testResultId}`, testResultData);
   },
   
   /**
    * Delete a test result (admin only)
    */
   deleteTestResult: async (testResultId: string): Promise<ApiResponse<void>> => {
-    return api.delete<void>(`/test-results/${testResultId}`);
+    return api.delete<void>(`/api/LabTest/${testResultId}`);
   },
   
   /**
    * Upload a file attachment for a test result
    */
-  uploadAttachment: async (testResultId: string, file: File): Promise<ApiResponse<{fileUrl: string}>> => {
-    return api.uploadFile(file, `/test-results/${testResultId}/upload-attachment`);
+  uploadAttachment: async (file: File): Promise<ApiResponse<{fileUrl: string}>> => {
+    return uploadFile(file, '/api/LabTest/upload-attachment');
+  },
+  
+  /**
+   * Add a comment to a test result
+   */
+  addComment: async (testResultId: string, comment: string): Promise<ApiResponse<TestResult>> => {
+    return api.post<TestResult>(`/api/LabTest/${testResultId}/comment`, { comment });
+  },
+  
+  /**
+   * Mark a test result as viewed by consultant
+   */
+  markAsViewed: async (testResultId: string): Promise<ApiResponse<TestResult>> => {
+    return api.put<TestResult>(`/api/LabTest/${testResultId}/mark-viewed`, {});
+  },
+  
+  /**
+   * Mark a test result as viewed by consultant (alias for markAsViewed)
+   */
+  markTestResultAsViewed: async (testResultId: string): Promise<ApiResponse<TestResult>> => {
+    return api.put<TestResult>(`/api/LabTest/${testResultId}/mark-viewed`, {});
   },
   
   /**
@@ -118,13 +160,12 @@ const testResultService = {
     if (startDate) queryParams.append('startDate', startDate);
     if (endDate) queryParams.append('endDate', endDate);
     
-    const endpoint = `/test-results/statistics?${queryParams.toString()}`;
     return api.get<{
       totalTests: number;
       positiveResults: number;
       negativeResults: number;
       byTestType: {testType: string, count: number}[];
-    }>(endpoint);
+    }>(`/api/LabTest/statistics?${queryParams.toString()}`);
   },
 };
 

@@ -91,14 +91,13 @@ const Navbar: React.FC = () => {
   }, [dropdownOpen, servicesDropdownOpen]);
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
-    setUser(null);
-    setUserRole(null);
-    navigate('/auth/login');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('roles');
+    localStorage.removeItem('AccountID');
+    localStorage.removeItem('consultantProfile');
+    navigate('/login');
   };
 
   const handleNavigation = (path: string) => {

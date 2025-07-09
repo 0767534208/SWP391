@@ -241,10 +241,10 @@ export interface CreateConsultantRequest {
  * Yêu cầu cập nhật profile tư vấn viên
  */
 export interface ConsultantProfileRequest {
-  specialization?: string;
-  experience?: number;
-  bio?: string;
-  isAvailable?: boolean;
+  description?: string;
+  specialty?: string;
+  experience?: string;
+  consultantPrice?: number;
 }
 
 // ========== Slot Types ==========

@@ -193,6 +193,19 @@ const Login: React.FC = () => {
     }
   };
 
+  const handleLogout = () => {
+    // Clear all authentication data
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('roles');
+    localStorage.removeItem('AccountID');
+    localStorage.removeItem('consultantProfile'); // Xóa dữ liệu profile consultant
+    
+    // Redirect to login page
+    navigate('/login');
+  };
+
   return (
     <div className="login-page" style={{
       backgroundImage: 'url("/istockphoto.jpg")',

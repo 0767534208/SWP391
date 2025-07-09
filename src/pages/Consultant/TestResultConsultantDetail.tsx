@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FaArrowLeft, FaDownload, FaPrint, FaShare } from 'react-icons/fa';
-import '../User/TestResultUser.css';
+import './TestResultConsultant.css';
+import { testResultService } from '../../services';
+import { toast } from 'react-hot-toast';
 
 // Define interfaces for our data structure
 interface TestResult {
@@ -48,14 +50,125 @@ const TestResultConsultantDetail: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Simulating API call to fetch test results
-    const fetchTestResults = () => {
+    // Fetch test result data from API
+    const fetchTestResult = async () => {
+      if (!id) {
+        toast.error('Không tìm thấy ID kết quả xét nghiệm');
+        return;
+      }
+      
       setLoading(true);
       
-      // This would be an API call in a real application
-      setTimeout(() => {
-        // Dữ liệu mẫu khác nhau dựa trên ID
-        let fakeReport: TestReport;
+      try {
+        const response = await testResultService.getTestResult(id);
+        
+        if (response.statusCode === 200 && response.data) {
+          const testResult = response.data;
+          
+          // Transform API data to match our component's expected format
+          const reportData: TestReport = {
+            id: testResult.id,
+            patientInfo: {
+              id: testResult.userId,
+              name: testResult.user?.name || 'Không xác định',
+              dob: testResult.user?.dateOfBirth || 'Không có thông tin',
+              gender: testResult.user?.gender || 'Không xác định',
+              email: testResult.user?.email,
+              phone: testResult.user?.phone
+            },
+            testDate: testResult.testDate,
+            reportDate: testResult.testDate, // Using same date for simplicity
+            sampleType: testResult.testType,
+            collectionDate: `${testResult.testDate} 09:00 AM`, // Simulating time
+            receivedDate: `${testResult.testDate} 10:00 AM`, // Simulating time
+            labId: `LAB-${testResult.id.substring(0, 5).toUpperCase()}`,
+            expiryDate: calculateExpiryDate(testResult.testDate),
+            categories: determineCategories(testResult),
+            notes: testResult.notes || 'Kết quả xét nghiệm chỉ có giá trị tại thời điểm lấy mẫu.',
+            doctorName: 'BS. Tư vấn'
+          };
+          
+          setReport(reportData);
+        } else {
+          toast.error(`Không thể tải kết quả xét nghiệm: ${response.message}`);
+          fallbackToMockData();
+        }
+      } catch (error) {
+        console.error('Error fetching test result:', error);
+        toast.error('Có lỗi khi tải kết quả xét nghiệm, đang hiển thị dữ liệu mẫu');
+        fallbackToMockData();
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchTestResult();
+  }, [id]);
+  
+  // Helper function to calculate expiry date (1 year from test date)
+  const calculateExpiryDate = (testDate: string): string => {
+    const date = new Date(testDate);
+    date.setFullYear(date.getFullYear() + 1);
+    return date.toISOString().split('T')[0];
+  };
+  
+  // Helper function to determine status based on result
+  const determineStatus = (result: string): 'normal' | 'abnormal' | 'critical' => {
+    const lowerResult = result.toLowerCase();
+    if (lowerResult.includes('dương tính') || lowerResult.includes('positive')) {
+      return 'abnormal';
+    } else if (lowerResult.includes('nguy hiểm') || lowerResult.includes('critical')) {
+      return 'critical';
+    } else {
+      return 'normal';
+    }
+  };
+  
+  // Helper function to create categories based on test result
+  const determineCategories = (testResult: any): TestCategory[] => {
+    // Create simple categories based on test type
+    const result = testResult.result || 'Không có kết quả';
+    const status = determineStatus(result);
+    
+    // Default category with test result
+    const categories: TestCategory[] = [
+      {
+        name: 'KẾT QUẢ XÉT NGHIỆM',
+        results: [
+          {
+            name: testResult.testType,
+            value: result,
+            status: status
+          }
+        ]
+      }
+    ];
+    
+    // For HIV test, add more detailed information
+    if (testResult.testType.toLowerCase().includes('hiv')) {
+      categories.push({
+        name: 'MIỄN DỊCH',
+        results: [
+          {
+            name: 'HIV Combo Ag + Ab',
+            value: status === 'normal' ? '0.05' : '3.25',
+            referenceRange: '< 1',
+            unit: 'S/CO',
+            status: status
+          }
+        ]
+      });
+    }
+    
+    return categories;
+  };
+  
+  // Fallback to mock data if API fails
+  const fallbackToMockData = () => {
+    if (!id) return;
+    
+    // This is mock data used as fallback
+    let fakeReport: TestReport;
         
         switch(id) {
           case 'TR-1001':
@@ -133,377 +246,155 @@ const TestResultConsultantDetail: React.FC = () => {
             };
             break;
             
-          case 'TR-1002':
+      // Add cases for other IDs if needed
+      
+      default:
             fakeReport = {
-              id: 'TR-1002',
+          id: id,
               patientInfo: {
-                id: 'BN-5045',
-                name: 'Trần Thị B',
-                dob: '22/08/1990',
-                gender: 'Nữ',
-                email: 'tranthib@example.com',
-                phone: '0987654321'
-              },
-              testDate: '26/06/2023',
-              reportDate: '26/06/2023',
-              sampleType: 'Máu, Dịch niệu đạo',
-              collectionDate: '26/06/2023 10:15 AM',
-              receivedDate: '26/06/2023 11:00 AM',
-              labId: 'LAB10045',
-              expiryDate: '05/06/2025',
+            id: 'BN-XXXX',
+            name: 'Bệnh nhân',
+            dob: '01/01/1990',
+            gender: 'Không xác định',
+            email: 'patient@example.com',
+            phone: '0900000000'
+          },
+          testDate: '01/01/2023',
+          reportDate: '01/01/2023',
+          sampleType: 'Máu',
+          collectionDate: '01/01/2023 09:00 AM',
+          receivedDate: '01/01/2023 10:00 AM',
+          labId: 'LABXXXXX',
+          expiryDate: '01/01/2024',
               categories: [
                 {
-                  name: 'SINH HÓA',
+              name: 'KẾT QUẢ XÉT NGHIỆM',
                   results: [
-                    {
-                      name: 'Rapid Plasma Reagin (RPR - Kháng thể không đặc hiệu giang mai)',
-                      value: '1.20',
-                      referenceRange: '< 1',
-                      unit: 'RU',
-                      status: 'abnormal'
-                    }
-                  ]
-                },
                 {
-                  name: 'MIỄN DỊCH',
-                  results: [
-                    {
-                      name: 'HIV Combo Ag + Ab',
-                      value: '0.08',
-                      referenceRange: '< 1',
-                      unit: 'S/CO',
-                      status: 'normal'
-                    },
-                    {
-                      name: 'Hepatitis B Surface Antigen',
-                      value: '1.25',
-                      referenceRange: 'Âm Tính: < 1.00\nDương Tính: ≥ 1.00',
-                      unit: 'S/CO',
-                      status: 'abnormal'
-                    }
-                  ]
-                }
-              ],
-              notes: 'Kết quả xét nghiệm chỉ có giá trị tại thời điểm lấy mẫu. Đề nghị tái khám sau 3 tháng.',
-              doctorName: 'BS. Nguyễn Thị C'
-            };
-            break;
-            
-          case 'TR-1003':
-            fakeReport = {
-              id: 'TR-1003',
-              patientInfo: {
-                id: 'BN-5078',
-                name: 'Lê Văn C',
-                dob: '10/11/1988',
-                gender: 'Nam',
-                email: 'levanc@example.com',
-                phone: '0909123456'
-              },
-              testDate: '27/06/2023',
-              reportDate: '27/06/2023',
-              sampleType: 'Máu, Dịch niệu đạo',
-              collectionDate: '27/06/2023 08:30 AM',
-              receivedDate: '27/06/2023 09:15 AM',
-              labId: 'LAB10078',
-              expiryDate: '05/06/2025',
-              categories: [
-                {
-                  name: 'SINH HỌC PHÂN TỬ',
-                  description: 'Bộ STIs / STDs 13 Realtime PCR (Định Tính - CE-IVD)',
-                  results: [
-                    { name: 'Chlamydia trachomatis', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Candida albicans', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Treponema pallidum', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Herpes Simplex Virus 1', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Herpes Simplex Virus 2', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Ureaplasma parvum', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Trichomonas vaginalis', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Mycoplasma genitalium', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Mycoplasma hominis', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Neisseria gonorrhoeae', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Ureaplasma urealyticum', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Haemophilus ducreyi', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Gardnerella vaginalis', value: 'Âm Tính', status: 'normal' }
-                  ]
-                }
-              ],
-              notes: 'Kết quả xét nghiệm chỉ có giá trị tại thời điểm lấy mẫu.',
-              doctorName: 'BS. Phạm Văn D'
-            };
-            break;
-            
-          case 'TR-1004':
-            fakeReport = {
-              id: 'TR-1004',
-              patientInfo: {
-                id: 'BN-5102',
-                name: 'Phạm Thị D',
-                dob: '05/03/1995',
-                gender: 'Nữ',
-                email: 'phamthid@example.com',
-                phone: '0912876543'
-              },
-              testDate: '28/06/2023',
-              reportDate: '28/06/2023',
-              sampleType: 'Máu, Dịch niệu đạo, Tế bào cổ tử cung',
-              collectionDate: '28/06/2023 14:20 PM',
-              receivedDate: '28/06/2023 15:00 PM',
-              labId: 'LAB10102',
-              expiryDate: '05/06/2025',
-              categories: [
-                {
-                  name: 'SINH HỌC PHÂN TỬ',
-                  description: 'HPV Genotyping (Định type)',
-                  results: [
-                    { name: 'HPV 16', value: 'Dương Tính', status: 'critical' },
-                    { name: 'HPV 18', value: 'Âm Tính', status: 'normal' },
-                    { name: 'HPV Type nguy cơ cao khác', value: 'Âm Tính', status: 'normal' }
-                  ]
-                }
-              ],
-              notes: 'Kết quả xét nghiệm chỉ có giá trị tại thời điểm lấy mẫu. Đề nghị tái khám ngay để được tư vấn điều trị.',
-              doctorName: 'BS. Hoàng Thị E'
-            };
-            break;
-            
-          case 'TR-1005':
-            fakeReport = {
-              id: 'TR-1005',
-              patientInfo: {
-                id: 'BN-5134',
-                name: 'Hoàng Văn E',
-                dob: '18/12/1985',
-                gender: 'Nam',
-                email: 'hoangvane@example.com',
-                phone: '0978123456'
-              },
-              testDate: '29/06/2023',
-              reportDate: '29/06/2023',
-              sampleType: 'Máu, Dịch niệu đạo',
-              collectionDate: '29/06/2023 11:30 AM',
-              receivedDate: '29/06/2023 12:15 PM',
-              labId: 'LAB10134',
-              expiryDate: '05/06/2025',
-              categories: [
-                {
-                  name: 'SINH HÓA',
-                  results: [
-                    {
-                      name: 'Rapid Plasma Reagin (RPR - Kháng thể không đặc hiệu giang mai)',
-                      value: '0.50',
-                      referenceRange: '< 1',
-                      unit: 'RU',
+                  name: 'Xét nghiệm chung',
+                  value: 'Bình thường',
                       status: 'normal'
                     }
                   ]
-                },
-                {
-                  name: 'MIỄN DỊCH',
-                  results: [
-                    {
-                      name: 'HIV Combo Ag + Ab',
-                      value: '0.07',
-                      referenceRange: '< 1',
-                      unit: 'S/CO',
-                      status: 'normal'
-                    }
-                  ]
-                },
-                {
-                  name: 'SINH HỌC PHÂN TỬ',
-                  description: 'Bộ STIs / STDs 13 Realtime PCR (Định Tính - CE-IVD)',
-                  results: [
-                    { name: 'Chlamydia trachomatis', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Candida albicans', value: 'Dương Tính', status: 'abnormal' },
-                    { name: 'Treponema pallidum', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Herpes Simplex Virus 1', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Herpes Simplex Virus 2', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Ureaplasma parvum', value: 'Dương Tính', status: 'abnormal' },
-                    { name: 'Trichomonas vaginalis', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Mycoplasma genitalium', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Mycoplasma hominis', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Neisseria gonorrhoeae', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Ureaplasma urealyticum', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Haemophilus ducreyi', value: 'Âm Tính', status: 'normal' },
-                    { name: 'Gardnerella vaginalis', value: 'Âm Tính', status: 'normal' }
-                  ]
                 }
               ],
-              notes: 'Kết quả xét nghiệm chỉ có giá trị tại thời điểm lấy mẫu. Đề nghị điều trị nhiễm nấm Candida và Ureaplasma.',
-              doctorName: 'BS. Trần Văn F'
-            };
-            break;
-            
-          default:
-            // Trường hợp không tìm thấy ID phù hợp
-            fakeReport = {
-              id: id || 'Unknown',
-              patientInfo: {
-                id: 'Unknown',
-                name: 'Không tìm thấy',
-                dob: 'N/A',
-                gender: 'N/A',
-                email: 'N/A',
-                phone: 'N/A'
-              },
-              testDate: 'N/A',
-              reportDate: 'N/A',
-              sampleType: 'N/A',
-              collectionDate: 'N/A',
-              receivedDate: 'N/A',
-              labId: 'N/A',
-              expiryDate: 'N/A',
-              categories: [],
-              notes: 'Không tìm thấy kết quả xét nghiệm cho ID này.',
-              doctorName: 'N/A'
+          notes: 'Dữ liệu mẫu - không phải kết quả thực tế',
+          doctorName: 'BS. Mẫu'
             };
         }
         
         setReport(fakeReport);
-        setLoading(false);
-      }, 1000);
     };
-    
-    fetchTestResults();
-  }, [id]);
 
   const handlePrint = () => {
     window.print();
   };
 
-  if (loading) {
-    return (
-      <div className="test-results-loading">
-        <div className="loading-spinner"></div>
-        <p>Đang tải kết quả xét nghiệm...</p>
-      </div>
-    );
-  }
-
-  if (!report) {
-    return (
-      <div className="test-results-error">
-        <h2>Không tìm thấy kết quả xét nghiệm</h2>
-        <p>Kết quả xét nghiệm bạn đang tìm kiếm không tồn tại hoặc đã bị xóa.</p>
-        <Link to="/consultant/test-results" className="back-link">
-          <FaArrowLeft /> Quay lại danh sách kết quả
-        </Link>
-      </div>
-    );
-  }
+  const getStatusClass = (status: 'normal' | 'abnormal' | 'critical'): string => {
+    switch (status) {
+      case 'normal': return 'status-normal';
+      case 'abnormal': return 'status-abnormal';
+      case 'critical': return 'status-critical';
+      default: return '';
+    }
+  };
 
   return (
-    <div className="test-results-page">
-      <div className="test-results-container">
-        <div className="test-results-header">
-          <div className="header-left">
-            <Link to="/consultant/test-results" className="back-button">
-              <FaArrowLeft /> Quay lại
+    <div className="test-result-consultant">
+      <div className="test-result-header">
+        <h1>Chi tiết kết quả xét nghiệm</h1>
+        <div className="page-actions">
+          <Link to="/consultant/test-results" className="btn-back">
+            <FaArrowLeft /> Quay lại danh sách kết quả
             </Link>
-          </div>
-          <div className="header-center">
-            <h1>Kết Quả Xét Nghiệm STIs</h1>
-            <p>Mã phiếu: {report.id}</p>
-          </div>
-          <div className="header-right">
-            <button className="action-button" onClick={handlePrint}>
-              <FaPrint /> In
+          <div className="action-buttons">
+            <button className="btn-print" onClick={handlePrint}>
+              <FaPrint /> In kết quả
             </button>
-            <button className="action-button">
+            <button className="btn-download">
               <FaDownload /> Tải PDF
             </button>
-            <button className="action-button">
+            <button className="btn-share">
               <FaShare /> Chia sẻ
             </button>
           </div>
         </div>
+                </div>
 
-        <div className="test-results-content">
-          <div className="test-info-section">
-            <div className="patient-info">
-              <h2>Thông tin bệnh nhân</h2>
-              <div className="info-grid">
-                <div className="info-item">
-                  <span className="info-label">Họ và tên:</span>
-                  <span className="info-value">{report.patientInfo.name}</span>
+      {loading ? (
+        <div className="loading">
+          <div className="loading-spinner"></div>
+          <p>Đang tải kết quả xét nghiệm...</p>
                 </div>
-                <div className="info-item">
-                  <span className="info-label">Mã bệnh nhân:</span>
-                  <span className="info-value">{report.patientInfo.id}</span>
+      ) : report ? (
+        <div className="test-report">
+          <div className="report-header">
+            <div className="clinic-info">
+              <h3>TRUNG TÂM Y TẾ CHĂM SÓC SỨC KHỎE SINH SẢN</h3>
+              <p>123 Nguyễn Văn Linh, Quận 7, TP.HCM</p>
+              <p>ĐT: 1900-0123 | Email: info@rh-center.vn</p>
                 </div>
-                <div className="info-item">
-                  <span className="info-label">Ngày sinh:</span>
-                  <span className="info-value">{report.patientInfo.dob}</span>
-                </div>
-                <div className="info-item">
-                  <span className="info-label">Giới tính:</span>
-                  <span className="info-value">{report.patientInfo.gender}</span>
-                </div>
-                <div className="info-item">
-                  <span className="info-label">Email:</span>
-                  <span className="info-value">{report.patientInfo.email}</span>
-                </div>
-                <div className="info-item">
-                  <span className="info-label">Số điện thoại:</span>
-                  <span className="info-value">{report.patientInfo.phone}</span>
+            <div className="report-title">
+              <h2>KẾT QUẢ XÉT NGHIỆM</h2>
+              <div className="report-id">Mã phiếu: {report.id}</div>
                 </div>
               </div>
+          
+          <div className="patient-info">
+            <div className="info-row">
+              <div className="info-item"><strong>Họ tên:</strong> {report.patientInfo.name}</div>
+              <div className="info-item"><strong>Mã BN:</strong> {report.patientInfo.id}</div>
             </div>
-
-            <div className="sample-info">
-              <h2>Thông tin mẫu xét nghiệm</h2>
-              <div className="info-grid">
-                <div className="info-item">
-                  <span className="info-label">Loại mẫu:</span>
-                  <span className="info-value">{report.sampleType}</span>
+            <div className="info-row">
+              <div className="info-item"><strong>Ngày sinh:</strong> {report.patientInfo.dob}</div>
+              <div className="info-item"><strong>Giới tính:</strong> {report.patientInfo.gender}</div>
                 </div>
-                <div className="info-item">
-                  <span className="info-label">Ngày lấy mẫu:</span>
-                  <span className="info-value">{report.collectionDate}</span>
+            <div className="info-row">
+              <div className="info-item"><strong>SĐT:</strong> {report.patientInfo.phone || 'N/A'}</div>
+              <div className="info-item"><strong>Email:</strong> {report.patientInfo.email || 'N/A'}</div>
                 </div>
-                <div className="info-item">
-                  <span className="info-label">Ngày nhận mẫu:</span>
-                  <span className="info-value">{report.receivedDate}</span>
                 </div>
-                <div className="info-item">
-                  <span className="info-label">Ngày có kết quả:</span>
-                  <span className="info-value">{report.reportDate}</span>
+          
+          <div className="test-info">
+            <div className="info-row">
+              <div className="info-item"><strong>Loại mẫu:</strong> {report.sampleType}</div>
+              <div className="info-item"><strong>Mã xét nghiệm:</strong> {report.id}</div>
                 </div>
-                <div className="info-item">
-                  <span className="info-label">Mã xét nghiệm:</span>
-                  <span className="info-value">{report.labId}</span>
+            <div className="info-row">
+              <div className="info-item"><strong>Ngày lấy mẫu:</strong> {report.collectionDate}</div>
+              <div className="info-item"><strong>Ngày nhận mẫu:</strong> {report.receivedDate}</div>
                 </div>
-              </div>
+            <div className="info-row">
+              <div className="info-item"><strong>Ngày trả kết quả:</strong> {report.reportDate}</div>
+              <div className="info-item"><strong>Có hiệu lực đến:</strong> {report.expiryDate}</div>
             </div>
           </div>
 
-          <div className="test-results-section">
-            <h2>Kết quả xét nghiệm</h2>
-            
-            {report.categories.map((category, categoryIndex) => (
-              <div key={categoryIndex} className="result-category">
+          <div className="test-results">
+            {report.categories.map((category, index) => (
+              <div key={index} className="test-category">
                 <h3>{category.name}</h3>
                 {category.description && (
                   <p className="category-description">{category.description}</p>
                 )}
-                
                 <table className="results-table">
                   <thead>
                     <tr>
-                      <th className="test-name-col">TÊN XÉT NGHIỆM</th>
-                      <th className="test-result-col">KẾT QUẢ</th>
-                      <th className="reference-range-col">THANG Đ.CHIẾU</th>
-                      <th className="unit-col">ĐƠN VỊ</th>
+                      <th>Tên xét nghiệm</th>
+                      <th>Kết quả</th>
+                      <th>Đơn vị</th>
+                      <th>Giá trị tham chiếu</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {category.results.map((result, resultIndex) => (
-                      <tr key={resultIndex} className={`result-row ${result.status}`}>
-                        <td className="test-name">{result.name}</td>
-                        <td className="test-result">{result.value}</td>
-                        <td className="reference-range">{result.referenceRange || '-'}</td>
-                        <td className="unit">{result.unit || '-'}</td>
+                    {category.results.map((result, idx) => (
+                      <tr key={idx} className={`result-row result-${result.status}`}>
+                        <td>{result.name}</td>
+                        <td className={`result-value result-${result.status}`}>
+                          {result.value}
+                        </td>
+                        <td>{result.unit || ''}</td>
+                        <td>{result.referenceRange || ''}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -512,18 +403,31 @@ const TestResultConsultantDetail: React.FC = () => {
             ))}
           </div>
 
-          <div className="test-footer">
-            <div className="doctor-signature">
-              <p className="signature-date">Ngày {report.reportDate.split('/')[0]} tháng {report.reportDate.split('/')[1]} năm {report.reportDate.split('/')[2]}</p>
-              <p className="doctor-title">Bác sĩ chỉ định</p>
-              <p className="doctor-name">{report.doctorName}</p>
+          {report.notes && (
+            <div className="test-notes">
+              <p><strong>Ghi chú:</strong> {report.notes}</p>
             </div>
-            <div className="report-verification">
-              <p>Kết quả này được xác thực điện tử và có giá trị như bản in.</p>
+          )}
+          
+          <div className="report-footer">
+            <div className="doctor-signature">
+              <p><strong>Bác sĩ phụ trách</strong></p>
+              <div className="signature-placeholder"></div>
+              <p>{report.doctorName}</p>
+            </div>
+            <div className="report-note">
+              <p>Kết quả này được tạo bởi hệ thống điện tử và có giá trị mà không cần chữ ký</p>
             </div>
           </div>
         </div>
+      ) : (
+        <div className="no-results">
+          <p>Không thể tải kết quả xét nghiệm. Vui lòng thử lại sau.</p>
+          <Link to="/consultant/test-results" className="btn-back">
+            <FaArrowLeft /> Quay lại danh sách
+          </Link>
       </div>
+      )}
     </div>
   );
 };
