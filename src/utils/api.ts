@@ -21,20 +21,34 @@ export interface ApiResponse<T> {
 export interface AppointmentData {
   appointmentID: string;
   customerID: string;
-  consultantID: string;
+  consultantID: string | null;
   appointmentDate: string;
   status: number;
   appointmentType: number;
   totalAmount: number;
   paymentStatus: number;
-  treatmentID?: string;
+  treatmentID?: string | null;
+  treatmentOutcome?: any | null;
   slot: {
+    slotID: number;
+    startConsultant: string;
     startTime: string;
     endTime: string;
   };
   consultant: {
     name: string;
+  } | null;
+  customer?: {
+    name: string;
+    address: string;
+    phone: string;
+    status: boolean;
+    dateOfBirth: string;
   };
+  appointmentCode?: string;
+  expiredTime?: string;
+  createAt?: string;
+  updateAt?: string;
 }
 
 /**
@@ -361,10 +375,12 @@ export const appointmentAPI = {
 
   /**
    * Thay đổi trạng thái lịch hẹn
-   * @param statusChangeData - Thông tin thay đổi trạng thái
+   * @param appointmentID 
+   * @param status
+   * @param paymentStatus
    */
-  changeAppointmentStatus: async (statusChangeData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/api/appointment/ChangeAppointmentStatus', 'PUT', statusChangeData);
+  changeAppointmentStatus: async (appointmentID: number, status: number, paymentStatus: number): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/appointment/ChangeAppointmentStatus?appointmentID=${appointmentID}&status=${status}&paymentStatus=${paymentStatus}`, 'PUT');
   },
 
   /**

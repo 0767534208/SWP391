@@ -169,9 +169,12 @@ const TestResultManagementStaff: React.FC = () => {
   };
 
   return (
-    <div className="test-result-management-container">
-      <h1 className="page-title">Quản Lý Kết Quả Xét Nghiệm</h1>
-      
+    <div className="test-result-management-staff">
+      <div className="page-header">
+        <h1 className="page-title">Quản Lý Kết Quả Xét Nghiệm</h1>
+        <p className="page-subtitle">Quản lý và cập nhật kết quả xét nghiệm của bệnh nhân</p>
+      </div>
+
       {/* Search Section with Refresh Button */}
       <div className="search-filter-container">
         <div className="search-box">

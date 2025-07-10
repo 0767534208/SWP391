@@ -5,6 +5,18 @@ import slotService from '../../services/slotService';
 import { consultantSlotAPI } from '../../utils/api';
 import api from '../../utils/api';
 
+// Custom Date Display component
+interface CustomDateDisplayProps {
+  date: Date;
+}
+
+const CustomDateDisplay: React.FC<CustomDateDisplayProps> = ({ date }) => {
+  // Format date as DD/MM without timezone issues
+  const formattedDate = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+  
+  return <span className="custom-date-display">{formattedDate}</span>;
+};
+
 // Types
 interface Consultant {
   name: string;
@@ -360,9 +372,12 @@ const WeeklyCalendar: React.FC = () => {
     return dates;
   }
 
-  // Format date as YYYY-MM-DD
+  // Format date as YYYY-MM-DD without timezone issues
   function formatDateForComparison(date: Date): string {
-    return date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   // Get week number of the year - aligned with our calendar display
@@ -466,6 +481,12 @@ const WeeklyCalendar: React.FC = () => {
     return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
   };
 
+  // Format date for display
+  const formatDate = (date: Date): string => {
+    // Use Vietnamese locale to ensure DD/MM format
+    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+  };
+
   // Get all weeks for the selected year, aligned with the calendar display
   const getWeeksForYear = (year: number): { value: number; label: string }[] => {
     const weeks: { value: number; label: string }[] = [];
@@ -488,9 +509,13 @@ const WeeklyCalendar: React.FC = () => {
       const weekEnd = new Date(currentDate);
       weekEnd.setDate(weekStart.getDate() + 6);
 
+      // Format dates as DD/MM
+      const startFormatted = `${weekStart.getDate().toString().padStart(2, '0')}/${(weekStart.getMonth() + 1).toString().padStart(2, '0')}`;
+      const endFormatted = `${weekEnd.getDate().toString().padStart(2, '0')}/${(weekEnd.getMonth() + 1).toString().padStart(2, '0')}`;
+
       weeks.push({
         value: weekNumber,
-        label: `${formatShortDate(weekStart)} đến ${formatShortDate(weekEnd)}`
+        label: `${startFormatted} đến ${endFormatted}`
       });
 
       // Move to next Monday
@@ -520,11 +545,6 @@ const WeeklyCalendar: React.FC = () => {
       'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'
     ];
     return translations[day];
-  };
-
-  // Format date for display
-  const formatDate = (date: Date): string => {
-    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
   };
 
   // Get slots for a specific date
@@ -639,7 +659,11 @@ const WeeklyCalendar: React.FC = () => {
       // Format date and time for API (local time, không có Z)
       const formatLocalDateTime = (date: string, time: string): string => {
         const [hours, minutes] = time.split(':');
-        const dateObj = new Date(date);
+        
+        // Create date object without timezone issues
+        const [year, month, day] = date.split('-').map(num => parseInt(num));
+        const dateObj = new Date(year, month - 1, day); // month is 0-indexed in JS Date
+        
         dateObj.setHours(parseInt(hours), parseInt(minutes), 0, 0);
         const pad = (n: number) => n.toString().padStart(2, '0');
         return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}T${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:00`;
@@ -682,13 +706,25 @@ const WeeklyCalendar: React.FC = () => {
   const formatDateTimeForApi = (date: string, time: string): string => {
     // Combine date and time into ISO format
     const [hours, minutes] = time.split(':');
-    const dateObj = new Date(date);
+    
+    // Create date object without timezone issues
+    const [year, month, day] = date.split('-').map(num => parseInt(num));
+    const dateObj = new Date(year, month - 1, day); // month is 0-indexed in JS Date
+    
     dateObj.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-    return dateObj.toISOString();
+    
+    // Format as local time without timezone offset
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}T${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:00`;
   };
 
   return (
     <div className="weekly-calendar-container">
+      <div className="page-header">
+        <h1 className="page-title">Lịch Làm Việc Theo Tuần</h1>
+        <p className="page-subtitle">Quản lý và xem lịch làm việc của chuyên gia</p>
+      </div>
+
       {/* Notification for successful slot creation */}
       {notification.show && (
         <div className="success-notification">
@@ -854,7 +890,7 @@ const WeeklyCalendar: React.FC = () => {
               >
                 <div className="day-header">
                   <div className="day-name">{translateDayName(date.getDay())}</div>
-                  <div className="day-date">{formatDate(date)}</div>
+                  <div className="day-date"><CustomDateDisplay date={date} /></div>
                 </div>
 
                 <div className="day-slots">

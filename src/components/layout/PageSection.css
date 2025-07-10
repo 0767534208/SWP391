@@ -1,0 +1,23 @@
+/* PageSection styles */
+.page-section {
+  width: 100%;
+}
+
+/* Page header styles */
+.page-header {
+  margin-bottom: 2rem;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
+}
+
+.page-subtitle {
+  font-size: 1rem;
+  color: #6b7280;
+  font-weight: normal;
+} 

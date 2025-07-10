@@ -381,6 +381,11 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+.custom-date-display {
+  font-weight: 500;
+  color: #374151;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .calendar-grid {

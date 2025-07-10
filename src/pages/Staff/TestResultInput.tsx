@@ -171,11 +171,11 @@ const TestResultInput: React.FC = () => {
   }
 
   return (
-    <div className="test-result-input-container print-friendly">
+    <div className="test-result-input print-friendly">
       <div className="page-header">
-        <h1>{isSubmitted ? 'Kết Quả Xét Nghiệm' : 'Nhập Kết Quả Xét Nghiệm'}</h1>
-        <p className="text-gray-500">
-          {isSubmitted ? 'Xem kết quả xét nghiệm đã hoàn thành' : 'Nhập kết quả xét nghiệm cho bệnh nhân'}
+        <h1 className="page-title">{isSubmitted ? 'Kết Quả Xét Nghiệm' : 'Nhập Kết Quả Xét Nghiệm'}</h1>
+        <p className="page-subtitle">
+          {isSubmitted ? 'Xem kết quả xét nghiệm đã hoàn thành' : 'Nhập thông tin chi tiết kết quả xét nghiệm của bệnh nhân'}
         </p>
       </div>
 

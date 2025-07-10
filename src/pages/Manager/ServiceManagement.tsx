@@ -374,9 +374,23 @@ const ServiceManagement: React.FC = () => {
   }
 
   return (
-    <div className="service-management">
-      <h1 className="page-title">Quản Lý Dịch Vụ</h1>
+    <div className="service-management-container">
+      <div className="page-header">
+        <h1 className="page-title">Quản Lý Dịch Vụ</h1>
+        <p className="page-subtitle">Tạo và quản lý các dịch vụ trên hệ thống</p>
+      </div>
       
+      {/* Service Management Toolbar */}
+      <div className="toolbar">
+        <button className="add-service-btn" onClick={handleAddService}>
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+          </svg>
+          Thêm dịch vụ mới
+        </button>
+      </div>
+
+      {/* Search and Filter */}
       <div className="controls">
         <div className="search-filter">
           <input
@@ -401,12 +415,6 @@ const ServiceManagement: React.FC = () => {
           </select>
         </div>
         
-        <button className="add-service-btn" onClick={handleAddService}>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="28" height="28">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          Thêm dịch vụ mới
-        </button>
       </div>
       
       <div className="services-table-container">

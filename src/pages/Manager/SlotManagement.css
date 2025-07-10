@@ -9,13 +9,6 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
 /* Filter and search */
 .filter-search-container {
   display: flex;

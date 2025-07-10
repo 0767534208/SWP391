@@ -4,6 +4,71 @@ import './SlotCreation.css';
 import api from '../../utils/api';
 import type { SlotCreationRequest } from '../../types';
 
+// CustomDatePicker component
+interface CustomDatePickerProps {
+  value: string;
+  onChange: (date: string) => void;
+  min?: string;
+}
+
+const CustomDatePicker: React.FC<CustomDatePickerProps> = ({ value, onChange, min }) => {
+  // Format date for display (YYYY-MM-DD to DD/MM/YYYY)
+  const formatDateForDisplay = (dateString: string): string => {
+    if (!dateString) return '';
+    try {
+      const [year, month, day] = dateString.split('-');
+      return `${day}/${month}/${year}`;
+    } catch (error) {
+      return dateString;
+    }
+  };
+
+  // Format date for input (DD/MM/YYYY to YYYY-MM-DD)
+  const formatDateForInput = (dateString: string): string => {
+    if (!dateString) return '';
+    try {
+      const [day, month, year] = dateString.split('/');
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      return dateString;
+    }
+  };
+
+  // Handle date change
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = e.target.value; // This will be in YYYY-MM-DD format
+    
+    // Create a date object from the input value to ensure consistency
+    if (newDate) {
+      const [year, month, day] = newDate.split('-').map(num => parseInt(num));
+      // Create a date object with correct values (month is 0-indexed in JS Date)
+      const dateObj = new Date(year, month - 1, day);
+      
+      // Format back to YYYY-MM-DD to ensure consistency
+      const formattedDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+      onChange(formattedDate);
+    } else {
+      onChange('');
+    }
+  };
+
+  return (
+    <div className="custom-date-picker">
+      <div className="date-display">
+        {value ? formatDateForDisplay(value) : 'Chọn ngày'}
+      </div>
+      <input
+        type="date"
+        className="date-input-hidden"
+        value={value}
+        onChange={handleDateChange}
+        min={min}
+        required
+      />
+    </div>
+  );
+};
+
 // CustomTimePicker component
 interface CustomTimePickerProps {
   value: string;
@@ -223,8 +288,13 @@ const SlotCreation = () => {
   // Format date and time for API
   const formatDateTimeForApi = (date: string, time: string): string => {
     const [hours, minutes] = time.split(':');
-    const dateObj = new Date(date);
+    
+    // Create date object without timezone issues
+    const [year, month, day] = date.split('-').map(num => parseInt(num));
+    const dateObj = new Date(year, month - 1, day); // month is 0-indexed in JS Date
+    
     dateObj.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    
     // Format as 'YYYY-MM-DDTHH:mm:ss' (local time, no Z)
     const pad = (n: number) => n.toString().padStart(2, '0');
     return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}T${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:00`;
@@ -315,7 +385,8 @@ const SlotCreation = () => {
         ))}
       </div>
       <div className="page-header">
-        <h1 className="text-2xl font-bold text-gray-800">Tạo khung giờ làm việc</h1>
+        <h1 className="page-title">Tạo khung giờ làm việc</h1>
+        <p className="page-subtitle">Tạo và quản lý lịch làm việc cho chuyên gia</p>
       </div>
       <div className="slot-creation-form bg-white p-6 rounded-lg shadow-sm mb-6">
         <h2 className="text-xl font-semibold mb-4 text-gray-700">Tạo khung giờ mới</h2>
@@ -323,15 +394,10 @@ const SlotCreation = () => {
         <div className="form-group mb-4">
           <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">Chọn ngày:</label>
           <div className="date-input-container">
-            <input
-              type="date"
-              id="date"
-              className="form-input w-full p-2 border border-gray-300 rounded-md date-input cursor-pointer"
+            <CustomDatePicker
               value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
+              onChange={setSelectedDate}
               min={new Date().toISOString().split('T')[0]}
-              placeholder="dd/mm/yyyy"
-              required
             />
           </div>
         </div>
