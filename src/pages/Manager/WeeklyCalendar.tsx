@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './WeeklyCalendar.css';
+import slotService from '../../services/slotService';
+import { consultantSlotAPI } from '../../utils/api';
+import api from '../../utils/api';
 
 // Types
 interface Consultant {
   name: string;
   specialty: string;
+  consultantID?: string;
 }
 
 interface TimeSlot {
@@ -13,6 +17,10 @@ interface TimeSlot {
   start: string;
   end: string;
   consultants?: Consultant[];
+  slotID?: string; // API ID
+  maxConsultant?: number;
+  maxTestAppointment?: number;
+  workingHourID?: number; // Always number
 }
 
 interface SlotDay {
@@ -22,33 +30,16 @@ interface SlotDay {
   id?: number;
 }
 
-// Thông tin consultant mock
-const mockConsultant = {
-  name: 'BS. Lê Văn C',
-  specialty: 'Sức khỏe tình dục',
-  education: 'Bác sĩ chuyên khoa II, Đại học Y Hà Nội',
-  experience: '8 năm kinh nghiệm tư vấn sức khỏe tình dục và sinh sản',
-  certificates: [
-    {
-      name: 'Chứng chỉ Tư vấn Sức khỏe tình dục',
-      org: 'Tổ chức Y tế Thế giới (WHO)',
-      year: '2017'
-    },
-    {
-      name: 'Chứng nhận đào tạo về Giáo dục giới tính',
-      org: 'Bộ Y tế',
-      year: '2019'
-    }
-  ]
-};
 
 // CustomTimePicker copy từ SlotCreation
 interface CustomTimePickerProps {
   value: string;
   onChange: (time: string) => void;
   isEndTime?: boolean;
+  minTime?: string; // Added minTime prop
+  maxTime?: string; // Added maxTime prop
 }
-const CustomTimePicker: React.FC<CustomTimePickerProps> = ({ value, onChange, isEndTime = false }) => {
+const CustomTimePicker: React.FC<CustomTimePickerProps> = ({ value, onChange, isEndTime = false, minTime, maxTime }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedHour, setSelectedHour] = useState(value ? value.split(':')[0] : '');
   const [selectedMinute, setSelectedMinute] = useState(value ? value.split(':')[1] : '');
@@ -145,10 +136,10 @@ const WeeklyCalendar: React.FC = () => {
   const location = useLocation();
   const currentDate = new Date();
   const [selectedYear, setSelectedYear] = useState<number>(currentDate.getFullYear());
-  
+
   // Initialize with the current week's Monday
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(getWeekStartDate(currentDate));
-  const [createdSlots, setCreatedSlots] = useState<SlotDay[]>([]); // This would come from API in a real app
+  const [createdSlots, setCreatedSlots] = useState<SlotDay[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
   const [selectedWeek, setSelectedWeek] = useState<number>(0); // Track selected week
@@ -158,104 +149,175 @@ const WeeklyCalendar: React.FC = () => {
   const [editStart, setEditStart] = useState('');
   const [editEnd, setEditEnd] = useState('');
   const [modalError, setModalError] = useState<string | null>(null);
-  
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [slotConsultants, setSlotConsultants] = useState<{ [slotId: string]: Consultant[] }>({});
+  const [workingHours, setWorkingHours] = useState<any[]>([]);
+  const [editMaxConsultant, setEditMaxConsultant] = useState<number>(0);
+  const [editMaxTestAppointment, setEditMaxTestAppointment] = useState<number>(0);
+
+  useEffect(() => {
+    // Fetch working hours 1 lần khi mount
+    api.get('/api/WorkingHour/GetWorkingHour').then(res => {
+      if (Array.isArray(res.data)) setWorkingHours(res.data);
+    });
+  }, []);
+
   // Check if we're coming from slot creation with new slots
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const slotCreated = params.get('slotCreated');
-    
+
     if (slotCreated === 'true') {
       // Show notification
-      setNotification({ 
-        show: true, 
-        message: 'Khung giờ đã được tạo thành công và cập nhật trên lịch!' 
+      setNotification({
+        show: true,
+        message: 'Khung giờ đã được tạo thành công và cập nhật trên lịch!'
       });
-      
+
       // Clear the URL parameter to avoid showing the notification on refresh
       navigate('/manager/slot-calendar', { replace: true });
-      
+
       // Hide notification after 3 seconds
       setTimeout(() => {
         setNotification({ show: false, message: '' });
       }, 3000);
     }
   }, [location.search, navigate]);
-  
-  // Load slots from localStorage khi currentWeekStart hoặc selectedYear thay đổi
+
+  // Fetch slots from API when week changes
   useEffect(() => {
-    const savedSlots = localStorage.getItem('managedSlots');
-    if (savedSlots) {
-      try {
-        const parsedSlots = JSON.parse(savedSlots);
-        if (Array.isArray(parsedSlots)) {
-          setCreatedSlots(parsedSlots);
-          return;
-        }
-      } catch (error) {
-        console.error('Error parsing saved slots:', error);
-      }
-    }
-    // Nếu không có dữ liệu thì setCreatedSlots([])
-    setCreatedSlots([]);
+    fetchSlots();
   }, [currentWeekStart, selectedYear]);
-  
-  // Tự động chèn fake data nếu chưa có dữ liệu
-  useEffect(() => {
-    const savedSlots = localStorage.getItem('managedSlots');
-    if (!savedSlots) {
-      const fakeData = [
-        {
-          id: 1,
-          day: 'monday',
-          date: '2024-06-10',
-          slots: [
-            { id: 101, start: '08:00', end: '09:00' },
-            { id: 102, start: '09:30', end: '10:30' }
-          ]
-        },
-        {
-          id: 2,
-          day: 'tuesday',
-          date: '2024-06-11',
-          slots: [
-            { id: 201, start: '13:00', end: '14:00' }
-          ]
-        },
-        {
-          id: 3,
-          day: 'friday',
-          date: '2024-06-14',
-          slots: [
-            { id: 301, start: '15:00', end: '16:00' }
-          ]
+
+  // Fetch all slots from API
+  const fetchSlots = async () => {
+    setIsLoading(true);
+    try {
+      // Get the start and end dates of the current week
+      const weekDates = getWeekDates(currentWeekStart);
+      const startDate = formatDateForComparison(weekDates[0]);
+      const endDate = formatDateForComparison(weekDates[6]);
+
+      // Fetch slots from API
+      const response = await slotService.getAllSlots();
+
+      if (response.data) {
+        // Process the API response into our SlotDay format
+        const processedSlots: SlotDay[] = [];
+
+        // Group slots by date
+        const slotsByDate: { [date: string]: TimeSlot[] } = {};
+
+        response.data.forEach((slot: any) => {
+          // Extract date from the slot's startTime
+          const slotDate = new Date(slot.startTime);
+          const dateString = formatDateForComparison(slotDate);
+
+          // Extract time from the slot's startTime and endTime
+          const startTime = new Date(slot.startTime).toTimeString().substring(0, 5);
+          const endTime = new Date(slot.endTime).toTimeString().substring(0, 5);
+
+          // Create TimeSlot object
+          const timeSlot: TimeSlot = {
+            id: slot.slotID,
+            slotID: slot.slotID.toString(),
+            start: startTime,
+            end: endTime,
+            maxConsultant: slot.maxConsultant,
+            maxTestAppointment: slot.maxTestAppointment,
+            consultants: [], // Will be populated later
+            workingHourID: typeof slot.workingHourID === 'string' ? parseInt(slot.workingHourID) : slot.workingHourID // Ensure number
+          };
+
+          // Add to slotsByDate
+          if (!slotsByDate[dateString]) {
+            slotsByDate[dateString] = [];
+          }
+          slotsByDate[dateString].push(timeSlot);
+        });
+
+        // Create SlotDay objects from slotsByDate
+        for (const [dateString, slots] of Object.entries(slotsByDate)) {
+          const date = new Date(dateString);
+          const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+          const day = dayNames[date.getDay()];
+
+          processedSlots.push({
+            day,
+            date: dateString,
+            slots: slots.sort((a, b) => a.start.localeCompare(b.start))
+          });
         }
-      ];
-      localStorage.setItem('managedSlots', JSON.stringify(fakeData));
+
+        setCreatedSlots(processedSlots);
+
+        // Fetch consultants for each slot
+        fetchConsultantsForSlots();
+      }
+    } catch (error) {
+      console.error('Error fetching slots:', error);
+    } finally {
+      setIsLoading(false);
     }
-  }, []);
-  
+  };
+
+  // Fetch consultants for each slot
+  const fetchConsultantsForSlots = async () => {
+    try {
+      // Get all consultants and their slots
+      const response = await consultantSlotAPI.getAllConsultants();
+
+      console.log("Consultant API response:", response.data);
+
+      if (response.data) {
+        const consultantsBySlot: { [slotId: string]: Consultant[] } = {};
+
+        // Process the response data
+        response.data.forEach((item: any) => {
+          if (!item.slotID) return;
+
+          const slotId = item.slotID.toString();
+
+          if (!consultantsBySlot[slotId]) {
+            consultantsBySlot[slotId] = [];
+          }
+
+          // Add consultant to the slot if it exists
+          if (item.consultant) {
+            consultantsBySlot[slotId].push({
+              consultantID: item.consultantID,
+              name: item.consultant.name || 'Consultant',
+              specialty: item.consultant.specialization || ''
+            });
+          }
+        });
+
+        console.log("Processed consultant data:", consultantsBySlot);
+        setSlotConsultants(consultantsBySlot);
+      }
+    } catch (error) {
+      console.error('Error fetching consultants:', error);
+    }
+  };
+
   // Initial render - set to current week
   useEffect(() => {
     // Just to make sure we're starting with the current week
     const today = new Date();
     const weekStart = getWeekStartDate(today);
     const weekNum = getWeekNumber(weekStart);
-    
-    console.log('Current date:', today);
-    console.log('Week start date:', weekStart);
-    console.log('Week number:', weekNum);
-    
+
     setCurrentWeekStart(weekStart);
     setSelectedWeek(weekNum);
     setIsInitialized(true);
   }, []);
-  
+
   // Update when year changes (but skip the first render)
   useEffect(() => {
     if (!isInitialized) return;
-    
+
     const today = new Date();
-    
+
     // If the selected year is the current year, show the current week
     if (selectedYear === today.getFullYear()) {
       const weekStart = getWeekStartDate(today);
@@ -274,16 +336,16 @@ const WeeklyCalendar: React.FC = () => {
     // Create a clone to avoid modifying the original date
     const dateClone = new Date(date.getTime());
     dateClone.setHours(0, 0, 0, 0);
-    
+
     const day = dateClone.getDay();
     // If Sunday (0), go back 6 days to get Monday
     // Otherwise, go back (day - 1) days to get to Monday
     const diff = day === 0 ? 6 : day - 1;
-    
+
     // Create the Monday date
     const monday = new Date(dateClone);
     monday.setDate(dateClone.getDate() - diff);
-    
+
     return monday;
   }
 
@@ -307,26 +369,26 @@ const WeeklyCalendar: React.FC = () => {
   const getWeekNumber = (date: Date): number => {
     const year = date.getFullYear();
     const dateClone = new Date(date.getTime());
-    
+
     // Normalize the date to midnight to avoid time issues
     dateClone.setHours(0, 0, 0, 0);
-    
+
     // Find the first Monday of the year
     let firstMonday = new Date(year, 0, 1);
     firstMonday.setHours(0, 0, 0, 0);
-    
+
     while (firstMonday.getDay() !== 1) {
       firstMonday.setDate(firstMonday.getDate() + 1);
     }
-    
+
     // If the date is before the first Monday of the year
     if (dateClone < firstMonday) {
       return 1;
     }
-    
+
     // Calculate days between the first Monday and the given date
     const daysDiff = Math.round((dateClone.getTime() - firstMonday.getTime()) / (24 * 60 * 60 * 1000));
-    
+
     // Calculate the week number
     return Math.floor(daysDiff / 7) + 1;
   };
@@ -335,19 +397,19 @@ const WeeklyCalendar: React.FC = () => {
   const getDateOfWeek = (weekNumber: number, year: number): Date => {
     // Make sure week number is valid
     const validWeekNumber = Math.max(1, weekNumber);
-    
+
     // Get the first Monday of the year
     let firstMonday = new Date(year, 0, 1);
     firstMonday.setHours(0, 0, 0, 0);
-    
+
     while (firstMonday.getDay() !== 1) {
       firstMonday.setDate(firstMonday.getDate() + 1);
     }
-    
+
     // Calculate target date: first Monday + (weekNumber-1) * 7 days
     const targetDate = new Date(firstMonday);
     targetDate.setDate(firstMonday.getDate() + (validWeekNumber - 1) * 7);
-    
+
     return targetDate;
   };
 
@@ -363,7 +425,7 @@ const WeeklyCalendar: React.FC = () => {
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const year = parseInt(e.target.value);
     setSelectedYear(year);
-    
+
     // Keep the same week number but in the new year
     const currentWeekNumber = getWeekNumber(currentWeekStart);
     const newStartDate = getDateOfWeek(currentWeekNumber, year);
@@ -380,7 +442,7 @@ const WeeklyCalendar: React.FC = () => {
       navigate('/manager/slot-creation');
     }
   };
-  
+
   // Handle day selection
   const handleDaySelect = (date: Date) => {
     // Only allow selecting today or future dates
@@ -398,54 +460,54 @@ const WeeklyCalendar: React.FC = () => {
     }
     return years;
   };
-  
+
   // Format date as DD-MM
   const formatShortDate = (date: Date): string => {
     return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
   };
-  
+
   // Get all weeks for the selected year, aligned with the calendar display
   const getWeeksForYear = (year: number): { value: number; label: string }[] => {
     const weeks: { value: number; label: string }[] = [];
-    
+
     // First day of year
     const firstDay = new Date(year, 0, 1);
-    
+
     // Find the first Monday of the year or the first day of the year
     let firstMonday = new Date(year, 0, 1);
     while (firstMonday.getDay() !== 1) {
       firstMonday.setDate(firstMonday.getDate() + 1);
     }
-    
+
     // Generate all weeks starting from the first Monday
     let currentDate = new Date(firstMonday);
     let weekNumber = 1;
-    
+
     while (currentDate.getFullYear() === year) {
       const weekStart = new Date(currentDate);
       const weekEnd = new Date(currentDate);
       weekEnd.setDate(weekStart.getDate() + 6);
-      
+
       weeks.push({
         value: weekNumber,
         label: `${formatShortDate(weekStart)} đến ${formatShortDate(weekEnd)}`
       });
-      
+
       // Move to next Monday
       currentDate.setDate(currentDate.getDate() + 7);
       weekNumber++;
     }
-    
+
     return weeks;
   };
-  
+
   // Update week start date when year changes
   useEffect(() => {
     const currentWeekNumber = getWeekNumber(currentWeekStart);
     // If the week number is greater than the number of weeks in the new year, set to last week
     const lastDayOfYear = new Date(selectedYear, 11, 31);
     const totalWeeks = getWeekNumber(lastDayOfYear);
-    
+
     const weekToUse = currentWeekNumber > totalWeeks ? totalWeeks : currentWeekNumber;
     const newStartDate = getDateOfWeek(weekToUse, selectedYear);
     setCurrentWeekStart(newStartDate);
@@ -454,7 +516,7 @@ const WeeklyCalendar: React.FC = () => {
   // Translate day name to Vietnamese
   const translateDayName = (day: number): string => {
     const translations = [
-      'Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 
+      'Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư',
       'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'
     ];
     return translations[day];
@@ -465,118 +527,39 @@ const WeeklyCalendar: React.FC = () => {
     return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
   };
 
-  // Hàm kiểm tra xem tuần hiện tại có phải là tuần 23-27/6/2025 không
-  function isSpecialWeek(dates: Date[]): boolean {
-    if (dates.length !== 7) return false;
-    // Thứ 2 ngày 23/6/2025 đến Thứ 6 ngày 27/6/2025
-    const monday = dates[0];
-    return (
-      monday.getFullYear() === 2025 &&
-      monday.getMonth() === 5 && // Tháng 6 (0-based)
-      monday.getDate() === 23
-    );
-  }
-
-  // Fake data cho tuần đặc biệt
-  const specialWeekFakeData: SlotDay[] = [
-    {
-      id: 1,
-      day: 'monday',
-      date: '2025-06-23',
-      slots: [
-        {
-          id: 101, start: '08:00', end: '09:00',
-          consultants: [
-            { name: 'BS. Nguyễn Văn A', specialty: 'Tư vấn sức khỏe giới tính' },
-            { name: 'BS. Trần Thị B', specialty: 'Tư vấn sức khỏe sinh sản' }
-          ]
-        },
-        {
-          id: 102, start: '09:30', end: '10:30',
-          consultants: [
-            { name: 'BS. Lê Văn C', specialty: 'Tư vấn HIV/AIDS' }
-          ]
-        }
-      ]
-    },
-    {
-      id: 2,
-      day: 'tuesday',
-      date: '2025-06-24',
-      slots: [
-        {
-          id: 201, start: '13:00', end: '14:00',
-          consultants: [
-            { name: 'BS. Nguyễn Văn D', specialty: 'Tư vấn phòng tránh thai' }
-          ]
-        }
-      ]
-    },
-    {
-      id: 3,
-      day: 'wednesday',
-      date: '2025-06-25',
-      slots: [
-        {
-          id: 301, start: '15:00', end: '16:00',
-          consultants: [
-            { name: 'BS. Phạm Thị E', specialty: 'Tư vấn sức khỏe tình dục vị thành niên' }
-          ]
-        }
-      ]
-    },
-    {
-      id: 4,
-      day: 'thursday',
-      date: '2025-06-26',
-      slots: [
-        {
-          id: 401, start: '10:00', end: '11:00',
-          consultants: [
-            { name: 'BS. Hoàng Văn F', specialty: 'Tư vấn các bệnh lây truyền qua đường tình dục (STI)' }
-          ]
-        }
-      ]
-    },
-    {
-      id: 5,
-      day: 'friday',
-      date: '2025-06-27',
-      slots: [
-        {
-          id: 501, start: '14:00', end: '15:00',
-          consultants: [
-            { name: 'BS. Nguyễn Thị G', specialty: 'Tư vấn tâm lý giới tính' }
-          ]
-        }
-      ]
-    }
-  ];
-
   // Get slots for a specific date
   const getSlotsForDate = (date: Date): TimeSlot[] => {
-    const weekDates = getWeekDates(currentWeekStart);
-    if (isSpecialWeek(weekDates)) {
-      // Nếu là tuần đặc biệt, trả về fake data cứng
-      const dateString = formatDateForComparison(date);
-      const slotDay = specialWeekFakeData.find(slot => slot.date === dateString);
-      return slotDay ? slotDay.slots : [];
-    }
-    // Ngược lại, lấy từ localStorage
     const dateString = formatDateForComparison(date);
     const slotDay = createdSlots.find(slot => slot.date === dateString);
-    return slotDay ? slotDay.slots : [];
+
+    if (slotDay) {
+      // Add consultants to each slot
+      return slotDay.slots.map(slot => {
+        // Convert slot ID to string for matching
+        const slotID = slot.slotID || slot.id.toString();
+
+        if (slotID && slotConsultants[slotID]) {
+          return {
+            ...slot,
+            consultants: slotConsultants[slotID]
+          };
+        }
+        return slot;
+      });
+    }
+
+    return [];
   };
 
-  
+
   // Check if a date is today
   const isToday = (date: Date): boolean => {
     const today = new Date();
-    return date.getDate() === today.getDate() && 
-           date.getMonth() === today.getMonth() && 
-           date.getFullYear() === today.getFullYear();
+    return date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear();
   };
-  
+
   // Check if a date is selectable (today or future)
   const isSelectable = (date: Date): boolean => {
     const today = new Date();
@@ -585,69 +568,123 @@ const WeeklyCalendar: React.FC = () => {
     return date >= today;
   };
 
-  // Generate the weekly calendar
-  const weekDates = getWeekDates(currentWeekStart);
+  // Handle slot click
+  const handleSlotClick = (slot: TimeSlot, date: string) => {
+    // Ensure slot has consultants property
+    const slotID = slot.slotID || slot.id.toString();
+    const slotWithConsultants = {
+      ...slot,
+      consultants: slotID && slotConsultants[slotID]
+        ? slotConsultants[slotID]
+        : []
+    };
 
-  // Khi click vào slot
-  const handleSlotClick = (slot: any, date: string, isFake: boolean) => {
-    setSelectedSlot({ slot, date, isFake });
+    setSelectedSlot({
+      slot: slotWithConsultants,
+      date,
+      isFake: false
+    });
     setEditStart(slot.start);
     setEditEnd(slot.end);
+    setEditMaxConsultant(slot.maxConsultant ?? 0);
+    setEditMaxTestAppointment(slot.maxTestAppointment ?? 0);
     setModalOpen(true);
     setModalError(null);
   };
 
-  // Validate overlap slot trong ngày (trừ chính slot đang chỉnh)
-  function checkSlotOverlap(slots: TimeSlot[], start: string, end: string, editingId: number) {
-    return slots.some(slot => slot.id !== editingId && start < slot.end && end > slot.start);
+  // Fix the type mismatch in the checkSlotOverlap function
+  function checkSlotOverlap(slots: TimeSlot[], start: string, end: string, editingId: number | string) {
+    return slots.some(slot => {
+      const slotId = typeof slot.id === 'string' ? slot.id : slot.id.toString();
+      const compareId = typeof editingId === 'string' ? editingId : editingId.toString();
+      return slotId !== compareId && start < slot.end && end > slot.start;
+    });
   }
 
+  // Trong modal, lấy working hour tương ứng với slot đang sửa
+  const editingWorkingHour = selectedSlot && selectedSlot.slot.workingHourID
+    ? workingHours.find(wh => wh.workingHourID === Number(selectedSlot.slot.workingHourID))
+    : null;
+  const minTime = editingWorkingHour ? editingWorkingHour.openingTime.slice(0,5) : '07:00';
+  const maxTime = editingWorkingHour ? editingWorkingHour.closingTime.slice(0,5) : '19:00';
+
   // Lưu thay đổi thời gian slot
-  const handleSaveSlot = () => {
+  const handleSaveSlot = async () => {
     if (!selectedSlot) return;
+
     let error = '';
     if (editStart >= editEnd) error = 'Thời gian kết thúc phải sau thời gian bắt đầu!';
     const slotsInDay = getSlotsForDate(new Date(selectedSlot.date));
-    if (checkSlotOverlap(slotsInDay, editStart, editEnd, selectedSlot.slot.id)) error = 'Khoảng thời gian này trùng với một khung giờ khác!';
-    if (editStart < '08:00' || editEnd > '20:00') error = 'Chỉ được chọn từ 08:00 đến 20:00!';
+
+    // Use the correct type for the id
+    const slotId = typeof selectedSlot.slot.id === 'string' ?
+      selectedSlot.slot.id : selectedSlot.slot.id;
+
+    if (checkSlotOverlap(slotsInDay, editStart, editEnd, slotId)) {
+      error = 'Khoảng thời gian này trùng với một khung giờ khác!';
+    }
+    if (editStart < minTime || editEnd > maxTime) error = `Chỉ được chọn từ ${minTime} đến ${maxTime}!`;
     if (editStart === '' || editEnd === '') error = 'Vui lòng chọn đầy đủ thời gian!';
-    if (error) { setModalError(error); return; }
-    if (selectedSlot.isFake) {
-      // Cập nhật fake data trong biến tạm thời
-      const weekDates = getWeekDates(currentWeekStart);
-      if (isSpecialWeek(weekDates)) {
-        const idx = specialWeekFakeData.findIndex(s => s.date === selectedSlot.date);
-        if (idx !== -1) {
-          const slotIdx = specialWeekFakeData[idx].slots.findIndex(s => s.id === selectedSlot.slot.id);
-          if (slotIdx !== -1) {
-            specialWeekFakeData[idx].slots[slotIdx].start = editStart;
-            specialWeekFakeData[idx].slots[slotIdx].end = editEnd;
-          }
-        }
-      }
-      // Clone sâu để trigger re-render
-      const deepClone = JSON.parse(JSON.stringify(specialWeekFakeData));
-      setCreatedSlots(deepClone);
-      setModalOpen(false);
+    if (editMaxConsultant < 1) error = 'Số lượng tư vấn viên tối đa phải lớn hơn 0!';
+    if (editMaxTestAppointment < 1) error = 'Số lượng cuộc hẹn xét nghiệm tối đa phải lớn hơn 0!';
+
+    if (error) {
+      setModalError(error);
       return;
     }
-    // Tuần thường: cập nhật localStorage
-    const allSlots = localStorage.getItem('managedSlots');
-    if (!allSlots) return setModalOpen(false);
-    let arr = JSON.parse(allSlots);
-    const dayIdx = arr.findIndex((d: any) => d.date === selectedSlot.date);
-    if (dayIdx !== -1) {
-      const slotIdx = arr[dayIdx].slots.findIndex((s: any) => s.id === selectedSlot.slot.id);
-      if (slotIdx !== -1) {
-        arr[dayIdx].slots[slotIdx].start = editStart;
-        arr[dayIdx].slots[slotIdx].end = editEnd;
-        localStorage.setItem('managedSlots', JSON.stringify(arr));
+
+    try {
+      setIsLoading(true);
+
+      // Format date and time for API (local time, không có Z)
+      const formatLocalDateTime = (date: string, time: string): string => {
+        const [hours, minutes] = time.split(':');
+        const dateObj = new Date(date);
+        dateObj.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}T${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:00`;
+      };
+      const formattedStartTime = formatLocalDateTime(selectedSlot.date, editStart);
+      const formattedEndTime = formatLocalDateTime(selectedSlot.date, editEnd);
+
+      if (selectedSlot.slot.slotID) {
+        // Update slot via API, giữ nguyên workingHourID, gửi maxConsultant, maxTestAppointment mới
+        await slotService.updateSlot(selectedSlot.slot.slotID, {
+          workingHourID: selectedSlot.slot.workingHourID,
+          maxConsultant: editMaxConsultant,
+          maxTestAppointment: editMaxTestAppointment,
+          startTime: formattedStartTime,
+          endTime: formattedEndTime
+        });
+
+        // Refresh slots data
+        await fetchSlots();
+
+        setModalOpen(false);
+        setNotification({
+          show: true,
+          message: 'Khung giờ đã được cập nhật thành công!'
+        });
+
+        setTimeout(() => {
+          setNotification({ show: false, message: '' });
+        }, 3000);
       }
+    } catch (error) {
+      console.error('Error updating slot:', error);
+      setModalError('Đã xảy ra lỗi khi cập nhật khung giờ');
+    } finally {
+      setIsLoading(false);
     }
-    // Luôn đọc lại từ localStorage mới nhất
-    const updated = localStorage.getItem('managedSlots');
-    setCreatedSlots(updated ? JSON.parse(updated) : []);
-    setModalOpen(false);
+  };
+
+  // Format date and time for API
+  const formatDateTimeForApi = (date: string, time: string): string => {
+    // Combine date and time into ISO format
+    const [hours, minutes] = time.split(':');
+    const dateObj = new Date(date);
+    dateObj.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    return dateObj.toISOString();
   };
 
   return (
@@ -665,7 +702,20 @@ const WeeklyCalendar: React.FC = () => {
           </div>
         </div>
       )}
-      
+
+      {/* Loading indicator */}
+      {isLoading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner">
+            <svg className="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span className="ml-2">Đang tải...</span>
+          </div>
+        </div>
+      )}
+
       {/* Modal chi tiết slot */}
       {modalOpen && selectedSlot && (
         <div className="modal-overlay">
@@ -673,97 +723,132 @@ const WeeklyCalendar: React.FC = () => {
             <button className="modal-close" onClick={() => setModalOpen(false)} title="Đóng">
               <span aria-hidden="true">&times;</span>
             </button>
-            <h2 className="modal-title">Chỉnh sửa khung giờ</h2>
+            <h2 className="modal-title">Chi tiết khung giờ</h2>
             <div className="modal-section">
               <strong>Thời gian khung giờ:</strong>
               <div className="modal-time-edit">
-                <CustomTimePicker value={editStart} onChange={setEditStart} />
+                <CustomTimePicker value={editStart} onChange={setEditStart} minTime={minTime} maxTime={maxTime} />
                 <span style={{ margin: '0 8px' }}>-</span>
-                <CustomTimePicker value={editEnd} onChange={setEditEnd} isEndTime />
+                <CustomTimePicker value={editEnd} onChange={setEditEnd} isEndTime minTime={minTime} maxTime={maxTime} />
               </div>
-              {modalError && <div style={{color:'#e11d48',marginTop:4,fontSize:13}}>{modalError}</div>}
+              {modalError && <div style={{ color: '#e11d48', marginTop: 4, fontSize: 13 }}>{modalError}</div>}
+            </div>
+            <div className="modal-section">
+              <strong>Thông tin khung giờ:</strong>
+              <div style={{ marginTop: 8, fontSize: 14 }}>
+                <div style={{ marginBottom: 8 }}>
+                  <label>Số lượng tư vấn viên tối đa: </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={editMaxConsultant}
+                    onChange={e => setEditMaxConsultant(Number(e.target.value))}
+                    style={{ width: 60, fontWeight: 600, marginLeft: 8 }}
+                  />
+                </div>
+                <div>
+                  <label>Số lượng cuộc hẹn xét nghiệm tối đa: </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={editMaxTestAppointment}
+                    onChange={e => setEditMaxTestAppointment(Number(e.target.value))}
+                    style={{ width: 60, fontWeight: 600, marginLeft: 8 }}
+                  />
+                </div>
+              </div>
             </div>
             <div className="modal-section">
               <strong>Danh sách consultant đã đăng ký:</strong>
               {selectedSlot.slot.consultants && selectedSlot.slot.consultants.length > 0 ? (
-                <ul style={{marginTop:8}}>
-                  {selectedSlot.slot.consultants.map((c: any, idx: number) => (
-                    <li key={idx} style={{marginBottom:6}}>
-                      <span style={{fontWeight:600}}>{c.name}</span> <span style={{color:'#6366f1'}}>- {c.specialty}</span>
+                <ul style={{ marginTop: 8 }}>
+                  {selectedSlot.slot.consultants.map((c: Consultant, idx: number) => (
+                    <li key={idx} style={{ marginBottom: 6 }}>
+                      <span style={{ fontWeight: 600 }}>{c.name}</span>
+                      {c.specialty && <span style={{ color: '#6366f1' }}> - {c.specialty}</span>}
                     </li>
                   ))}
                 </ul>
               ) : (
-                <div style={{color:'#64748b',marginTop:8}}>Chưa có ai đăng ký</div>
+                <div style={{ color: '#64748b', marginTop: 8 }}>Chưa có ai đăng ký</div>
               )}
             </div>
-            <button className="modal-save" onClick={handleSaveSlot}>Lưu thay đổi</button>
+            <button
+              className={`modal-save ${isLoading ? 'disabled' : ''}`}
+              onClick={handleSaveSlot}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Đang lưu...' : 'Lưu thay đổi'}
+            </button>
           </div>
         </div>
       )}
 
       <div className="calendar-header">
         <h1 className="text-2xl font-bold text-gray-800">Lịch khung giờ làm việc</h1>
-        
-                  <div className="calendar-controls">
-            <div className="selectors-container">
-              <div className="week-selector">
-                <label htmlFor="week-select">Tuần:</label>
-                <select 
-                  id="week-select"
-                  value={selectedWeek}
-                  onChange={handleWeekChange}
-                  className="week-select"
-                >
-                  {getWeeksForYear(selectedYear).map((week) => (
-                    <option key={week.value} value={week.value}>
-                      {week.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="year-selector">
-                <label htmlFor="year-select">Năm:</label>
-                <select 
-                  id="year-select"
-                  value={selectedYear}
-                  onChange={handleYearChange}
-                  className="year-select"
-                >
-                  {getYearOptions().map(year => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              </div>
+
+        <div className="calendar-controls">
+          <div className="selectors-container">
+            <div className="week-selector">
+              <label htmlFor="week-select">Tuần:</label>
+              <select
+                id="week-select"
+                value={selectedWeek}
+                onChange={handleWeekChange}
+                className="week-select"
+              >
+                {getWeeksForYear(selectedYear).map((week) => (
+                  <option key={week.value} value={week.value}>
+                    {week.label}
+                  </option>
+                ))}
+              </select>
             </div>
-            
-            <button 
-              className={`create-slot-button ${!selectedDate ? 'disabled' : ''}`}
-              onClick={navigateToSlotCreation}
-              disabled={!selectedDate}
-              title={!selectedDate ? "Vui lòng chọn một ngày" : "Tạo khung giờ cho ngày đã chọn"}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-              </svg>
-              Tạo khung giờ
-            </button>
+
+            <div className="year-selector">
+              <label htmlFor="year-select">Năm:</label>
+              <select
+                id="year-select"
+                value={selectedYear}
+                onChange={handleYearChange}
+                className="year-select"
+              >
+                {getYearOptions().map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+            </div>
           </div>
+
+          <button
+            className={`create-slot-button ${!selectedDate ? 'disabled' : ''}`}
+            onClick={navigateToSlotCreation}
+            disabled={!selectedDate}
+            title={!selectedDate ? "Vui lòng chọn một ngày" : "Tạo khung giờ cho ngày đã chọn"}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            Tạo khung giờ
+          </button>
+        </div>
       </div>
 
+      {/* Update the calendar grid section to display slots with correct consultant counts */}
       <div className="weekly-calendar">
         <div className="calendar-grid">
-          {weekDates.map((date, index) => {
+          {getWeekDates(currentWeekStart).map((date, index) => {
             // Check if this date is selected
-            const isSelected = selectedDate && 
-                              date.getDate() === selectedDate.getDate() && 
-                              date.getMonth() === selectedDate.getMonth() && 
-                              date.getFullYear() === selectedDate.getFullYear();
-            
+            const isSelected = selectedDate &&
+              date.getDate() === selectedDate.getDate() &&
+              date.getMonth() === selectedDate.getMonth() &&
+              date.getFullYear() === selectedDate.getFullYear();
+
+            const slotsForDate = getSlotsForDate(date);
+
             return (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className={`calendar-day ${isToday(date) ? 'today' : ''} ${isSelected ? 'selected' : ''} ${!isSelectable(date) ? 'past-date' : 'selectable'}`}
                 onClick={() => handleDaySelect(date)}
               >
@@ -771,14 +856,54 @@ const WeeklyCalendar: React.FC = () => {
                   <div className="day-name">{translateDayName(date.getDay())}</div>
                   <div className="day-date">{formatDate(date)}</div>
                 </div>
-                
+
                 <div className="day-slots">
-                  {getSlotsForDate(date).length > 0 ? (
-                    getSlotsForDate(date).map((slot) => (
-                      <div key={slot.id} className="time-slot" onClick={() => handleSlotClick(slot, formatDateForComparison(date), isSpecialWeek(weekDates))}>
-                        <span className="slot-time">{slot.start} - {slot.end}</span>
-                      </div>
-                    ))
+                  {slotsForDate.length > 0 ? (
+                    slotsForDate.map((slot) => {
+                      // Count consultants registered for this slot
+                      const consultantCount = slot.consultants?.length || 0;
+                      const maxConsultants = slot.maxConsultant || 0;
+
+                      // Calculate fill percentage
+                      const fillPercentage = maxConsultants > 0
+                        ? Math.min(100, (consultantCount / maxConsultants) * 100)
+                        : 0;
+
+                      // Determine status color
+                      let statusColor = 'bg-green-100 text-green-800'; // Default: Available
+                      if (fillPercentage >= 100) {
+                        statusColor = 'bg-red-100 text-red-800'; // Full
+                      } else if (fillPercentage >= 70) {
+                        statusColor = 'bg-yellow-100 text-yellow-800'; // Almost full
+                      }
+
+                      return (
+                        <div
+                          key={slot.id}
+                          className={`time-slot ${statusColor}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSlotClick(slot, formatDateForComparison(date));
+                          }}
+                        >
+                          <span className="slot-time">{slot.start} - {slot.end}</span>
+                          <div className="slot-capacity-container">
+                            {maxConsultants > 0 ? (
+                              <span className="slot-capacity">
+                                {consultantCount}/{maxConsultants} tư vấn viên
+                              </span>
+                            ) : (
+                              <span className="slot-capacity">
+                                {consultantCount} tư vấn viên
+                              </span>
+                            )}
+                            <span className="slot-capacity">
+                              Tối đa {slot.maxTestAppointment} cuộc hẹn xét nghiệm
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
                   ) : (
                     <div className="no-slots">Không có khung giờ</div>
                   )}

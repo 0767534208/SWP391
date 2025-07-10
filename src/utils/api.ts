@@ -861,7 +861,18 @@ export const slotAPI = {
    * @param slotData - Thông tin slot
    */
   createSlot: async (slotData: any): Promise<ApiResponse<any>> => {
+    console.log('Calling createSlot API with data:', slotData);
     return apiRequest<any>('/api/slot', 'POST', slotData);
+  },
+  
+  
+  /**
+   * Cập nhật slot
+   * @param slotId - ID của slot
+   * @param slotData - Thông tin slot cần cập nhật
+   */
+  updateSlot: async (slotId: string, slotData: any): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/slot/${slotId}`, 'PUT', slotData);
   },
 
   /**
@@ -1019,48 +1030,39 @@ export const categoryAPI = {
   }
 };
 
-// Consultant Slot API endpoints
+// Consultant Slot API endpoints (Quản lý đăng ký slot của consultant)
 export const consultantSlotAPI = {
   /**
-   * Lấy tất cả tư vấn viên và slot của họ
+   * Lấy tất cả consultant và thông tin slot đã đăng ký
    */
   getAllConsultants: async (): Promise<ApiResponse<any[]>> => {
     return apiRequest<any[]>('/api/consultantSlot/GetAll', 'GET');
   },
-  
+
   /**
-   * Lấy slots theo ID tư vấn viên
+   * Lấy thông tin đăng ký slot của một consultant
+   * @param consultantId - ID của consultant
    */
-  getSlotsByConsultantId: async (consultantId: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>(`/api/consultantSlot?consultantId=${consultantId}`, 'GET');
+  getConsultantSlots: async (consultantId: string): Promise<ApiResponse<any[]>> => {
+    return apiRequest<any[]>(`/api/consultant/${consultantId}/slots`, 'GET');
   },
 
   /**
-   * Đăng ký slot tư vấn viên
+   * Đăng ký slot cho consultant
+   * @param consultantId - ID của consultant
+   * @param slotId - ID của slot
    */
-  registerConsultantSlot: async (registrationData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/api/consultantSlot/register', 'POST', registrationData);
+  registerSlot: async (consultantId: string, slotId: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/consultant/${consultantId}/slots/${slotId}`, 'POST');
   },
 
   /**
-   * Tạo hồ sơ tư vấn viên
+   * Hủy đăng ký slot của consultant
+   * @param consultantId - ID của consultant
+   * @param slotId - ID của slot
    */
-  createConsultantProfile: async (profileData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/api/consultantSlot/CreateConsultantProfile', 'POST', profileData);
-  },
-
-  /**
-   * Cập nhật hồ sơ tư vấn viên
-   */
-  updateConsultantProfile: async (profileData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/api/consultantSlot/UpdateConsultantProfile', 'PUT', profileData);
-  },
-
-  /**
-   * Đổi slot tư vấn viên
-   */
-  swapSlot: async (swapData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/api/consultantSlot/swap', 'POST', swapData);
+  unregisterSlot: async (consultantId: string, slotId: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/consultant/${consultantId}/slots/${slotId}`, 'DELETE');
   }
 };
 
