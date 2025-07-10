@@ -137,7 +137,10 @@ const ManagerDashboard: React.FC = () => {
 
   return (
     <div className="manager-dashboard">
-      <h1 className="dashboard-title">Bảng điều khiển</h1>
+      <div className="page-header">
+        <h1 className="page-title">Bảng điều khiển</h1>
+        <p className="page-subtitle">Xem tổng quan về dữ liệu và hoạt động của hệ thống</p>
+      </div>
 
       {/* Stats overview */}
       <div className="stats-grid">

@@ -134,9 +134,9 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard">
-      <div className="dashboard-header">
-        <h1>Quản trị hệ thống</h1>
-        <p>Xem tổng quan về dữ liệu và hoạt động của hệ thống</p>
+      <div className="page-header">
+        <h1 className="page-title">Quản trị hệ thống</h1>
+        <p className="page-subtitle">Xem tổng quan về dữ liệu và hoạt động của hệ thống</p>
       </div>
 
       <div className="stats-grid">

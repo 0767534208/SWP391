@@ -231,264 +231,257 @@ const TestResultEdit: React.FC = () => {
     navigate(`/staff/test-results/${id}`);
   };
 
-  if (loading) {
-    return (
-      <div className="test-result-edit-loading">
-        <div className="loading-spinner"></div>
-        <p>Đang tải dữ liệu kết quả xét nghiệm...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="test-result-edit-error">
-        <p>{error}</p>
-        <button onClick={() => navigate('/staff/test-results')} className="back-button">
-          <FaArrowLeft /> Quay lại danh sách kết quả
-        </button>
-      </div>
-    );
-  }
-
-  if (!testResult) {
-    return (
-      <div className="test-result-edit-error">
-        <p>Không tìm thấy kết quả xét nghiệm.</p>
-        <button onClick={() => navigate('/staff/test-results')} className="back-button">
-          <FaArrowLeft /> Quay lại danh sách kết quả
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div className="test-result-edit-container">
-      <div className="test-result-edit-header">
-        <button className="back-button" onClick={handleCancel}>
-          <FaArrowLeft /> Quay lại
-        </button>
-        <h1>Chỉnh sửa kết quả xét nghiệm</h1>
+    <div className="test-result-edit">
+      <div className="page-header">
+        <h1 className="page-title">Chỉnh Sửa Kết Quả Xét Nghiệm</h1>
+        <p className="page-subtitle">Cập nhật thông tin kết quả xét nghiệm của bệnh nhân</p>
       </div>
 
-      <div className="test-result-edit-content">
-        <form onSubmit={handleSubmit}>
-          <div className="info-section">
-            <div className="section-header">
-              <h2>Thông tin bệnh nhân</h2>
-            </div>
-            <div className="info-grid">
-              <div className="info-item">
-                <label>Họ và tên:</label>
-                <span>{testResult.patientName}</span>
-              </div>
-              <div className="info-item">
-                <label>ID bệnh nhân:</label>
-                <span>{testResult.patientId}</span>
-              </div>
-              <div className="info-item">
-                <label>Ngày sinh:</label>
-                <span>{testResult.patientDob}</span>
-              </div>
-              <div className="info-item">
-                <label>Giới tính:</label>
-                <span>{testResult.patientGender}</span>
-              </div>
-              <div className="info-item">
-                <label>Email:</label>
-                <span>{testResult.patientEmail}</span>
-              </div>
-              <div className="info-item">
-                <label>Số điện thoại:</label>
-                <span>{testResult.patientPhone}</span>
-              </div>
-            </div>
+      {loading ? (
+        <div className="test-result-edit-loading">
+          <div className="loading-spinner"></div>
+          <p>Đang tải dữ liệu kết quả xét nghiệm...</p>
+        </div>
+      ) : error ? (
+        <div className="test-result-edit-error">
+          <p>{error}</p>
+          <button onClick={() => navigate('/staff/test-results')} className="back-button">
+            <FaArrowLeft /> Quay lại danh sách kết quả
+          </button>
+        </div>
+      ) : !testResult ? (
+        <div className="test-result-edit-error">
+          <p>Không tìm thấy kết quả xét nghiệm.</p>
+          <button onClick={() => navigate('/staff/test-results')} className="back-button">
+            <FaArrowLeft /> Quay lại danh sách kết quả
+          </button>
+        </div>
+      ) : (
+        <div className="test-result-edit-content">
+          <div className="test-result-edit-actions">
+            <button className="back-button" onClick={handleCancel}>
+              <FaArrowLeft /> Quay lại
+            </button>
           </div>
+          <form onSubmit={handleSubmit}>
+            <div className="info-section">
+              <div className="section-header">
+                <h2>Thông tin bệnh nhân</h2>
+              </div>
+              <div className="info-grid">
+                <div className="info-item">
+                  <label>Họ và tên:</label>
+                  <span>{testResult.patientName}</span>
+                </div>
+                <div className="info-item">
+                  <label>ID bệnh nhân:</label>
+                  <span>{testResult.patientId}</span>
+                </div>
+                <div className="info-item">
+                  <label>Ngày sinh:</label>
+                  <span>{testResult.patientDob}</span>
+                </div>
+                <div className="info-item">
+                  <label>Giới tính:</label>
+                  <span>{testResult.patientGender}</span>
+                </div>
+                <div className="info-item">
+                  <label>Email:</label>
+                  <span>{testResult.patientEmail}</span>
+                </div>
+                <div className="info-item">
+                  <label>Số điện thoại:</label>
+                  <span>{testResult.patientPhone}</span>
+                </div>
+              </div>
+            </div>
 
-          <div className="info-section">
-            <div className="section-header">
-              <h2>Thông tin mẫu xét nghiệm</h2>
-            </div>
-            <div className="info-grid">
-              <div className="info-item">
-                <label>Mã cuộc hẹn:</label>
-                <span>APT-{testResult.appointmentId}</span>
+            <div className="info-section">
+              <div className="section-header">
+                <h2>Thông tin mẫu xét nghiệm</h2>
               </div>
-              <div className="info-item">
-                <label>Loại xét nghiệm:</label>
-                <span>{testResult.testType}</span>
-              </div>
-              <div className="info-item">
-                <label>Loại mẫu:</label>
-                <input
-                  type="text"
-                  value={testResult.sampleType}
-                  onChange={(e) => setTestResult({...testResult, sampleType: e.target.value})}
-                  className="form-input"
-                />
-              </div>
-              <div className="info-item">
-                <label>Ngày lấy mẫu:</label>
-                <input
-                  type="text"
-                  value={testResult.sampleCollectedAt}
-                  onChange={(e) => setTestResult({...testResult, sampleCollectedAt: e.target.value})}
-                  className="form-input"
-                />
-              </div>
-              <div className="info-item">
-                <label>Ngày nhận mẫu:</label>
-                <input
-                  type="text"
-                  value={testResult.sampleReceivedAt}
-                  onChange={(e) => setTestResult({...testResult, sampleReceivedAt: e.target.value})}
-                  className="form-input"
-                />
-              </div>
-              <div className="info-item">
-                <label>Mã xét nghiệm:</label>
-                <input
-                  type="text"
-                  value={testResult.testId}
-                  onChange={(e) => setTestResult({...testResult, testId: e.target.value})}
-                  className="form-input"
-                />
-              </div>
-              <div className="info-item">
-                <label>Bác sĩ chỉ định:</label>
-                <input
-                  type="text"
-                  value={testResult.consultant}
-                  onChange={(e) => setTestResult({...testResult, consultant: e.target.value})}
-                  className="form-input"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="test-results-section">
-            <div className="section-header">
-              <h2>Kết quả xét nghiệm</h2>
-            </div>
-            
-            {testResult.categories.map((category, categoryIndex) => (
-              <div key={categoryIndex} className="category-section">
-                <div className="category-header">
+              <div className="info-grid">
+                <div className="info-item">
+                  <label>Mã cuộc hẹn:</label>
+                  <span>APT-{testResult.appointmentId}</span>
+                </div>
+                <div className="info-item">
+                  <label>Loại xét nghiệm:</label>
+                  <span>{testResult.testType}</span>
+                </div>
+                <div className="info-item">
+                  <label>Loại mẫu:</label>
                   <input
                     type="text"
-                    value={category.name}
-                    onChange={(e) => handleCategoryChange(categoryIndex, 'name', e.target.value)}
-                    className="form-input category-name-input"
-                    placeholder="Tên danh mục xét nghiệm"
-                  />
-                  
-                  <input
-                    type="text"
-                    value={category.description || ''}
-                    onChange={(e) => handleCategoryChange(categoryIndex, 'description', e.target.value)}
-                    className="form-input category-description-input"
-                    placeholder="Mô tả (nếu có)"
+                    value={testResult.sampleType}
+                    onChange={(e) => setTestResult({...testResult, sampleType: e.target.value})}
+                    className="form-input"
                   />
                 </div>
-                
-                <table className="edit-results-table">
-                  <thead>
-                    <tr>
-                      <th>Tên xét nghiệm</th>
-                      <th>Kết quả</th>
-                      <th>Thang điểm chiếu</th>
-                      <th>Đơn vị</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {category.items.map((item, itemIndex) => (
-                      <tr key={itemIndex}>
-                        <td>
-                          <input
-                            type="text"
-                            value={item.testName}
-                            onChange={(e) => handleResultChange(categoryIndex, itemIndex, 'testName', e.target.value)}
-                            className="form-input"
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            value={item.result}
-                            onChange={(e) => handleResultChange(categoryIndex, itemIndex, 'result', e.target.value)}
-                            className="form-input"
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            value={item.normalRange || ''}
-                            onChange={(e) => handleResultChange(categoryIndex, itemIndex, 'normalRange', e.target.value)}
-                            className="form-input"
-                            placeholder="Ví dụ: 0-10"
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            value={item.unit || ''}
-                            onChange={(e) => handleResultChange(categoryIndex, itemIndex, 'unit', e.target.value)}
-                            className="form-input"
-                            placeholder="Ví dụ: mg/dL"
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                <button 
-                  type="button" 
-                  className="add-item-button"
-                  onClick={() => addTestItem(categoryIndex)}
-                >
-                  + Thêm kết quả
-                </button>
+                <div className="info-item">
+                  <label>Ngày lấy mẫu:</label>
+                  <input
+                    type="text"
+                    value={testResult.sampleCollectedAt}
+                    onChange={(e) => setTestResult({...testResult, sampleCollectedAt: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+                <div className="info-item">
+                  <label>Ngày nhận mẫu:</label>
+                  <input
+                    type="text"
+                    value={testResult.sampleReceivedAt}
+                    onChange={(e) => setTestResult({...testResult, sampleReceivedAt: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+                <div className="info-item">
+                  <label>Mã xét nghiệm:</label>
+                  <input
+                    type="text"
+                    value={testResult.testId}
+                    onChange={(e) => setTestResult({...testResult, testId: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+                <div className="info-item">
+                  <label>Bác sĩ chỉ định:</label>
+                  <input
+                    type="text"
+                    value={testResult.consultant}
+                    onChange={(e) => setTestResult({...testResult, consultant: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
               </div>
-            ))}
+            </div>
 
-            <button 
-              type="button" 
-              className="add-category-button"
-              onClick={addCategory}
-            >
-              + Thêm danh mục xét nghiệm
-            </button>
-          </div>
+            <div className="test-results-section">
+              <div className="section-header">
+                <h2>Kết quả xét nghiệm</h2>
+              </div>
+              
+              {testResult.categories.map((category, categoryIndex) => (
+                <div key={categoryIndex} className="category-section">
+                  <div className="category-header">
+                    <input
+                      type="text"
+                      value={category.name}
+                      onChange={(e) => handleCategoryChange(categoryIndex, 'name', e.target.value)}
+                      className="form-input category-name-input"
+                      placeholder="Tên danh mục xét nghiệm"
+                    />
+                    
+                    <input
+                      type="text"
+                      value={category.description || ''}
+                      onChange={(e) => handleCategoryChange(categoryIndex, 'description', e.target.value)}
+                      className="form-input category-description-input"
+                      placeholder="Mô tả (nếu có)"
+                    />
+                  </div>
+                  
+                  <table className="edit-results-table">
+                    <thead>
+                      <tr>
+                        <th>Tên xét nghiệm</th>
+                        <th>Kết quả</th>
+                        <th>Thang điểm chiếu</th>
+                        <th>Đơn vị</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {category.items.map((item, itemIndex) => (
+                        <tr key={itemIndex}>
+                          <td>
+                            <input
+                              type="text"
+                              value={item.testName}
+                              onChange={(e) => handleResultChange(categoryIndex, itemIndex, 'testName', e.target.value)}
+                              className="form-input"
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              value={item.result}
+                              onChange={(e) => handleResultChange(categoryIndex, itemIndex, 'result', e.target.value)}
+                              className="form-input"
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              value={item.normalRange || ''}
+                              onChange={(e) => handleResultChange(categoryIndex, itemIndex, 'normalRange', e.target.value)}
+                              className="form-input"
+                              placeholder="Ví dụ: 0-10"
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              value={item.unit || ''}
+                              onChange={(e) => handleResultChange(categoryIndex, itemIndex, 'unit', e.target.value)}
+                              className="form-input"
+                              placeholder="Ví dụ: mg/dL"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
 
-          <div className="form-actions">
-            <button 
-              type="button" 
-              className="cancel-button"
-              onClick={handleCancel}
-              disabled={saving}
-            >
-              Hủy
-            </button>
-            <button 
-              type="submit" 
-              className="save-button"
-              disabled={saving}
-            >
-              {saving ? (
-                <>
-                  <div className="button-spinner"></div>
-                  Đang lưu...
-                </>
-              ) : (
-                <>
-                  <FaSave /> Lưu kết quả
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
+                  <button 
+                    type="button" 
+                    className="add-item-button"
+                    onClick={() => addTestItem(categoryIndex)}
+                  >
+                    + Thêm kết quả
+                  </button>
+                </div>
+              ))}
+
+              <button 
+                type="button" 
+                className="add-category-button"
+                onClick={addCategory}
+              >
+                + Thêm danh mục xét nghiệm
+              </button>
+            </div>
+
+            <div className="form-actions">
+              <button 
+                type="button" 
+                className="cancel-button"
+                onClick={handleCancel}
+                disabled={saving}
+              >
+                Hủy
+              </button>
+              <button 
+                type="submit" 
+                className="save-button"
+                disabled={saving}
+              >
+                {saving ? (
+                  <>
+                    <div className="button-spinner"></div>
+                    Đang lưu...
+                  </>
+                ) : (
+                  <>
+                    <FaSave /> Lưu kết quả
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };

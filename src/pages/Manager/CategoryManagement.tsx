@@ -288,9 +288,12 @@ const CategoryManagement: React.FC = () => {
   };
 
   return (
-    <div className="category-management">
-      <h1 className="page-title">Quản Lý Danh Mục</h1>
-      
+    <div className="category-management-container">
+      <div className="page-header">
+        <h1 className="page-title">Quản Lý Danh Mục</h1>
+        <p className="page-subtitle">Tạo và quản lý các danh mục dịch vụ</p>
+      </div>
+
       {/* Error message */}
       {error && (
         <div className="error-message">

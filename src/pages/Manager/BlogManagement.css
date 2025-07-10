@@ -3,6 +3,22 @@
   width: 100%;
 }
 
+/* Loading state */
+.loading {
+  text-align: center;
+  padding: 40px;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+/* No data state */
+.no-data {
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+  font-style: italic;
+}
+
 /* Page Header */
 .page-header {
   display: flex;

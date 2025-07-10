@@ -445,12 +445,10 @@ const SlotManagement = () => {
   return (
     <div className="slot-management-container">
       <div className="page-header">
-        <div>
-          <h1 className="text-xl font-bold mb-1">Quản Lý Lịch Làm Việc Chuyên Gia</h1>
-          <p className="text-sm text-gray-500">
-            Duyệt các yêu cầu lịch làm việc từ chuyên gia
-          </p>
-        </div>
+        <h1 className="page-title">Quản Lý Lịch Làm Việc Chuyên Gia</h1>
+        <p className="page-subtitle">
+          Duyệt các yêu cầu lịch làm việc từ chuyên gia
+        </p>
       </div>
 
       {/* Filter and search */}

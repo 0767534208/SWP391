@@ -328,8 +328,8 @@ const TestResultManagement = () => {
   return (
     <div className="test-result-management">
       <div className="page-header">
-        <h1>Test Results Management</h1>
-        <p>Manage and update patient STI test results</p>
+        <h1 className="page-title">Test Results Management</h1>
+        <p className="page-subtitle">Manage and update patient STI test results</p>
       </div>
 
       <div className="toolbar">

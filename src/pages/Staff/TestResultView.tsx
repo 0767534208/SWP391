@@ -418,70 +418,83 @@ const TestResultView = () => {
 
   // Render consultation notes view
   return (
-    <div className="test-result-container">
-      <div className="test-result-header">
-        <button className="back-button" onClick={handleBack}>
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-          </svg>
-          Quay lại
-        </button>
-        <button className="print-button" onClick={handlePrint}>
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clipRule="evenodd" />
-          </svg>
-          In kết quả
-        </button>
+    <div className="test-result-view">
+      <div className="page-header">
+        <h1 className="page-title">Chi Tiết Kết Quả Xét Nghiệm</h1>
+        <p className="page-subtitle">Xem thông tin chi tiết kết quả xét nghiệm của bệnh nhân</p>
       </div>
 
-      <div className="test-result-card">
-        <div className="test-result-title">
-          <h1>Kết Quả Tư Vấn</h1>
-          <div className="test-result-id">ID: {testResult.id}</div>
+      {loading ? (
+        <div className="test-result-loading">
+          <div className="spinner"></div>
+          <p>Đang tải kết quả...</p>
         </div>
+      ) : (
+        <>
+          <div className="test-result-actions">
+            <button className="back-button" onClick={handleBack}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+              </svg>
+              Quay lại
+            </button>
+            <button className="print-button" onClick={handlePrint}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clipRule="evenodd" />
+              </svg>
+              In kết quả
+            </button>
+          </div>
+          <div className="test-result-card">
+            <div className="test-result-title">
+              <h1>Kết Quả Tư Vấn</h1>
+              <div className="test-result-id">ID: {testResult.id}</div>
+            </div>
 
-        <div className="test-result-info">
-          <div className="info-group">
-            <div className="info-label">Bệnh nhân:</div>
-            <div className="info-value">{testResult.patientName}</div>
-          </div>
-          <div className="info-group">
-            <div className="info-label">Số điện thoại:</div>
-            <div className="info-value">{testResult.patientPhone}</div>
-          </div>
-          <div className="info-group">
-            <div className="info-label">Dịch vụ:</div>
-            <div className="info-value">{testResult.service}</div>
-          </div>
-          <div className="info-group">
-            <div className="info-label">Ngày khám:</div>
-            <div className="info-value">{testResult.date}</div>
-          </div>
-          <div className="info-group">
-            <div className="info-label">Giờ khám:</div>
-            <div className="info-value">{testResult.time}</div>
-          </div>
-          <div className="info-group">
-            <div className="info-label">Chuyên gia:</div>
-            <div className="info-value">{testResult.consultant}</div>
-          </div>
-        </div>
+            <div className="test-result-info">
+              <div className="info-group">
+                <div className="info-label">Bệnh nhân:</div>
+                <div className="info-value">{testResult.patientName}</div>
+              </div>
+              <div className="info-group">
+                <div className="info-label">Số điện thoại:</div>
+                <div className="info-value">{testResult.patientPhone}</div>
+              </div>
+              <div className="info-group">
+                <div className="info-label">Dịch vụ:</div>
+                <div className="info-value">{testResult.service}</div>
+              </div>
+              <div className="info-group">
+                <div className="info-label">Ngày khám:</div>
+                <div className="info-value">{testResult.date}</div>
+              </div>
+              <div className="info-group">
+                <div className="info-label">Giờ khám:</div>
+                <div className="info-value">{testResult.time}</div>
+              </div>
+              <div className="info-group">
+                <div className="info-label">Chuyên gia:</div>
+                <div className="info-value">{testResult.consultant}</div>
+              </div>
+            </div>
 
-        <div className="test-result-content">
-          <h2>Nhận xét của chuyên gia</h2>
-          <div className="result-text">
-            {testResult.consultationNotes?.split('\n').map((line, index) => (
-              <p key={index}>{line}</p>
-            ))}
-          </div>
-        </div>
+            <div className="test-result-content">
+              <h2>Nhận xét của chuyên gia</h2>
+              <div className="result-text">
+                {testResult.consultationNotes?.split('\n').map((line, index) => (
+                  <p key={index}>{line}</p>
+                ))}
+              </div>
+            </div>
 
-        <div className="test-result-footer">
-          <div className="timestamp">
-            Kết quả được tạo lúc: {testResult.createdAt}
+            <div className="test-result-footer">
+              <div className="timestamp">
+                Kết quả được tạo lúc: {testResult.createdAt}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 };

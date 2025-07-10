@@ -129,9 +129,9 @@ const StaffDashboard = () => {
 
   return (
     <div className="staff-dashboard">
-      <div className="dashboard-header">
-        <h1>Bảng điều khiển nhân viên</h1>
-        <p>Quản lý lịch hẹn và kết quả xét nghiệm</p>
+      <div className="page-header">
+        <h1 className="page-title">Bảng Điều Khiển Nhân Viên</h1>
+        <p className="page-subtitle">Quản lý công việc và theo dõi hoạt động</p>
       </div>
 
       <div className="stats-grid">

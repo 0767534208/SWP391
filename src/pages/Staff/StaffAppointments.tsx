@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import type { ChangeEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './StaffAppointments.css';
-import { FaSync, FaEllipsisH } from 'react-icons/fa';
+import { FaSync, FaEllipsisH, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { appointmentAPI } from '../../utils/api';
+import type { ApiResponse } from '../../utils/api';
 
 interface AppointmentType {
-  id: number;
+  id: string;
   patientName: string;
   patientPhone: string;
   service: string;
@@ -14,9 +16,16 @@ interface AppointmentType {
   time: string;
   consultant: string;
   status: string;
-  notes: string;
+  paymentStatus: number;
   testResults?: string;
   consultationNotes?: string;
+}
+
+// Toast notification type
+interface ToastNotification {
+  id: number;
+  message: string;
+  type: 'success' | 'error';
 }
 
 // Helper functions for status display
@@ -54,6 +63,42 @@ const getStatusDisplayText = (status: string): string => {
   }
 };
 
+// Map API status numbers to string values
+const mapStatusNumberToString = (statusNumber: number): string => {
+  switch (statusNumber) {
+    case 0:
+      return 'pending';
+    case 1:
+      return 'confirmed';
+    case 2:
+      return 'in_progress';
+    case 3:
+      return 'awaiting_results';
+    case 4:
+      return 'completed';
+    default:
+      return 'pending';
+  }
+};
+
+// Map string status values to API status numbers
+const mapStatusStringToNumber = (statusString: string): number => {
+  switch (statusString) {
+    case 'pending':
+      return 0;
+    case 'confirmed':
+      return 1;
+    case 'in_progress':
+      return 2;
+    case 'awaiting_results':
+      return 3;
+    case 'completed':
+      return 4;
+    default:
+      return 0;
+  }
+};
+
 const StaffAppointments = () => {
   const navigate = useNavigate();
   const [filterStatus, setFilterStatus] = useState('all');
@@ -69,28 +114,104 @@ const StaffAppointments = () => {
   const [resultText, setResultText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const appointmentsPerPage = 10;
 
-  // Mock data
-  const [appointments, setAppointments] = useState<AppointmentType[]>([
-    { id: 1, patientName: "Nguyễn Văn A", patientPhone: "0901234567", service: "Xét nghiệm HIV", serviceType: 'test', date: "15/06/2023", time: "09:00", consultant: "Dr. Minh", status: "pending", notes: "Lịch hẹn lần đầu" },
-    { id: 2, patientName: "Trần Thị B", patientPhone: "0912345678", service: "Tư vấn STI", serviceType: 'consultation', date: "16/06/2023", time: "10:30", consultant: "Dr. Hoa", status: "confirmed", notes: "Đã xác nhận qua điện thoại" },
-    { id: 3, patientName: "Lê Văn C", patientPhone: "0923456789", service: "Xét nghiệm STI tổng quát", serviceType: 'test', date: "17/06/2023", time: "14:00", consultant: "Dr. Minh", status: "in_progress", notes: "Đang thực hiện xét nghiệm" },
-    { id: 4, patientName: "Phạm Thị D", patientPhone: "0934567890", service: "Tư vấn sức khỏe tình dục", serviceType: 'consultation', date: "18/06/2023", time: "15:30", consultant: "Dr. Hoa", status: "awaiting_results", notes: "Đang chờ kết quả tư vấn" },
-    { id: 5, patientName: "Hoàng Văn E", patientPhone: "0945678901", service: "Xét nghiệm HIV", serviceType: 'test', date: "19/06/2023", time: "08:00", consultant: "Dr. Nam", status: "completed", notes: "Đã hoàn thành tư vấn và xét nghiệm", testResults: "HIV: Âm tính\nGhi chú: Tư vấn về phòng ngừa đã được thực hiện" },
-    { id: 6, patientName: "Ngô Thị F", patientPhone: "0956789012", service: "Tư vấn STI", serviceType: 'consultation', date: "20/06/2023", time: "11:00", consultant: "Dr. Nam", status: "pending", notes: "" },
-    { id: 7, patientName: "Vũ Văn G", patientPhone: "0967890123", service: "Xét nghiệm STI tổng quát", serviceType: 'test', date: "21/06/2023", time: "13:30", consultant: "Dr. Minh", status: "confirmed", notes: "Đã xác nhận qua email" },
-    { id: 8, patientName: "Đặng Thị H", patientPhone: "0978901234", service: "Tư vấn sức khỏe tình dục", serviceType: 'consultation', date: "22/06/2023", time: "16:00", consultant: "Dr. Hoa", status: "completed", notes: "Đã hoàn thành tư vấn", consultationNotes: "Đã tư vấn về các biện pháp phòng tránh an toàn" },
-  ]);
+  // Toast notifications state
+  const [toasts, setToasts] = useState<ToastNotification[]>([]);
+
+  // Show toast notification
+  const showToast = (message: string, type: 'success' | 'error') => {
+    const id = Date.now();
+    setToasts(prevToasts => [...prevToasts, { id, message, type }]);
+    
+    // Auto remove toast after 3 seconds
+    setTimeout(() => {
+      setToasts(prevToasts => prevToasts.filter(toast => toast.id !== id));
+    }, 3000);
+  };
+
+  // Remove toast notification
+  const removeToast = (id: number) => {
+    setToasts(prevToasts => prevToasts.filter(toast => toast.id !== id));
+  };
+
+  // Real data from API
+  const [appointments, setAppointments] = useState<AppointmentType[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+
+  // Fetch appointments from API
+  const fetchAppointments = async () => {
+    setIsLoading(true);
+    try {
+      const response = await appointmentAPI.getAllAppointments();
+      console.log('Appointment API response:', response.data?.[0]); // Log first appointment to see structure
+
+      if (response.data) {
+        // Map API data to our AppointmentType interface
+        const mappedAppointments: AppointmentType[] = response.data.map(appointment => {
+          // Extract date and time from appointmentDate
+          const appointmentDate = new Date(appointment.appointmentDate || '');
+          const formattedDate = appointmentDate.toLocaleDateString('vi-VN');
+          const formattedTime = appointmentDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+          
+          // Determine service type based on appointmentType
+          const serviceType = appointment.appointmentType === 1 ? 'test' : 'consultation';
+          
+          // Get consultant name from the consultant object if available
+          const consultantName = appointment.consultant?.name || 'Không có tư vấn viên';
+          
+          // Get customer name from customer object if available
+          // Based on the API response screenshot, customer object has a name property
+          const customerName = appointment.customer?.name || 'Không có tên';
+          
+          // Get phone number from customer object if available
+          const phoneNumber = appointment.customer?.phone || 'Không có SĐT';
+          
+          return {
+            id: appointment.appointmentID.toString(),
+            patientName: customerName,
+            patientPhone: phoneNumber,
+            service: "Dịch vụ tư vấn", // This information might not be directly available in the API
+            serviceType: serviceType as 'test' | 'consultation',
+            date: formattedDate,
+            time: formattedTime,
+            consultant: consultantName,
+            status: mapStatusNumberToString(appointment.status),
+            paymentStatus: appointment.paymentStatus || 0,
+            testResults: '',
+            consultationNotes: ''
+          };
+        });
+
+        setAppointments(mappedAppointments);
+        setTotalItems(mappedAppointments.length);
+        setTotalPages(Math.ceil(mappedAppointments.length / appointmentsPerPage));
+      }
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  // Fetch appointments when component mounts
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
 
   // Filter appointments
   const filteredAppointments = appointments.filter(appointment => {
+    // Filter by search query
     const matchesSearch = 
       appointment.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       appointment.patientPhone.includes(searchQuery) ||
       appointment.consultant.toLowerCase().includes(searchQuery) ||
       appointment.service.toLowerCase().includes(searchQuery);
     
+    // Filter by status
     const matchesStatus = filterStatus === 'all' || appointment.status === filterStatus;
     
     // Filter by date range if provided
@@ -109,9 +230,10 @@ const StaffAppointments = () => {
   const indexOfLastAppointment = currentPage * appointmentsPerPage;
   const indexOfFirstAppointment = indexOfLastAppointment - appointmentsPerPage;
   const currentAppointments = filteredAppointments.slice(indexOfFirstAppointment, indexOfLastAppointment);
-  const totalPages = Math.ceil(filteredAppointments.length / appointmentsPerPage);
 
-  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+  const paginate = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
 
   // Handle status change
   const handleStatusChange = (appointment: AppointmentType) => {
@@ -120,20 +242,41 @@ const StaffAppointments = () => {
   };
 
   // Handle view test results
-  const handleViewTestResults = (appointmentId: number) => {
+  const handleViewTestResults = (appointmentId: string) => {
     navigate(`/staff/test-results/${appointmentId}`);
   };
 
   // Update appointment status
-  const updateAppointmentStatus = (newStatus: string) => {
+  const updateAppointmentStatus = async (newStatus: string) => {
     if (currentAppointment) {
+      setIsSubmitting(true);
+      
       // If changing from awaiting_results to completed, redirect to test results input page
       if (currentAppointment.status === 'awaiting_results' && newStatus === 'completed') {
         navigate(`/staff/test-result-input/${currentAppointment.id}`);
         setIsStatusModalOpen(false);
+        setIsSubmitting(false);
         return;
       }
       
+      try {
+        // Convert string status to number for API
+        const statusNumber = mapStatusStringToNumber(newStatus);
+        
+        // Call the API to update appointment status
+        // Using the correct API endpoint format with query parameters
+        // https://localhost:7084/api/appointment/ChangeAppointmentStatus?appointmentID=1&status=4&paymentStatus=1
+        const response = await appointmentAPI.changeAppointmentStatus(
+          parseInt(currentAppointment.id),
+          statusNumber + 1, // Add 1 to the status as requested
+          currentAppointment.paymentStatus // Keep current payment status
+        );
+        
+        if (response.statusCode === 200) {
+          // Show success toast notification
+          showToast("Cập nhật trạng thái thành công!", "success");
+          
+          // Update local state with the new status
       const updatedAppointments = appointments.map(appointment => {
         if (appointment.id === currentAppointment.id) {
           return {
@@ -146,16 +289,38 @@ const StaffAppointments = () => {
 
       setAppointments(updatedAppointments);
       setIsStatusModalOpen(false);
+        }
+      } catch (error) {
+        console.error('Error updating appointment status:', error);
+        showToast("Cập nhật trạng thái thất bại. Vui lòng thử lại sau.", "error");
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
   // Save test results and complete appointment
-  const saveTestResults = () => {
+  const saveTestResults = async () => {
     if (currentAppointment && resultText.trim() !== '') {
       setIsSubmitting(true);
       
-      // Simulate API call
-      setTimeout(() => {
+      try {
+        // Update appointment status to completed
+        const statusNumber = mapStatusStringToNumber('completed');
+        
+        const response = await appointmentAPI.changeAppointmentStatus(
+          parseInt(currentAppointment.id),
+          statusNumber + 1, // Add 1 to the status as requested
+          currentAppointment.paymentStatus // Keep current payment status
+        );
+        
+        if (response.statusCode === 200) {
+          // Show success toast notification
+          showToast("Lưu kết quả thành công!", "success");
+          
+          // In a real app, you would also save the test results or consultation notes
+          // to a separate API endpoint here
+          
         const updatedAppointments = appointments.map(appointment => {
           if (appointment.id === currentAppointment.id) {
             const updatedAppointment = {
@@ -178,23 +343,23 @@ const StaffAppointments = () => {
         setAppointments(updatedAppointments);
         setIsResultModalOpen(false);
         setIsStatusModalOpen(false);
+          setResultText('');
+        }
+      } catch (error) {
+        console.error('Error saving test results:', error);
+        showToast("Lưu kết quả thất bại. Vui lòng thử lại sau.", "error");
+      } finally {
         setIsSubmitting(false);
-        setResultText('');
-      }, 1000);
+      }
     } else {
-      alert('Vui lòng nhập kết quả trước khi hoàn thành');
+      showToast('Vui lòng nhập kết quả trước khi hoàn thành', "error");
     }
   };
 
   // Handle refresh data
   const handleRefresh = () => {
     setIsRefreshing(true);
-    
-    // Simulate API call to refresh data
-    setTimeout(() => {
-      // In a real app, you would fetch fresh data from the server here
-      setIsRefreshing(false);
-    }, 1000);
+    fetchAppointments();
   };
 
   // Date range handlers
@@ -216,13 +381,28 @@ const StaffAppointments = () => {
 
   return (
     <div className="staff-appointments-container">
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <h1 className="text-xl font-bold mb-1">Quản Lý Lịch Hẹn</h1>
-          <p className="text-sm text-gray-500">
-            Theo dõi và cập nhật trạng thái các lịch hẹn
-          </p>
-        </div>
+      {/* Toast Notifications */}
+      <div className="toast-container">
+        {toasts.map(toast => (
+          <div key={toast.id} className={`toast-notification ${toast.type}`}>
+            <div className="toast-content">
+              {toast.type === 'success' ? (
+                <FaCheckCircle className="toast-icon" />
+              ) : (
+                <FaTimesCircle className="toast-icon" />
+              )}
+              <span>{toast.message}</span>
+            </div>
+            <button className="toast-close" onClick={() => removeToast(toast.id)}>
+              &times;
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div className="page-header">
+        <h1 className="page-title">Quản Lý Lịch Hẹn</h1>
+        <p className="page-subtitle">Theo dõi và cập nhật trạng thái các lịch hẹn</p>
       </div>
 
       {/* Filter Bar */}
@@ -259,21 +439,28 @@ const StaffAppointments = () => {
               onClick={resetFilters}
               className="reset-button"
             >
-              Đặt Lại
+              Xóa bộ lọc
             </button>
           </div>
           
           <div className="flex gap-3 items-center">
             <div className="relative w-full">
+              <label htmlFor="start-date" className="date-label">Ngày bắt đầu</label>
               <input
+                id="start-date"
                 type="date"
                 className="filter-input date-input"
                 value={dateRange.startDate}
                 onChange={handleStartDateChange}
               />
             </div>
+            <div className="date-separator">
+              <span>đến</span>
+            </div>
             <div className="relative w-full">
+              <label htmlFor="end-date" className="date-label">Ngày kết thúc</label>
               <input
+                id="end-date"
                 type="date"
                 className="filter-input date-input"
                 value={dateRange.endDate}
@@ -294,6 +481,12 @@ const StaffAppointments = () => {
       {/* Appointments Table */}
       <div className="appointments-card mb-4 overflow-hidden">
         <div className="overflow-x-auto">
+          {isLoading ? (
+            <div className="loading-container p-8 text-center">
+              <div className="loading-spinner"></div>
+              <p className="mt-4 text-gray-600">Đang tải dữ liệu lịch hẹn...</p>
+            </div>
+          ) : (
           <table className="appointments-table w-full">
             <thead>
               <tr>
@@ -358,10 +551,11 @@ const StaffAppointments = () => {
               )}
             </tbody>
           </table>
+          )}
         </div>
         
         {/* Pagination */}
-        {filteredAppointments.length > 0 && (
+        {!isLoading && currentAppointments.length > 0 && (
           <div className="pagination">
             <button 
               className="pagination-button"
@@ -467,12 +661,6 @@ const StaffAppointments = () => {
                     <span className="w-32 text-sm text-gray-500">Ngày & giờ hẹn:</span>
                     <span className="text-sm font-medium">{currentAppointment.date} {currentAppointment.time}</span>
                   </div>
-                  {currentAppointment.notes && (
-                    <div className="flex">
-                      <span className="w-32 text-sm text-gray-500">Ghi chú:</span>
-                      <span className="text-sm font-medium">{currentAppointment.notes}</span>
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -493,8 +681,9 @@ const StaffAppointments = () => {
                           <button 
                             className="status-button status-button-confirmed"
                             onClick={() => updateAppointmentStatus('confirmed')}
+                            disabled={isSubmitting}
                           >
-                            Đã Xác Nhận
+                            {isSubmitting ? 'Đang cập nhật...' : 'Đã Xác Nhận'}
                           </button>
                         </div>
                       )}
@@ -504,8 +693,9 @@ const StaffAppointments = () => {
                           <button 
                             className="status-button status-button-in-progress"
                             onClick={() => updateAppointmentStatus('in_progress')}
+                            disabled={isSubmitting}
                           >
-                            Đang Thực Hiện
+                            {isSubmitting ? 'Đang cập nhật...' : 'Đang Thực Hiện'}
                           </button>
                         </div>
                       )}
@@ -515,8 +705,9 @@ const StaffAppointments = () => {
                           <button 
                             className="status-button status-button-awaiting-results"
                             onClick={() => updateAppointmentStatus('awaiting_results')}
+                            disabled={isSubmitting}
                           >
-                            Đợi Kết Quả
+                            {isSubmitting ? 'Đang cập nhật...' : 'Đợi Kết Quả'}
                           </button>
                         </div>
                       )}
@@ -526,8 +717,9 @@ const StaffAppointments = () => {
                           <button 
                             className="status-button status-button-completed"
                             onClick={() => updateAppointmentStatus('completed')}
+                            disabled={isSubmitting}
                           >
-                            Hoàn Thành
+                            {isSubmitting ? 'Đang cập nhật...' : 'Hoàn Thành'}
                           </button>
                         </div>
                       )}
@@ -540,6 +732,7 @@ const StaffAppointments = () => {
                 <button 
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 font-medium transition-all"
                   onClick={() => setIsStatusModalOpen(false)}
+                  disabled={isSubmitting}
                 >
                   Đóng
                 </button>
@@ -566,6 +759,7 @@ const StaffAppointments = () => {
                     setIsResultModalOpen(false);
                   }
                 }}
+                disabled={isSubmitting}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -596,6 +790,7 @@ const StaffAppointments = () => {
                   value={resultText}
                   onChange={(e) => setResultText(e.target.value)}
                   required
+                  disabled={isSubmitting}
                 ></textarea>
                 <p className="text-xs text-gray-500 mt-1">
                   Vui lòng nhập {currentAppointment.serviceType === 'test' ? 'kết quả xét nghiệm' : 'nhận xét tư vấn'} trước khi chuyển trạng thái sang Hoàn thành
@@ -612,6 +807,7 @@ const StaffAppointments = () => {
                       setIsResultModalOpen(false);
                     }
                   }}
+                  disabled={isSubmitting}
                 >
                   Hủy
                 </button>
