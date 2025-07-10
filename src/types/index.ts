@@ -274,6 +274,20 @@ export interface CreateSlotRequest {
   endTime: string;
 }
 
+/**
+ * Yêu cầu tạo khung giờ từ API
+ */
+export interface SlotCreationRequest {
+  clinicID: number;
+  workingHourID: number;
+  maxConsultant: number;
+  maxTestAppointment: number;
+  startTime: string; // ISO format date-time
+  endTime: string;   // ISO format date-time
+}
+
+
+
 // ========== Blog Types ==========
 
 /**
