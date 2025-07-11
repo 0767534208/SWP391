@@ -507,3 +507,112 @@ export interface PaginatedResponse<T> {
   limit: number;
   totalPages: number;
 } 
+
+/**
+ * Vai trò người dùng
+ */
+export enum UserRole {
+  ADMIN = 'admin',
+  MANAGER = 'manager',
+  STAFF = 'staff',
+  CONSULTANT = 'consultant',
+  USER = 'user',
+}
+
+/**
+ * Thông tin người dùng
+ */
+export interface User {
+  userId: string;
+  email: string;
+  fullName: string;
+  phoneNumber: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// QnA types
+/**
+ * Thông tin câu hỏi
+ */
+export interface Question {
+  id?: number;
+  questionID?: number;
+  title?: string;
+  content: string;
+  category?: string;
+  createdAt?: string;
+  authorId?: string;
+  authorName?: string;
+  authorRole?: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  votes?: number;
+  answered?: boolean;
+  customer?: {
+    name: string;
+    [key: string]: unknown;
+  };
+  customerID?: string;
+  messages?: Answer[];
+}
+
+/**
+ * Thông tin câu trả lời
+ */
+export interface Answer {
+  id?: number;
+  messageID?: number;
+  questionId?: number;
+  content: string;
+  authorId?: string;
+  authorName?: string;
+  authorRole?: string;
+  createdAt?: string;
+  isVerified?: boolean;
+  votes?: number;
+  customer?: {
+    name: string;
+    [key: string]: unknown;
+  };
+}
+
+/**
+ * Yêu cầu tạo câu hỏi mới
+ */
+export interface CreateQuestionRequest {
+  title: string;
+  content: string;
+  category: string;
+}
+
+/**
+ * Yêu cầu tạo câu trả lời mới
+ */
+export interface CreateAnswerRequest {
+  questionId: number;
+  content: string;
+}
+
+/**
+ * Câu hỏi với danh sách câu trả lời
+ */
+export interface QuestionResponse extends Question {
+  answers?: Answer[];
+  messages?: Answer[];
+}
+
+/**
+ * Yêu cầu cập nhật trạng thái câu hỏi
+ */
+export interface UpdateQuestionStatusRequest {
+  status: 'pending' | 'approved' | 'rejected';
+}
+
+/**
+ * Yêu cầu bình chọn
+ */
+export interface VoteRequest {
+  direction: 'up' | 'down';
+} 

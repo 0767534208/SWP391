@@ -59,17 +59,55 @@ export interface AppointmentData {
  */
 const handleResponse = async <T>(response: Response): Promise<ApiResponse<T>> => {
   if (!response.ok) {
+    const contentType = response.headers.get('content-type');
+    
+    // Handle empty response
+    if (!contentType || response.headers.get('content-length') === '0') {
+      // Special case for Question endpoints with 404
+      if (response.url.includes('/Question') && response.status === 404) {
+        return {
+          message: "No questions",
+          statusCode: 200,
+          data: { items: [], total: 0, page: 1, pageSize: 0, totalPages: 0 } as unknown as T
+        };
+      }
+      
+      throw new Error(`API error: ${response.status}`);
+    }
+    
     const errorText = await response.text();
     let errorMessage;
+    let errorData;
     
     try {
-      const errorData = JSON.parse(errorText);
+      errorData = JSON.parse(errorText);
       errorMessage = errorData.message || `API error: ${response.status}`;
+      
+      // Special case for "No questions" 404 response
+      if (response.status === 404 && errorData.message === "No questions") {
+        // Return a valid empty response instead of throwing an error
+        return {
+          message: "No questions",
+          statusCode: 200,
+          data: { items: [], total: 0, page: 1, pageSize: 0, totalPages: 0 } as unknown as T
+        };
+      }
+      
     } catch {
       errorMessage = `API error: ${response.status} - ${errorText || 'Unknown error'}`;
     }
     
     throw new Error(errorMessage);
+  }
+  
+  // Handle empty successful response
+  const contentType = response.headers.get('content-type');
+  if (!contentType || response.headers.get('content-length') === '0') {
+    return {
+      message: "Success",
+      statusCode: response.status,
+      data: null as unknown as T
+    };
   }
   
   return response.json();
@@ -1194,5 +1232,135 @@ export const blogAPI = {
    */
   deleteBlog: async (blogId: string): Promise<ApiResponse<any>> => {
     return apiRequest<any>(`/api/blog/DeleteBlog?blogId=${blogId}`, 'DELETE');
+  }
+}; 
+
+// QnA API endpoints
+export const qnaAPI = {
+  /**
+   * Get all questions
+   */
+  getAllQuestions: async (params?: any): Promise<ApiResponse<any>> => {
+    let url = API.QNA.QUESTIONS;
+    if (params) {
+      const queryParams = new URLSearchParams();
+      if (params.page) queryParams.append('pageNumber', params.page.toString());
+      if (params.limit) queryParams.append('pageSize', params.limit.toString());
+      if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+      if (params.sortDirection) queryParams.append('sortDirection', params.sortDirection);
+      if (params.searchTerm) queryParams.append('searchTerm', params.searchTerm);
+      url = `${url}?${queryParams.toString()}`;
+    }
+    return apiRequest<any>(url, 'GET');
+  },
+  
+  /**
+   * Get a question by ID
+   */
+  getQuestionById: async (questionId: number): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(API.QNA.QUESTION_BY_ID(questionId), 'GET');
+  },
+  
+  /**
+   * Create a new question
+   */
+  createQuestion: async (data: any): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(API.QNA.QUESTIONS, 'POST', data);
+  },
+  
+  /**
+   * Get all messages for a question
+   */
+  getMessages: async (questionId: number): Promise<ApiResponse<any>> => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('questionId', questionId.toString());
+    return apiRequest<any>(`${API.QNA.MESSAGES}?${queryParams.toString()}`, 'GET');
+  },
+  
+  /**
+   * Add a message to a question
+   */
+  createMessage: async (questionId: number, data: any): Promise<ApiResponse<any>> => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('questionId', questionId.toString());
+    return apiRequest<any>(`${API.QNA.MESSAGES}?${queryParams.toString()}`, 'POST', data);
+  },
+  
+  /**
+   * Vote on a question
+   */
+  voteQuestion: async (questionId: number, data: any): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(API.QNA.VOTE_QUESTION(questionId), 'POST', data);
+  },
+  
+  /**
+   * Vote on an answer
+   */
+  voteAnswer: async (answerId: number, data: any): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(API.QNA.VOTE_ANSWER(answerId), 'POST', data);
+  },
+  
+  /**
+   * Verify an answer
+   */
+  verifyAnswer: async (answerId: number): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(API.QNA.VERIFY_ANSWER(answerId), 'PUT');
+  },
+  
+  /**
+   * Search questions
+   */
+  searchQuestions: async (searchTerm: string, params?: any): Promise<ApiResponse<any>> => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('searchTerm', searchTerm);
+    
+    if (params) {
+      if (params.page) queryParams.append('pageNumber', params.page.toString());
+      if (params.limit) queryParams.append('pageSize', params.limit.toString());
+      if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+      if (params.sortDirection) queryParams.append('sortDirection', params.sortDirection);
+    }
+    
+    return apiRequest<any>(`${API.QNA.SEARCH}?${queryParams.toString()}`, 'GET');
+  },
+  
+  /**
+   * Get questions by category
+   */
+  getQuestionsByCategory: async (category: string, params?: any): Promise<ApiResponse<any>> => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('category', category);
+    
+    if (params) {
+      if (params.page) queryParams.append('pageNumber', params.page.toString());
+      if (params.limit) queryParams.append('pageSize', params.limit.toString());
+      if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+      if (params.sortDirection) queryParams.append('sortDirection', params.sortDirection);
+    }
+    
+    return apiRequest<any>(`${API.QNA.BY_CATEGORY}?${queryParams.toString()}`, 'GET');
+  },
+  
+  /**
+   * Get questions by current user
+   */
+  getUserQuestions: async (params?: any): Promise<ApiResponse<any>> => {
+    let url = API.QNA.MY_QUESTIONS;
+    if (params) {
+      const queryParams = new URLSearchParams();
+      if (params.page) queryParams.append('pageNumber', params.page.toString());
+      if (params.limit) queryParams.append('pageSize', params.limit.toString());
+      if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+      if (params.sortDirection) queryParams.append('sortDirection', params.sortDirection);
+      url = `${url}?${queryParams.toString()}`;
+    }
+    return apiRequest<any>(url, 'GET');
+  },
+  
+  /**
+   * Update question status
+   */
+  updateQuestionStatus: async (questionId: number, data: any): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(API.QNA.UPDATE_STATUS(questionId), 'PUT', data);
   }
 }; 

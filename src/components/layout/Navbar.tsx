@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaUserCircle, FaChevronDown } from 'react-icons/fa';
 import './Navbar.css';
+import authService from '../../services/authService';
+import { ROUTES } from '../../config/constants';
 
 interface UserData {
   id?: string;
@@ -91,13 +93,14 @@ const Navbar: React.FC = () => {
   }, [dropdownOpen, servicesDropdownOpen]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('roles');
-    localStorage.removeItem('AccountID');
-    localStorage.removeItem('consultantProfile');
-    navigate('/login');
+    // Use the authService to clear all authentication data
+    authService.clearAuthData();
+    
+    // Dispatch event to update UI
+    window.dispatchEvent(new Event('login-state-changed'));
+    
+    // Navigate to login page
+    navigate(ROUTES.AUTH.LOGIN);
   };
 
   const handleNavigation = (path: string) => {

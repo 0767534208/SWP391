@@ -194,16 +194,14 @@ const Login: React.FC = () => {
   };
 
   const handleLogout = () => {
-    // Clear all authentication data
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('roles');
-    localStorage.removeItem('AccountID');
-    localStorage.removeItem('consultantProfile'); // Xóa dữ liệu profile consultant
+    // Use the authService to clear all authentication data
+    authService.clearAuthData();
+    
+    // Dispatch event to update UI
+    window.dispatchEvent(new Event('login-state-changed'));
     
     // Redirect to login page
-    navigate('/login');
+    navigate(ROUTES.AUTH.LOGIN);
   };
 
   return (

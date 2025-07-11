@@ -85,6 +85,20 @@ export const API = {
   CONTACT: {
     SEND: '/contact',
   },
+  
+  // QnA endpoints
+  QNA: {
+    QUESTIONS: '/Question',
+    QUESTION_BY_ID: (id: number) => `/Question/${id}`,
+    MESSAGES: '/Message',
+    VOTE_QUESTION: (id: number) => `/Question/${id}/vote`,
+    VOTE_ANSWER: (id: number) => `/Message/${id}/vote`,
+    VERIFY_ANSWER: (id: number) => `/Message/${id}/verify`,
+    SEARCH: '/Question/search',
+    BY_CATEGORY: '/Question/category',
+    MY_QUESTIONS: '/Question/my-questions',
+    UPDATE_STATUS: (id: number) => `/Question/${id}/status`,
+  },
 };
 
 /**

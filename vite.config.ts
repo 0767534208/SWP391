@@ -13,6 +13,18 @@ export default defineConfig({
         target: 'https://localhost:7084',
         changeOrigin: true,
         secure: false
+      },
+      '/Question': {
+        target: 'https://localhost:7084',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => `/api${path}`
+      },
+      '/Message': {
+        target: 'https://localhost:7084',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => `/api${path}`
       }
     }
   }

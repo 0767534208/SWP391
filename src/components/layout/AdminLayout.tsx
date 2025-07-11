@@ -1,10 +1,24 @@
 import React from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import './AdminLayout.css';
+import authService from '../../services/authService';
+import { ROUTES } from '../../config/constants';
 
 const AdminLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Kiểm tra quyền truy cập
+  useEffect(() => {
+    const userRole = localStorage.getItem('userRole')?.toLowerCase();
+    if (userRole !== 'admin') {
+      // Xóa thông tin đăng nhập nếu không có quyền
+      authService.clearAuthData();
+      window.dispatchEvent(new Event('login-state-changed'));
+      navigate(ROUTES.AUTH.LOGIN);
+    }
+  }, [navigate]);
 
   // Check current path to highlight active menu item
   const isActive = (path: string) => {

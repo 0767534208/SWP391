@@ -15,6 +15,7 @@ import paymentService from './paymentService';
 import serviceService from './serviceService';
 import slotService from './slotService';
 import testResultService from './testResultService';
+export { default as qnaService } from './qnaService';
 
 // Export all services
 export {

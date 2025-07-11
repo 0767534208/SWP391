@@ -1051,6 +1051,13 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "refundType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -2348,6 +2355,120 @@
         }
       }
     },
+    "/api/dashboard/adminDashBoard/GetTotalAppointmentsTotalAppointmentsAmount": {
+      "get": {
+        "tags": [
+          "DashBoard"
+        ],
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2025-05-10T00:00:00"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2025-05-10T00:00:00"
+            }
+          },
+          {
+            "name": "timeSpanType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTotalAppointmentsTotalAppointmentsAmountListBaseResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTotalAppointmentsTotalAppointmentsAmountListBaseResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTotalAppointmentsTotalAppointmentsAmountListBaseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/adminDashBoard/GetCurrentWeekRevenue": {
+      "get": {
+        "tags": [
+          "DashBoard"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetCurrentWeekRevenueListBaseResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetCurrentWeekRevenueListBaseResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetCurrentWeekRevenueListBaseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/adminDashBoard/GetTotalAppointmentsAndAmount": {
+      "get": {
+        "tags": [
+          "DashBoard"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTotalAppointmentsAndAmountBaseResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTotalAppointmentsAndAmountBaseResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTotalAppointmentsAndAmountBaseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/FeedBack": {
       "get": {
         "tags": [
@@ -3520,6 +3641,46 @@
       "get": {
         "tags": [
           "Transaction"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionResponseIEnumerableBaseResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionResponseIEnumerableBaseResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionResponseIEnumerableBaseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Transaction/GetAllTransactionByAppointmentId/{appointmentID}": {
+      "get": {
+        "tags": [
+          "Transaction"
+        ],
+        "parameters": [
+          {
+            "name": "appointmentID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -5825,6 +5986,18 @@
             "type": "number",
             "format": "double"
           },
+          "remainingBalance": {
+            "type": "number",
+            "format": "double"
+          },
+          "consultationFee": {
+            "type": "number",
+            "format": "double"
+          },
+          "stIsTestFee": {
+            "type": "number",
+            "format": "double"
+          },
           "status": {
             "$ref": "#/components/schemas/AppointmentStatus"
           },
@@ -5990,6 +6163,18 @@
             "type": "number",
             "format": "double"
           },
+          "remainingBalance": {
+            "type": "number",
+            "format": "double"
+          },
+          "consultationFee": {
+            "type": "number",
+            "format": "double"
+          },
+          "stIsTestFee": {
+            "type": "number",
+            "format": "double"
+          },
           "status": {
             "$ref": "#/components/schemas/AppointmentStatus"
           },
@@ -6033,6 +6218,40 @@
           },
           "dateOfBirth": {
             "$ref": "#/components/schemas/DateOnly"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetCurrentWeekRevenue": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalAppointmentsAmount": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetCurrentWeekRevenueListBaseResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "statusCode": {
+            "$ref": "#/components/schemas/StatusCodeEnum"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetCurrentWeekRevenue"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -6115,6 +6334,73 @@
             "type": "string",
             "format": "date-time",
             "example": "2025-05-10T00:00:00"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetTotalAppointmentsAndAmount": {
+        "type": "object",
+        "properties": {
+          "totalAppointments": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalAppointmentsAmount": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetTotalAppointmentsAndAmountBaseResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "statusCode": {
+            "$ref": "#/components/schemas/StatusCodeEnum"
+          },
+          "data": {
+            "$ref": "#/components/schemas/GetTotalAppointmentsAndAmount"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetTotalAppointmentsTotalAppointmentsAmount": {
+        "type": "object",
+        "properties": {
+          "span": {
+            "nullable": true
+          },
+          "totalAppointments": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalAppointmentsAmount": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetTotalAppointmentsTotalAppointmentsAmountListBaseResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "statusCode": {
+            "$ref": "#/components/schemas/StatusCodeEnum"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetTotalAppointmentsTotalAppointmentsAmount"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -6464,7 +6750,8 @@
           0,
           1,
           2,
-          3
+          3,
+          4
         ],
         "type": "integer",
         "format": "int32"
