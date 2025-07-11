@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Home.css';
-import { serviceAPI, categoryAPI } from '../../utils/api';
+import { serviceAPI, categoryAPI, blogAPI } from '../../utils/api';
 
 interface ServiceData {
   servicesID: number;
@@ -24,10 +24,21 @@ interface CategoryData {
   status: boolean;
 }
 
+interface BlogData {
+  blogID: number;
+  title: string;
+  content: string;
+  author: string;
+  createAt: string;
+  status: boolean;
+  imageBlogs?: { image: string }[];
+}
+
 const Home = () => {
   const navigate = useNavigate();
   const [services, setServices] = useState<ServiceData[]>([]);
   const [categories, setCategories] = useState<CategoryData[]>([]);
+  const [blogs, setBlogs] = useState<BlogData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,14 +54,29 @@ const Home = () => {
         // Fetch categories
         const categoryResponse = await categoryAPI.getCategories();
 
+        // Fetch blogs
+        const blogResponse = await blogAPI.getBlogs();
+
         if (serviceResponse.statusCode === 200 && serviceResponse.data) {
-          setServices(serviceResponse.data);
+          // Sắp xếp dịch vụ theo thời gian tạo mới nhất
+          const sortedServices = [...serviceResponse.data].sort((a, b) => 
+            new Date(b.createAt).getTime() - new Date(a.createAt).getTime()
+          );
+          setServices(sortedServices);
         } else {
           setError('Failed to fetch services');
         }
 
         if (categoryResponse.statusCode === 200 && categoryResponse.data) {
           setCategories(categoryResponse.data);
+        }
+
+        if (blogResponse.statusCode === 200 && blogResponse.data) {
+          // Sắp xếp blog theo thời gian tạo mới nhất
+          const sortedBlogs = [...blogResponse.data].sort((a, b) => 
+            new Date(b.createAt).getTime() - new Date(a.createAt).getTime()
+          );
+          setBlogs(sortedBlogs);
         }
       } catch (err) {
         setError('Error fetching data');
@@ -82,6 +108,14 @@ const Home = () => {
 
   // Get featured services (limit to 4)
   const featuredServices = services.slice(0, 4);
+
+  // Get featured blogs (limit to 3)
+  const featuredBlogs = blogs.slice(0, 3);
+
+  // Xử lý khi click vào blog
+  const handleBlogClick = (blogId: number) => {
+    navigate(`/blog/${blogId}`);
+  };
 
   return (
     <main className="home-main">
@@ -147,17 +181,6 @@ const Home = () => {
                 </Link>
               </div>
             )}
-
-            {/* Always show the cycle tracker card */}
-            <div className="feature-card service-card">
-              <img src="/bang_tinh_chu_ky_kinh_nguyet_va_thoi_diem_rung_trung.jpg" alt="Theo dõi chu kỳ" className="service-card-image" />
-              <h3>Theo dõi chu kỳ</h3>
-              <p>Công cụ theo dõi chu kỳ kinh nguyệt và dự đoán thời kỳ rụng trứng</p>
-              <div className="service-details">
-                <span className="price">Miễn phí</span>
-              </div>
-              <Link to="/cycletracker" className="service-link">Sử dụng ngay</Link>
-            </div>
           </div>
         )}
 
@@ -171,24 +194,40 @@ const Home = () => {
       <section className="blog-preview">
         <h2>Bài viết mới nhất</h2>
         <div className="blog-grid">
-          <div className="blog-card">
-            <img src="/blog-1.png" alt="Giáo dục giới tính cho thanh thiếu niên" />
-            <h3>Giáo dục giới tính cho thanh thiếu niên</h3>
-            <p>Tìm hiểu các phương pháp hiệu quả trong giáo dục giới tính và xây dựng mối quan hệ lành mạnh cho giới trẻ.</p>
-            <Link to="/blog/1" className="blog-link">Xem thêm</Link>
-          </div>
-          <div className="blog-card">
-            <img src="/blog-2.png" alt="Hiểu về sức khỏe sinh sản" />
-            <h3>Hiểu về sức khỏe sinh sản</h3>
-            <p>Hướng dẫn cần thiết để duy trì sức khỏe sinh sản và đưa ra quyết định chăm sóc sức khỏe đúng đắn.</p>
-            <Link to="/blog/2" className="blog-link">Xem thêm</Link>
-          </div>
-          <div className="blog-card">
-            <img src="/blog-3.png" alt="Hướng dẫn phòng ngừa STI" />
-            <h3>Hướng dẫn phòng ngừa STI</h3>
-            <p>Tìm hiểu về các phương pháp phòng ngừa và phát hiện sớm các bệnh lây truyền qua đường tình dục.</p>
-            <Link to="/blog/3" className="blog-link">Xem thêm</Link>
-          </div>
+          {featuredBlogs.length > 0 ? (
+            featuredBlogs.map((blog) => (
+              <div key={blog.blogID} className="blog-card" onClick={() => handleBlogClick(blog.blogID)}>
+                <img 
+                  src={blog.imageBlogs && blog.imageBlogs.length > 0 ? blog.imageBlogs[0].image : "/blog-1.png"} 
+                  alt={blog.title} 
+                />
+                <h3>{blog.title}</h3>
+                <p>{blog.content.substring(0, 100)}...</p>
+                <div className="blog-link">Xem thêm</div>
+              </div>
+            ))
+          ) : (
+            <>
+              <div className="blog-card" onClick={() => navigate('/blog/1')}>
+                <img src="/blog-1.png" alt="Giáo dục giới tính cho thanh thiếu niên" />
+                <h3>Giáo dục giới tính cho thanh thiếu niên</h3>
+                <p>Tìm hiểu các phương pháp hiệu quả trong giáo dục giới tính và xây dựng mối quan hệ lành mạnh cho giới trẻ.</p>
+                <div className="blog-link">Xem thêm</div>
+              </div>
+              <div className="blog-card" onClick={() => navigate('/blog/2')}>
+                <img src="/blog-2.png" alt="Hiểu về sức khỏe sinh sản" />
+                <h3>Hiểu về sức khỏe sinh sản</h3>
+                <p>Hướng dẫn cần thiết để duy trì sức khỏe sinh sản và đưa ra quyết định chăm sóc sức khỏe đúng đắn.</p>
+                <div className="blog-link">Xem thêm</div>
+              </div>
+              <div className="blog-card" onClick={() => navigate('/blog/3')}>
+                <img src="/blog-3.png" alt="Hướng dẫn phòng ngừa STI" />
+                <h3>Hướng dẫn phòng ngừa STI</h3>
+                <p>Tìm hiểu về các phương pháp phòng ngừa và phát hiện sớm các bệnh lây truyền qua đường tình dục.</p>
+                <div className="blog-link">Xem thêm</div>
+              </div>
+            </>
+          )}
         </div>
       </section>
 

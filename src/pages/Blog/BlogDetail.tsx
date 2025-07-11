@@ -1,12 +1,68 @@
-import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import './BlogDetail.css';
+import { blogAPI } from '../../utils/api';
+
+interface BlogData {
+  blogID: number;
+  title: string;
+  content: string;
+  author: string;
+  createAt: string;
+  updateAt: string;
+  status: boolean;
+  imageBlogs?: { image: string }[];
+}
 
 const BlogDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [blog, setBlog] = useState<BlogData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Kiểm tra xem người dùng đến từ trang quản lý hay không
+  const isFromManager = location.state?.fromManager || false;
+  
+  // Lấy role từ localStorage (hoặc nơi lưu trữ khác)
+  const userRole = localStorage.getItem('userRole') || 'customer';
 
+  useEffect(() => {
+    const fetchBlogDetail = async () => {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        const response = await blogAPI.getBlogById(id);
+        
+        if (response.statusCode === 200 && response.data) {
+          setBlog(response.data);
+        } else {
+          setError('Failed to fetch blog details');
+        }
+      } catch (err) {
+        setError('Error fetching blog details');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const blogPosts = [
+    fetchBlogDetail();
+  }, [id]);
+
+  // Xử lý quay lại
+  const handleGoBack = () => {
+    if (isFromManager || userRole === 'manager' || userRole === 'admin') {
+      navigate('/manager/blogs');
+    } else {
+      navigate('/blogUser');
+    }
+  };
+
+  // Fallback blog posts if API fails
+  const fallbackBlogPosts = [
     {
       id: '1',
       title: 'Giáo dục giới tính cho thanh thiếu niên',
@@ -45,47 +101,116 @@ const BlogDetail = () => {
     }
   ];
 
-  const post = blogPosts.find(post => post.id === id);
-
-  if (!post) {
+  // Nếu đang tải
+  if (loading) {
     return (
       <div className="blog-detail-page">
         <div className="blog-detail-container">
-          <h2>Không tìm thấy bài viết</h2>
-          <p>Bài viết bạn đang tìm kiếm không tồn tại.</p>
-          <Link to="/blog" className="back-btn">
-            Quay lại trang Bài viết
-          </Link>
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Đang tải bài viết...</p>
+          </div>
         </div>
       </div>
     );
   }
 
+  // Nếu có lỗi hoặc không tìm thấy bài viết từ API
+  if (error || !blog) {
+    // Thử tìm trong fallback data
+    const fallbackPost = fallbackBlogPosts.find(post => post.id === id);
+    
+    if (!fallbackPost) {
+      return (
+        <div className="blog-detail-page">
+          <div className="blog-detail-container">
+            <h2>Không tìm thấy bài viết</h2>
+            <p>Bài viết bạn đang tìm kiếm không tồn tại.</p>
+            <button onClick={handleGoBack} className="back-btn">
+              Quay lại
+            </button>
+          </div>
+        </div>
+      );
+    }
+    
+    // Hiển thị dữ liệu fallback
+    return (
+      <div className="blog-detail-page">
+        <div className="blog-detail-container">
+          <div className="detail-nav">
+            <button onClick={handleGoBack} className="back-link">
+              ← Quay lại
+            </button>
+          </div>
+
+          <header className="detail-header">
+            <h1 className="detail-title">{fallbackPost.title}</h1>
+            <div className="detail-meta">
+              <span className="detail-author">{fallbackPost.author}</span>
+              <span className="detail-date">{fallbackPost.publishedDate}</span>
+            </div>
+          </header>
+
+          <div className="detail-image">
+            <img src={fallbackPost.imageUrl} alt={fallbackPost.title} />
+          </div>
+
+          <article className="detail-content">
+            {fallbackPost.content.map((paragraph, index) => (
+              <p key={index}>{paragraph}</p>
+            ))}
+          </article>
+        </div>
+      </div>
+    );
+  }
+
+  // Hiển thị dữ liệu từ API
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' });
+    } catch (e) {
+      return 'Không xác định';
+    }
+  };
+
+  // Tách nội dung thành các đoạn văn
+  const contentParagraphs = blog.content.split('\n').filter(p => p.trim() !== '');
+
   return (
     <div className="blog-detail-page">
       <div className="blog-detail-container">
         <div className="detail-nav">
-          <Link to="/blogUser" className="back-link">
-            ← Quay lại trang Bài viết
-          </Link>
+          <button onClick={handleGoBack} className="back-link">
+            ← {isFromManager || userRole === 'manager' || userRole === 'admin' ? 'Quay lại trang quản lý bài viết' : 'Quay lại trang bài viết'}
+          </button>
         </div>
 
         <header className="detail-header">
-          <h1 className="detail-title">{post.title}</h1>
+          <h1 className="detail-title">{blog.title}</h1>
           <div className="detail-meta">
-            <span className="detail-author">{post.author}</span>
-            <span className="detail-date">{post.publishedDate}</span>
+            <span className="detail-author">{blog.author}</span>
+            <span className="detail-date">{formatDate(blog.createAt)}</span>
           </div>
         </header>
 
         <div className="detail-image">
-          <img src={post.imageUrl} alt={post.title} />
+          <img 
+            src={blog.imageBlogs && blog.imageBlogs.length > 0 ? blog.imageBlogs[0].image : "/blog1.jpg"} 
+            alt={blog.title} 
+          />
         </div>
 
         <article className="detail-content">
-          {post.content.map((paragraph, index) => (
-            <p key={index}>{paragraph}</p>
-          ))}
+          {contentParagraphs.length > 0 ? (
+            contentParagraphs.map((paragraph, index) => (
+              <p key={index}>{paragraph}</p>
+            ))
+          ) : (
+            <p>{blog.content}</p>
+          )}
         </article>
       </div>
     </div>

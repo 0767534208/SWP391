@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './BlogManagement.css';
-import { blogService } from '../../services';
+import { blogAPI } from '../../utils/api';
+import api from '../../utils/api';
 import type { Blog, BlogCreationRequest } from '../../types';
 
 interface BlogDisplay {
@@ -15,6 +17,7 @@ interface BlogDisplay {
 }
 
 const BlogManagement: React.FC = () => {
+  const navigate = useNavigate();
   const [blogs, setBlogs] = useState<BlogDisplay[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,18 +34,18 @@ const BlogManagement: React.FC = () => {
   const fetchBlogs = async () => {
     setIsLoading(true);
     try {
-      const response = await blogService.getAllBlogs();
-      if (response.data && response.data.items) {
-        const formattedBlogs: BlogDisplay[] = response.data.items.map(blog => ({
-          id: blog.id,
-          title: blog.title,
-          description: blog.summary,
-          content: blog.content,
-          imageUrl: blog.image || '',
-          publishedDate: new Date(blog.createdAt).toLocaleDateString('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' }),
-          author: blog.author?.name || 'Unknown',
-          status: blog.isPublished ? 'published' : 'draft'
-        }));
+      const response = await blogAPI.getBlogs();
+      if (response.data) {
+        const formattedBlogs: BlogDisplay[] = Array.isArray(response.data) ? response.data.map((blog: any) => ({
+          id: blog.blogID?.toString() || '',
+          title: blog.title || '',
+          description: blog.summary || blog.content?.substring(0, 100) || '',
+          content: blog.content || '',
+          imageUrl: blog.imageBlogs?.[0]?.image || blog.image || '',
+          publishedDate: blog.createAt ? new Date(blog.createAt).toLocaleDateString('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Invalid Date',
+          author: blog.author || 'Unknown',
+          status: blog.status ? 'published' : 'draft'
+        })) : [];
         setBlogs(formattedBlogs);
       }
     } catch (error) {
@@ -85,20 +88,24 @@ const BlogManagement: React.FC = () => {
     if (!currentBlog) return;
 
     try {
-      const blogData: BlogCreationRequest = {
-        title: currentBlog.title,
-        content: currentBlog.content,
-        summary: currentBlog.description,
-        image: currentBlog.imageUrl,
-        isPublished: currentBlog.status === 'published',
-      };
-
       if (currentBlog.id) {
         // Update existing blog
-        await blogService.updateBlog(currentBlog.id, blogData);
+        await blogAPI.updateBlog({
+          id: currentBlog.id,
+          title: currentBlog.title,
+          content: currentBlog.content,
+          author: currentBlog.author,
+          status: currentBlog.status === 'published'
+        });
       } else {
         // Create new blog
-        await blogService.createBlog(blogData);
+        await blogAPI.createBlog({
+          title: currentBlog.title,
+          content: currentBlog.content,
+          author: currentBlog.author,
+          isPublished: currentBlog.status === 'published',
+          image: currentBlog.imageUrl
+        });
       }
       
       // Refresh blog list
@@ -114,7 +121,8 @@ const BlogManagement: React.FC = () => {
   const handleDeleteBlog = async (id: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa bài viết này không?')) {
       try {
-        await blogService.deleteBlog(id);
+        // Use the generic delete method from api
+        await api.delete(`/api/blog/DeleteBlog?blogId=${id}`);
         // Refresh blog list
         fetchBlogs();
       } catch (error) {
@@ -127,15 +135,23 @@ const BlogManagement: React.FC = () => {
   const handleToggleStatus = async (blog: BlogDisplay) => {
     try {
       if (blog.status === 'published') {
-        await blogService.deactivateBlog(blog.id);
+        // Deactivate blog (set to draft)
+        await api.put(`/api/blog/DeactivateBlog?blogId=${blog.id}`);
       } else {
-        await blogService.activateBlog(blog.id);
+        // Activate blog (set to published)
+        await api.put(`/api/blog/ActivateBlog?blogId=${blog.id}`);
       }
       // Refresh blog list
       fetchBlogs();
     } catch (error) {
       console.error('Error toggling blog status:', error);
     }
+  };
+
+  // Xem chi tiết blog
+  const handleViewBlog = (blogId: string) => {
+    // Chuyển đến trang chi tiết blog trong cùng tab
+    navigate(`/blog/${blogId}`, { state: { fromManager: true } });
   };
 
   return (
@@ -215,7 +231,7 @@ const BlogManagement: React.FC = () => {
                         <button 
                           className="view-details-button" 
                           title="Xem chi tiết"
-                          onClick={() => window.open(`/blog/${blog.id}`, '_blank')}
+                          onClick={() => handleViewBlog(blog.id)}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -229,30 +245,6 @@ const BlogManagement: React.FC = () => {
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button 
-                          className="status-btn" 
-                          title={blog.status === 'published' ? 'Chuyển sang bản nháp' : 'Xuất bản'}
-                          onClick={() => handleToggleStatus(blog)}
-                        >
-                          {blog.status === 'published' ? (
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                            </svg>
-                          ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                            </svg>
-                          )}
-                        </button>
-                        <button 
-                          className="delete-button" 
-                          title="Xóa"
-                          onClick={() => handleDeleteBlog(blog.id)}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                         </button>
                       </div>
