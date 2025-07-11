@@ -1100,15 +1100,81 @@ export const blogAPI = {
   
   /**
    * Tạo bài viết mới (dành cho Manager)
+   * @param blogData - { title, content, author, status, images }
    */
   createBlog: async (blogData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/api/blog/CreateBlog', 'POST', blogData);
+    // Tạo FormData cho multipart/form-data
+    const formData = new FormData();
+    
+    // Thêm các trường dữ liệu cơ bản
+    formData.append('Title', blogData.title);
+    formData.append('Content', blogData.content);
+    formData.append('Author', blogData.author || '');
+    formData.append('Status', blogData.isPublished ? 'true' : 'false');
+    
+    // Thêm hình ảnh nếu có
+    if (blogData.image) {
+      if (typeof blogData.image === 'string') {
+        // Nếu là URL
+        const response = await fetch(blogData.image);
+        const blob = await response.blob();
+        formData.append('Images', blob, 'image.jpg');
+      } else if (blogData.image instanceof File) {
+        // Nếu là File
+        formData.append('Images', blogData.image);
+      }
+    }
+    
+    const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    // Gửi request với multipart/form-data
+    const response = await fetch(`${API.BASE_URL}/api/blog/CreateBlog`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+    
+    return handleResponse<any>(response);
   },
   
   /**
    * Cập nhật bài viết (dành cho Manager)
+   * @param blogData - { id, title, content, author, status }
    */
   updateBlog: async (blogData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/api/blog/UpdateBlog', 'PUT', blogData);
+    // Tạo dữ liệu cần gửi
+    const updateData = {
+      title: blogData.title,
+      content: blogData.content,
+      author: blogData.author,
+      status: blogData.isPublished || blogData.status === 'published'
+    };
+    
+    return apiRequest<any>(`/api/blog/UpdateBlog?blogId=${blogData.id}`, 'PUT', updateData);
+  },
+  
+  /**
+   * Kích hoạt bài viết (đổi trạng thái sang published)
+   */
+  activateBlog: async (blogId: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/blog/ActivateBlog?blogId=${blogId}`, 'PUT');
+  },
+  
+  /**
+   * Vô hiệu hóa bài viết (đổi trạng thái sang draft)
+   */
+  deactivateBlog: async (blogId: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/blog/DeactivateBlog?blogId=${blogId}`, 'PUT');
+  },
+  
+  /**
+   * Xóa bài viết
+   */
+  deleteBlog: async (blogId: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/blog/DeleteBlog?blogId=${blogId}`, 'DELETE');
   }
 }; 
