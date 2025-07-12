@@ -362,6 +362,37 @@ export interface CreateTestResultRequest {
   attachments?: string[];
 }
 
+/**
+ * Yêu cầu tạo kết quả xét nghiệm theo swagger API
+ */
+export interface CreateLabTestRequest {
+  customerID: string;
+  staffID: string;
+  treatmentID?: number | null;
+  testName: string;
+  result: string;
+  referenceRange?: string;
+  unit?: string;
+  isPositive?: boolean;
+  testDate: string;
+}
+
+/**
+ * Yêu cầu cập nhật kết quả xét nghiệm theo swagger API
+ */
+export interface UpdateLabTestRequest {
+  labTestID: number;
+  customerID?: string;
+  staffID?: string;
+  treatmentID?: number | null;
+  testName?: string;
+  result?: string;
+  referenceRange?: string;
+  unit?: string;
+  isPositive?: boolean;
+  testDate?: string;
+}
+
 // ========== Cycle Tracking Types ==========
 
 /**
@@ -582,9 +613,7 @@ export interface Answer {
  * Yêu cầu tạo câu hỏi mới
  */
 export interface CreateQuestionRequest {
-  title: string;
   content: string;
-  category: string;
 }
 
 /**

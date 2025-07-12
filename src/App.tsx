@@ -46,9 +46,9 @@ import WeeklyCalendar from './pages/Manager/WeeklyCalendar';
 import StaffDashboard from './pages/Staff/StaffDashboard';
 import StaffAppointments from './pages/Staff/StaffAppointments';
 import TestResultView from './pages/Staff/TestResultView';
-import TestResultInput from './pages/Staff/TestResultInput';
 import TestResultManagementStaff from './pages/Staff/TestResultManagementStaff';
 import TestResultEdit from './pages/Staff/TestResultEdit';
+import TestResultForm from './pages/Staff/TestResultForm';
 
 // Import API Testers
 import ApiTesters from './components/ApiTesters';
@@ -201,9 +201,9 @@ function App() {
           <Route path="dashboard" element={<StaffDashboard />} />
           <Route path="appointments" element={<StaffAppointments />} />
           <Route path="test-results" element={<TestResultManagementStaff />} />
+          <Route path="test-results/new" element={<TestResultForm />} />
           <Route path="test-results/:id" element={<TestResultView />} />
           <Route path="test-results/edit/:id" element={<TestResultEdit />} />
-          <Route path="test-result-input/:appointmentId" element={<TestResultInput />} />
         </Route>
 
         {/* Route dành cho admin */}

@@ -4,21 +4,17 @@ import { qnaService } from '../../services';
 import authService from '../../services/authService';
 import type { 
   CreateQuestionRequest, 
-  CreateAnswerRequest,
-  VoteRequest
+  CreateAnswerRequest
 } from '../../types';
 import { STORAGE_KEYS, ROUTES } from '../../config/constants';
 
 // Map the API Question and Answer types to the local component state types
 interface Question {
   id: number | undefined;
-  title: string;
   content: string;
-  category: string;
   date: string;
   author: string;
   authorRole: string;
-  votes: number;
   answered: boolean;
   answers: Answer[];
 }
@@ -30,37 +26,23 @@ interface Answer {
   authorRole: string;
   date: string;
   isVerified: boolean;
-  votes: number;
 }
 
 const QnA = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterCategory, setFilterCategory] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [showAskModal, setShowAskModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [newQuestion, setNewQuestion] = useState<CreateQuestionRequest>({
-    title: '',
     content: '',
-    category: 'Sức khỏe tình dục',
   });
 
   // Add state for loading, error, and questions data
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [categories, setCategories] = useState<string[]>(['all']);
   
-  // Add state to track liked/disliked content
-  const [userVotes, setUserVotes] = useState<{
-    questions: { [id: number]: 'up' | 'down' | null },
-    answers: { [id: number]: 'up' | 'down' | null }
-  }>({
-    questions: {},
-    answers: {}
-  });
-
   // Fetch questions on component mount
   useEffect(() => {
     fetchQuestions();
@@ -83,22 +65,15 @@ const QnA = () => {
         // Map API response to component state format
         const mappedQuestions = questionItems.map((q) => ({
           id: q.questionID || q.id,
-          title: q.title || '',
           content: q.content || '',
-          category: q.category || 'Chung',
           date: new Date(q.createdAt || new Date()).toISOString().split('T')[0],
           author: (q.customer && q.customer.name) || q.authorName || 'Ẩn danh',
           authorRole: q.authorRole || 'user',
-          votes: q.votes || 0,
           answered: q.messages && q.messages.length > 0 || false,
           answers: [] // Answers will be fetched separately when a question is selected
         })) as Question[];
         
         setQuestions(mappedQuestions);
-        
-        // Extract unique categories from questions
-        const uniqueCategories = ['all', ...Array.from(new Set(mappedQuestions.map(q => q.category)))];
-        setCategories(uniqueCategories);
       }
     } catch (err) {
       console.error('Error fetching questions:', err);
@@ -107,7 +82,6 @@ const QnA = () => {
       if (err instanceof Error && err.message === 'No questions') {
         // Treat as empty state, not an error
         setQuestions([]);
-        setCategories(['all']);
       } else {
         // Other errors
         setError('Không thể tải câu hỏi. Vui lòng thử lại sau.');
@@ -127,13 +101,10 @@ const QnA = () => {
         const q = response.data;
         const question: Question = {
           id: q.questionID || q.id,
-          title: q.title || '',
           content: q.content || '',
-          category: q.category || 'Chung',
           date: new Date(q.createdAt || new Date()).toISOString().split('T')[0],
           author: (q.customer && q.customer.name) || q.authorName || 'Ẩn danh',
           authorRole: q.authorRole || 'user',
-          votes: q.votes || 0,
           answered: q.messages && q.messages.length > 0 || false,
           answers: (q.messages || []).map((a) => ({
             id: a.messageID || a.id,
@@ -141,8 +112,7 @@ const QnA = () => {
             author: (a.customer && a.customer.name) || a.authorName || 'Ẩn danh',
             authorRole: a.authorRole || 'user',
             date: new Date(a.createdAt || new Date()).toISOString().split('T')[0],
-            isVerified: a.isVerified || false,
-            votes: a.votes || 0
+            isVerified: a.isVerified || false
           }))
         };
         setSelectedQuestion(question);
@@ -158,17 +128,14 @@ const QnA = () => {
   // Filter questions
   const filteredQuestions = questions.filter(question => {
     const matchesSearch = 
-      question.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       question.content.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory = filterCategory === 'all' || question.category === filterCategory;
     
     const matchesStatus = 
       filterStatus === 'all' || 
       (filterStatus === 'answered' && question.answered) ||
       (filterStatus === 'unanswered' && !question.answered);
     
-    return matchesSearch && matchesCategory && matchesStatus;
+    return matchesSearch && matchesStatus;
   });
   
   // Open question detail
@@ -216,12 +183,10 @@ const QnA = () => {
       const response = await qnaService.createQuestion(newQuestion);
       if (response && response.data) {
         alert("Câu hỏi của bạn đã được gửi và đang chờ được duyệt.");
-    setShowAskModal(false);
-    setNewQuestion({
-      title: '',
-      content: '',
-      category: 'Sức khỏe tình dục'
-    });
+        setShowAskModal(false);
+        setNewQuestion({
+          content: ''
+        });
         // Refresh questions
         fetchQuestions();
       }
@@ -296,93 +261,6 @@ const QnA = () => {
     }
   };
 
-  // Updated vote handling function with API integration
-  const handleVote = async (e: React.MouseEvent, id: number, type: 'question' | 'answer', direction: 'up' | 'down') => {
-    e.stopPropagation(); // Prevent opening the question when voting
-    
-    // Check if user is logged in
-    const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-    const isLoggedIn = localStorage.getItem(STORAGE_KEYS.IS_LOGGED_IN) === 'true';
-    
-    if (!token || !isLoggedIn) {
-      setShowLoginModal(true);
-      return;
-    }
-    
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const voteData: VoteRequest = {
-        direction
-    };
-    
-    if (type === 'question') {
-        await qnaService.voteQuestion(id, voteData);
-        // Update the local state with the new vote count
-        const updatedQuestions = [...questions];
-      const questionIndex = updatedQuestions.findIndex(q => q.id === id);
-        
-        if (questionIndex !== -1) {
-          // Optimistically update the UI
-          if (direction === 'up') {
-            updatedQuestions[questionIndex].votes += 1;
-          } else {
-            updatedQuestions[questionIndex].votes = Math.max(0, updatedQuestions[questionIndex].votes - 1);
-        }
-        
-          // Update selected question if needed
-        if (selectedQuestion && selectedQuestion.id === id) {
-          setSelectedQuestion({
-            ...selectedQuestion,
-            votes: updatedQuestions[questionIndex].votes
-          });
-        }
-          
-          setQuestions(updatedQuestions);
-      }
-      } else {
-        await qnaService.voteAnswer(id, voteData);
-        // Update the local state with the new vote count
-      if (selectedQuestion) {
-          const updatedAnswers = [...selectedQuestion.answers];
-          const answerIndex = updatedAnswers.findIndex(a => a.id === id);
-          
-          if (answerIndex !== -1) {
-            // Optimistically update the UI
-              if (direction === 'up') {
-              updatedAnswers[answerIndex].votes += 1;
-            } else {
-              updatedAnswers[answerIndex].votes = Math.max(0, updatedAnswers[answerIndex].votes - 1);
-            }
-            
-            setSelectedQuestion({
-              ...selectedQuestion,
-              answers: updatedAnswers
-            });
-          }
-        }
-      }
-      
-      // Update user votes tracking
-      setUserVotes(prev => {
-        const updatedVotes = { ...prev };
-        if (type === 'question') {
-          updatedVotes.questions = { ...updatedVotes.questions, [id]: direction };
-        } else {
-          updatedVotes.answers = { ...updatedVotes.answers, [id]: direction };
-        }
-        return updatedVotes;
-      });
-      
-    } catch (err) {
-      console.error('Error voting:', err);
-      setError('Không thể bình chọn. Vui lòng thử lại sau.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Handle searching questions
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -399,13 +277,10 @@ const QnA = () => {
         // Map API response to component state format
         const mappedQuestions = response.data.items.map((q) => ({
           id: q.questionID || q.id,
-          title: q.title || '',
           content: q.content || '',
-          category: q.category || 'Chung',
           date: new Date(q.createdAt || new Date()).toISOString().split('T')[0],
           author: (q.customer && q.customer.name) || q.authorName || 'Ẩn danh',
           authorRole: q.authorRole || 'user',
-          votes: q.votes || 0,
           answered: q.messages && q.messages.length > 0 || false,
           answers: [] // Answers will be fetched separately when a question is selected
         })) as Question[];
@@ -445,16 +320,6 @@ const QnA = () => {
             </button>
         </div>
           <div className="filter-options">
-          <select 
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-          >
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category === 'all' ? 'Tất cả chủ đề' : category}
-              </option>
-            ))}
-          </select>
           <select 
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
@@ -501,10 +366,8 @@ const QnA = () => {
                   onClick={() => openQuestion(question)}
                 >
                   <div className="question-header">
-                    <span className="category-tag">{question.category}</span>
                     <span className="date">{question.date}</span>
               </div>
-                <h3 className="question-title">{question.title}</h3>
                   <p className="question-preview">
                   {question.content.length > 150 
                     ? `${question.content.substring(0, 150)}...` 
@@ -514,21 +377,6 @@ const QnA = () => {
                   <div className="question-footer">
                     <span className="author">Bởi: {question.author}</span>
                     <div className="question-stats">
-                      <div className="vote-buttons">
-                        <button 
-                          className={`upvote ${userVotes.questions[question.id || 0] === 'up' ? 'active' : ''}`}
-                          onClick={(e) => handleVote(e, question.id || 0, 'question', 'up')}
-                        >
-                          <i className="fas fa-arrow-up"></i>
-                        </button>
-                        <span>{question.votes}</span>
-                        <button 
-                          className={`downvote ${userVotes.questions[question.id || 0] === 'down' ? 'active' : ''}`}
-                          onClick={(e) => handleVote(e, question.id || 0, 'question', 'down')}
-                        >
-                          <i className="fas fa-arrow-down"></i>
-                        </button>
-                      </div>
                       <span className="answer-count">
                         <i className="fas fa-comment"></i>
                         {question.answered ? 'Đã có câu trả lời' : 'Chưa có câu trả lời'}
@@ -550,28 +398,11 @@ const QnA = () => {
             
             <div className="question-detail-card">
               <div className="question-header">
-                <span className="category-tag">{selectedQuestion.category}</span>
                 <span className="date">{selectedQuestion.date}</span>
               </div>
-              <h2>{selectedQuestion.title}</h2>
               <p className="question-content">{selectedQuestion.content}</p>
               <div className="question-footer">
                 <span className="author">Bởi: {selectedQuestion.author}</span>
-                <div className="vote-buttons">
-                  <button 
-                    className={`upvote ${userVotes.questions[selectedQuestion.id || 0] === 'up' ? 'active' : ''}`}
-                    onClick={(e) => handleVote(e, selectedQuestion.id || 0, 'question', 'up')}
-                  >
-                    <i className="fas fa-arrow-up"></i>
-                  </button>
-                  <span>{selectedQuestion.votes}</span>
-                  <button 
-                    className={`downvote ${userVotes.questions[selectedQuestion.id || 0] === 'down' ? 'active' : ''}`}
-                    onClick={(e) => handleVote(e, selectedQuestion.id || 0, 'question', 'down')}
-                  >
-                    <i className="fas fa-arrow-down"></i>
-                  </button>
-                </div>
               </div>
             </div>
             
@@ -621,21 +452,6 @@ const QnA = () => {
                           </span>
                         )}
                       </div>
-                      <div className="vote-buttons">
-                        <button 
-                          className={`upvote ${userVotes.answers[answer.id || 0] === 'up' ? 'active' : ''}`}
-                          onClick={(e) => handleVote(e, answer.id || 0, 'answer', 'up')}
-                        >
-                          <i className="fas fa-arrow-up"></i>
-                        </button>
-                        <span>{answer.votes}</span>
-                        <button 
-                          className={`downvote ${userVotes.answers[answer.id || 0] === 'down' ? 'active' : ''}`}
-                          onClick={(e) => handleVote(e, answer.id || 0, 'answer', 'down')}
-                        >
-                          <i className="fas fa-arrow-down"></i>
-                        </button>
-                      </div>
                     </div>
                   </div>
                 ))
@@ -677,18 +493,6 @@ const QnA = () => {
             </div>
             <form onSubmit={handleFormSubmit} className="question-form">
               <div className="form-group">
-                <label htmlFor="title">Tiêu đề câu hỏi</label>
-                <input 
-                  type="text" 
-                  id="title"
-                  name="title" 
-                  value={newQuestion.title} 
-                  onChange={handleFormChange} 
-                  placeholder="Nhập tiêu đề ngắn gọn cho câu hỏi của bạn" 
-                  required 
-                />
-              </div>
-              <div className="form-group">
                 <label htmlFor="content">Nội dung câu hỏi</label>
                 <textarea 
                   id="content"
@@ -698,22 +502,6 @@ const QnA = () => {
                   placeholder="Mô tả chi tiết câu hỏi của bạn. Cung cấp càng nhiều thông tin sẽ giúp chuyên gia có thể trả lời chính xác hơn." 
                   required 
                 />
-              </div>
-              <div className="form-group">
-                <label htmlFor="category">Chủ đề</label>
-                <select 
-                  id="category"
-                  name="category" 
-                  value={newQuestion.category} 
-                  onChange={handleFormChange} 
-                  required
-                >
-                  <option value="Sức khỏe tình dục">Sức khỏe tình dục</option>
-                  <option value="Tránh thai">Tránh thai</option>
-                  <option value="STI">STI</option>
-                  <option value="Sức khỏe sinh sản">Sức khỏe sinh sản</option>
-                  <option value="Khác">Khác</option>
-                </select>
               </div>
               <div className="form-note">
                 <i className="fas fa-info-circle"></i> Câu hỏi của bạn sẽ được hiển thị công khai. Chúng tôi khuyến khích không sử dụng thông tin cá nhân có thể nhận dạng được.

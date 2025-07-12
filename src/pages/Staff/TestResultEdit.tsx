@@ -1,42 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './TestResultEdit.css';
-import { FaArrowLeft, FaSave } from 'react-icons/fa';
-
-// Types
-interface TestResultDetail {
-  testName: string;
-  result: string;
-  normalRange?: string;
-  unit?: string;
-  isNormal: boolean;
-}
-
-interface TestCategory {
-  name: string;
-  description?: string;
-  items: TestResultDetail[];
-}
+import { FaArrowLeft } from 'react-icons/fa';
+import testResultService from '../../services/testResultService';
+import type { UpdateLabTestRequest } from '../../types';
 
 interface TestResult {
-  id: number;
-  appointmentId: number;
-  patientId: string;
-  patientName: string;
-  patientDob: string;
-  patientGender: string;
-  patientEmail: string;
-  patientPhone: string;
-  testType: string;
-  testDate: string;
-  resultDate: string | null;
-  status: 'completed' | 'pending' | 'cancelled';
-  sampleType: string;
-  sampleCollectedAt: string;
-  sampleReceivedAt: string;
-  testId: string;
-  categories: TestCategory[];
-  consultant: string;
+  id?: number | string;
+  labTestID?: number;
+  userId?: string;
+  customerID?: string;
+  staffID?: string;
+  treatmentID?: number | null;
+  testName?: string;
+  testType?: string;
+  result?: string;
+  referenceRange?: string;
+  unit?: string;
+  isPositive?: boolean;
+  testDate?: string;
 }
 
 const TestResultEdit: React.FC = () => {
@@ -52,79 +34,20 @@ const TestResultEdit: React.FC = () => {
     const fetchTestResult = async () => {
       setLoading(true);
       try {
-        // In a real app, this would be an API call
-        // For now, we'll use mock data
-        setTimeout(() => {
-          // Mock data based on the ID
-          const mockTestResult: TestResult = {
-            id: Number(id),
-            appointmentId: 100 + Number(id),
-            patientId: `P-${1000 + Number(id)}`,
-            patientName: ['Nguyễn Văn A', 'Trần Thị B', 'Lê Văn C', 'Phạm Thị D', 'Hoàng Văn E'][Number(id) % 5],
-            patientDob: '15/05/1992',
-            patientGender: 'Nam',
-            patientEmail: 'nguyenvana@example.com',
-            patientPhone: '0912345678',
-            testType: ['Xét nghiệm STI toàn diện', 'Xét nghiệm HIV', 'Xét nghiệm viêm gan', 'Xét nghiệm Giang mai'][Number(id) % 4],
-            testDate: '2023-06-15',
-            resultDate: '2023-06-18',
-            status: 'completed',
-            sampleType: 'Máu, Dịch niệu đạo',
-            sampleCollectedAt: '15/06/2023 09:30',
-            sampleReceivedAt: '15/06/2023 10:15',
-            testId: `LAB-${10000 + Number(id)}`,
-            consultant: 'BS. Trần Văn B',
-            categories: [
-              {
-                name: 'SINH HÓA',
-                items: [
-                  { 
-                    testName: 'Rapid Plasma Reagin (RPR - Kháng thể không đặc hiệu giang mai)',
-                    result: '0.00',
-                    normalRange: '< 1',
-                    unit: 'RU',
-                    isNormal: true
-                  }
-                ]
-              },
-              {
-                name: 'MIỄN DỊCH',
-                items: [
-                  {
-                    testName: 'HIV Combo Ag + Ab',
-                    result: '0.05',
-                    normalRange: '< 1',
-                    unit: 'S/CO',
-                    isNormal: true
-                  },
-                  {
-                    testName: 'Syphilis',
-                    result: '0.11',
-                    normalRange: 'Âm Tính: < 1.00\nDương Tính: ≥ 1.00',
-                    unit: 'S/CO',
-                    isNormal: true
-                  }
-                ]
-              },
-              {
-                name: 'SINH HỌC PHÂN TỬ',
-                description: 'Bộ STIs / STDs 13 Realtime PCR (Định Tính - CE-IVD)',
-                items: [
-                  { testName: 'Chlamydia trachomatis', result: 'Âm Tính', isNormal: true },
-                  { testName: 'Candida albicans', result: 'Âm Tính', isNormal: true },
-                  { testName: 'Treponema pallidum', result: 'Âm Tính', isNormal: true },
-                  { testName: 'Herpes Simplex Virus 1', result: 'Âm Tính', isNormal: true },
-                  { testName: 'Herpes Simplex Virus 2', result: 'Âm Tính', isNormal: true }
-                ]
-              }
-            ]
-          };
-
-          setTestResult(mockTestResult);
-          setLoading(false);
-        }, 1000);
+        if (!id) {
+          throw new Error('ID không hợp lệ');
+        }
+        
+        const response = await testResultService.getTestResult(id);
+        if (response && response.data) {
+          setTestResult(response.data);
+        } else {
+          throw new Error('Không tìm thấy kết quả xét nghiệm');
+        }
       } catch (err) {
+        console.error('Error fetching test result:', err);
         setError('Không thể tải dữ liệu kết quả xét nghiệm. Vui lòng thử lại sau.');
+      } finally {
         setLoading(false);
       }
     };
@@ -133,79 +56,22 @@ const TestResultEdit: React.FC = () => {
   }, [id]);
 
   // Handle form input changes
-  const handleResultChange = (categoryIndex: number, itemIndex: number, field: keyof TestResultDetail, value: string) => {
-    if (!testResult) return;
-
-    const updatedCategories = [...testResult.categories];
-    const updatedItems = [...updatedCategories[categoryIndex].items];
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
     
-    updatedItems[itemIndex] = {
-      ...updatedItems[itemIndex],
-      [field]: value,
-      // Automatically update isNormal based on result if needed
-      isNormal: field === 'result' 
-        ? (value.toLowerCase().includes('âm tính') || value.toLowerCase().includes('không phản ứng'))
-        : updatedItems[itemIndex].isNormal
-    };
-    
-    updatedCategories[categoryIndex] = {
-      ...updatedCategories[categoryIndex],
-      items: updatedItems
-    };
-
-    setTestResult({
-      ...testResult,
-      categories: updatedCategories
-    });
-  };
-
-  const handleCategoryChange = (index: number, field: string, value: string) => {
-    if (!testResult) return;
-
-    const updatedCategories = [...testResult.categories];
-    updatedCategories[index] = {
-      ...updatedCategories[index],
-      [field]: value
-    };
-
-    setTestResult({
-      ...testResult,
-      categories: updatedCategories
-    });
-  };
-
-  const addTestItem = (categoryIndex: number) => {
-    if (!testResult) return;
-
-    const updatedCategories = [...testResult.categories];
-    const newItem: TestResultDetail = {
-      testName: '',
-      result: '',
-      normalRange: '',
-      unit: '',
-      isNormal: true
-    };
-
-    updatedCategories[categoryIndex].items.push(newItem);
-
-    setTestResult({
-      ...testResult,
-      categories: updatedCategories
-    });
-  };
-
-  const addCategory = () => {
-    if (!testResult) return;
-
-    const newCategory: TestCategory = {
-      name: '',
-      items: []
-    };
-
-    setTestResult({
-      ...testResult,
-      categories: [...testResult.categories, newCategory]
-    });
+    // Handle checkbox inputs
+    if (type === 'checkbox') {
+      const checkbox = e.target as HTMLInputElement;
+      setTestResult(prev => prev ? {
+        ...prev,
+        [name]: checkbox.checked
+      } : null);
+    } else {
+      setTestResult(prev => prev ? {
+        ...prev,
+        [name]: value
+      } : null);
+    }
   };
 
   // Handle form submission
@@ -214,249 +80,206 @@ const TestResultEdit: React.FC = () => {
     if (!testResult) return;
 
     setSaving(true);
+    setError(null);
+    
     try {
-      // In a real app, this would be an API call to update the test result
-      // For now, we'll just simulate a delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Convert our test result to match the API's UpdateLabTestRequest schema
+      const apiRequest: UpdateLabTestRequest = {
+        labTestID: testResult.labTestID || Number(testResult.id),
+        customerID: testResult.customerID || testResult.userId || '',
+        staffID: testResult.staffID || '',
+        treatmentID: testResult.treatmentID,
+        testName: testResult.testName || testResult.testType || '',
+        result: testResult.result || '',
+        referenceRange: testResult.referenceRange,
+        unit: testResult.unit,
+        isPositive: testResult.isPositive,
+        testDate: testResult.testDate || ''
+      };
+      
+      await testResultService.updateTestResult(apiRequest);
       
       // Navigate back to the test result view page after successful save
-      navigate(`/staff/test-results/${id}`);
+      navigate(`/staff/test-results`);
     } catch (err) {
+      console.error('Error updating test result:', err);
       setError('Không thể lưu kết quả xét nghiệm. Vui lòng thử lại sau.');
+    } finally {
       setSaving(false);
     }
   };
 
   const handleCancel = () => {
-    navigate(`/staff/test-results/${id}`);
+    navigate(`/staff/test-results`);
   };
+
+  if (loading) {
+  return (
+    <div className="test-result-edit">
+        <div className="loading-container">
+          <div className="spinner"></div>
+          <p>Đang tải dữ liệu kết quả xét nghiệm...</p>
+        </div>
+        </div>
+    );
+  }
+
+  if (error || !testResult) {
+    return (
+      <div className="test-result-edit">
+        <div className="error-container">
+          <p>{error || 'Không tìm thấy kết quả xét nghiệm'}</p>
+          <button onClick={() => navigate('/staff/test-results')} className="back-button">
+            <FaArrowLeft /> Quay lại danh sách kết quả
+          </button>
+        </div>
+          </div>
+    );
+  }
 
   return (
     <div className="test-result-edit">
       <div className="page-header">
         <h1 className="page-title">Chỉnh Sửa Kết Quả Xét Nghiệm</h1>
-        <p className="page-subtitle">Cập nhật thông tin kết quả xét nghiệm của bệnh nhân</p>
-      </div>
-
-      {loading ? (
-        <div className="test-result-edit-loading">
-          <div className="loading-spinner"></div>
-          <p>Đang tải dữ liệu kết quả xét nghiệm...</p>
-        </div>
-      ) : error ? (
-        <div className="test-result-edit-error">
-          <p>{error}</p>
-          <button onClick={() => navigate('/staff/test-results')} className="back-button">
-            <FaArrowLeft /> Quay lại danh sách kết quả
-          </button>
-        </div>
-      ) : !testResult ? (
-        <div className="test-result-edit-error">
-          <p>Không tìm thấy kết quả xét nghiệm.</p>
-          <button onClick={() => navigate('/staff/test-results')} className="back-button">
-            <FaArrowLeft /> Quay lại danh sách kết quả
-          </button>
-        </div>
-      ) : (
-        <div className="test-result-edit-content">
-          <div className="test-result-edit-actions">
-            <button className="back-button" onClick={handleCancel}>
-              <FaArrowLeft /> Quay lại
-            </button>
-          </div>
-          <form onSubmit={handleSubmit}>
-            <div className="info-section">
-              <div className="section-header">
-                <h2>Thông tin bệnh nhân</h2>
-              </div>
-              <div className="info-grid">
-                <div className="info-item">
-                  <label>Họ và tên:</label>
-                  <span>{testResult.patientName}</span>
-                </div>
-                <div className="info-item">
-                  <label>ID bệnh nhân:</label>
-                  <span>{testResult.patientId}</span>
-                </div>
-                <div className="info-item">
-                  <label>Ngày sinh:</label>
-                  <span>{testResult.patientDob}</span>
-                </div>
-                <div className="info-item">
-                  <label>Giới tính:</label>
-                  <span>{testResult.patientGender}</span>
-                </div>
-                <div className="info-item">
-                  <label>Email:</label>
-                  <span>{testResult.patientEmail}</span>
-                </div>
-                <div className="info-item">
-                  <label>Số điện thoại:</label>
-                  <span>{testResult.patientPhone}</span>
-                </div>
-              </div>
+        <p className="page-subtitle">ID: {testResult.labTestID || testResult.id}</p>
             </div>
 
-            <div className="info-section">
-              <div className="section-header">
-                <h2>Thông tin mẫu xét nghiệm</h2>
-              </div>
-              <div className="info-grid">
-                <div className="info-item">
-                  <label>Mã cuộc hẹn:</label>
-                  <span>APT-{testResult.appointmentId}</span>
-                </div>
-                <div className="info-item">
-                  <label>Loại xét nghiệm:</label>
-                  <span>{testResult.testType}</span>
-                </div>
-                <div className="info-item">
-                  <label>Loại mẫu:</label>
+      <form onSubmit={handleSubmit} className="test-result-edit-form">
+        <div className="form-section">
+          <h3 className="form-section-title">Thông tin cơ bản</h3>
+          
+          <div className="form-group">
+            <label htmlFor="customerID">ID Khách hàng <span className="required">*</span></label>
                   <input
                     type="text"
-                    value={testResult.sampleType}
-                    onChange={(e) => setTestResult({...testResult, sampleType: e.target.value})}
-                    className="form-input"
+              id="customerID"
+              name="customerID"
+              value={testResult.customerID || testResult.userId || ''}
+              onChange={handleInputChange}
+              required
                   />
                 </div>
-                <div className="info-item">
-                  <label>Ngày lấy mẫu:</label>
+          
+          <div className="form-group">
+            <label htmlFor="staffID">ID Nhân viên <span className="required">*</span></label>
                   <input
                     type="text"
-                    value={testResult.sampleCollectedAt}
-                    onChange={(e) => setTestResult({...testResult, sampleCollectedAt: e.target.value})}
-                    className="form-input"
+              id="staffID"
+              name="staffID"
+              value={testResult.staffID || ''}
+              onChange={handleInputChange}
+              required
                   />
                 </div>
-                <div className="info-item">
-                  <label>Ngày nhận mẫu:</label>
+
+          <div className="form-group">
+            <label htmlFor="testName">Loại xét nghiệm <span className="required">*</span></label>
+            <select
+              id="testName"
+              name="testName"
+              value={testResult.testName || testResult.testType || ''}
+              onChange={handleInputChange}
+              required
+            >
+              <option value="">-- Chọn loại xét nghiệm --</option>
+              <option value="Xét nghiệm HIV">Xét nghiệm HIV</option>
+              <option value="Xét nghiệm STI tổng quát">Xét nghiệm STI tổng quát</option>
+              <option value="Xét nghiệm Chlamydia">Xét nghiệm Chlamydia</option>
+              <option value="Xét nghiệm Gonorrhea">Xét nghiệm Gonorrhea</option>
+              <option value="Xét nghiệm Syphilis">Xét nghiệm Syphilis</option>
+              <option value="Xét nghiệm Hepatitis B">Xét nghiệm Hepatitis B</option>
+              <option value="Xét nghiệm Hepatitis C">Xét nghiệm Hepatitis C</option>
+              <option value="Khác">Khác</option>
+            </select>
+                </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="testDate">Ngày xét nghiệm <span className="required">*</span></label>
                   <input
-                    type="text"
-                    value={testResult.sampleReceivedAt}
-                    onChange={(e) => setTestResult({...testResult, sampleReceivedAt: e.target.value})}
-                    className="form-input"
+                type="date"
+                id="testDate"
+                name="testDate"
+                value={testResult.testDate || ''}
+                onChange={handleInputChange}
+                required
                   />
                 </div>
-                <div className="info-item">
-                  <label>Mã xét nghiệm:</label>
+            
+            <div className="form-group">
+              <label htmlFor="treatmentID">Mã điều trị</label>
                   <input
-                    type="text"
-                    value={testResult.testId}
-                    onChange={(e) => setTestResult({...testResult, testId: e.target.value})}
-                    className="form-input"
-                  />
-                </div>
-                <div className="info-item">
-                  <label>Bác sĩ chỉ định:</label>
-                  <input
-                    type="text"
-                    value={testResult.consultant}
-                    onChange={(e) => setTestResult({...testResult, consultant: e.target.value})}
-                    className="form-input"
+                type="number"
+                id="treatmentID"
+                name="treatmentID"
+                value={testResult.treatmentID || ''}
+                onChange={handleInputChange}
+                placeholder="Mã điều trị (nếu có)"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="test-results-section">
-              <div className="section-header">
-                <h2>Kết quả xét nghiệm</h2>
+        <div className="form-section">
+          <h3 className="form-section-title">Kết quả xét nghiệm</h3>
+          
+          <div className="form-group">
+            <label htmlFor="result">Kết quả xét nghiệm <span className="required">*</span></label>
+            <textarea
+              id="result"
+              name="result"
+              rows={4}
+              value={testResult.result || ''}
+              onChange={handleInputChange}
+              placeholder="Nhập kết quả xét nghiệm chi tiết"
+              required
+            ></textarea>
               </div>
               
-              {testResult.categories.map((category, categoryIndex) => (
-                <div key={categoryIndex} className="category-section">
-                  <div className="category-header">
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="referenceRange">Phạm vi tham chiếu</label>
                     <input
                       type="text"
-                      value={category.name}
-                      onChange={(e) => handleCategoryChange(categoryIndex, 'name', e.target.value)}
-                      className="form-input category-name-input"
-                      placeholder="Tên danh mục xét nghiệm"
-                    />
-                    
-                    <input
-                      type="text"
-                      value={category.description || ''}
-                      onChange={(e) => handleCategoryChange(categoryIndex, 'description', e.target.value)}
-                      className="form-input category-description-input"
-                      placeholder="Mô tả (nếu có)"
+                id="referenceRange"
+                name="referenceRange"
+                value={testResult.referenceRange || ''}
+                onChange={handleInputChange}
+                placeholder="Ví dụ: < 0.9 index"
                     />
                   </div>
                   
-                  <table className="edit-results-table">
-                    <thead>
-                      <tr>
-                        <th>Tên xét nghiệm</th>
-                        <th>Kết quả</th>
-                        <th>Thang điểm chiếu</th>
-                        <th>Đơn vị</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {category.items.map((item, itemIndex) => (
-                        <tr key={itemIndex}>
-                          <td>
+            <div className="form-group">
+              <label htmlFor="unit">Đơn vị đo</label>
                             <input
                               type="text"
-                              value={item.testName}
-                              onChange={(e) => handleResultChange(categoryIndex, itemIndex, 'testName', e.target.value)}
-                              className="form-input"
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="text"
-                              value={item.result}
-                              onChange={(e) => handleResultChange(categoryIndex, itemIndex, 'result', e.target.value)}
-                              className="form-input"
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="text"
-                              value={item.normalRange || ''}
-                              onChange={(e) => handleResultChange(categoryIndex, itemIndex, 'normalRange', e.target.value)}
-                              className="form-input"
-                              placeholder="Ví dụ: 0-10"
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="text"
-                              value={item.unit || ''}
-                              onChange={(e) => handleResultChange(categoryIndex, itemIndex, 'unit', e.target.value)}
-                              className="form-input"
-                              placeholder="Ví dụ: mg/dL"
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-
-                  <button 
-                    type="button" 
-                    className="add-item-button"
-                    onClick={() => addTestItem(categoryIndex)}
-                  >
-                    + Thêm kết quả
-                  </button>
-                </div>
-              ))}
-
-              <button 
-                type="button" 
-                className="add-category-button"
-                onClick={addCategory}
-              >
-                + Thêm danh mục xét nghiệm
-              </button>
+                id="unit"
+                name="unit"
+                value={testResult.unit || ''}
+                onChange={handleInputChange}
+                placeholder="Ví dụ: mmol/L"
+              />
             </div>
+          </div>
+          
+          <div className="form-group checkbox-group">
+                            <input
+              type="checkbox"
+              id="isPositive"
+              name="isPositive"
+              checked={testResult.isPositive || false}
+              onChange={handleInputChange}
+                            />
+            <label htmlFor="isPositive">Kết quả dương tính</label>
+                </div>
+            </div>
+
+        {error && <div className="error-message">{error}</div>}
 
             <div className="form-actions">
               <button 
                 type="button" 
-                className="cancel-button"
+            className="btn btn-secondary"
                 onClick={handleCancel}
                 disabled={saving}
               >
@@ -464,24 +287,13 @@ const TestResultEdit: React.FC = () => {
               </button>
               <button 
                 type="submit" 
-                className="save-button"
+            className="btn btn-primary"
                 disabled={saving}
               >
-                {saving ? (
-                  <>
-                    <div className="button-spinner"></div>
-                    Đang lưu...
-                  </>
-                ) : (
-                  <>
-                    <FaSave /> Lưu kết quả
-                  </>
-                )}
+            {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
               </button>
             </div>
           </form>
-        </div>
-      )}
     </div>
   );
 };
