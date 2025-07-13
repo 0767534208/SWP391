@@ -1108,7 +1108,7 @@ export const consultantSlotAPI = {
    * Lấy tất cả consultant và thông tin slot đã đăng ký
    */
   getAllConsultants: async (): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>('/api/consultantSlot/GetAll', 'GET');
+    return apiRequest<any[]>('/api/consultantSlot/GetAllConsultantSlot', 'GET');
   },
 
   /**
