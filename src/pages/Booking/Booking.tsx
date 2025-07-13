@@ -244,7 +244,7 @@ const Booking = () => {
   const getConsultantsByDate = async (date: string) => {
     setConsultantLoading(true);
     try {
-      const res = await consultantSlotAPI.getAllConsultants();
+      const res = await appointmentAPI.getSlots();
       if (res.statusCode === 200 && res.data) {
         // Filter slots by the selected date
         const slotsOnSelectedDate = res.data.filter(item => {
@@ -299,7 +299,7 @@ const Booking = () => {
   useEffect(() => {
     if (selectedConsultant && selectedDate) {
       setSlotLoading(true);
-      consultantSlotAPI.getSlotsByConsultantAndDate(selectedConsultant, selectedDate)
+      appointmentAPI.getSlots()
         .then(res => {
           if (res.statusCode === 200 && res.data) {
             // Xử lý dữ liệu từ API để lấy danh sách slot

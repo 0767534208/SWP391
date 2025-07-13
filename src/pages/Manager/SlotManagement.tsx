@@ -1,284 +1,325 @@
 import React, { useState, useEffect } from 'react';
 import './SlotManagement.css';
+import { consultantSlotAPI } from '../../utils/api';
 
-// Types
-interface TimeSlot {
-  id: number;
-  start: string;
-  end: string;
-  status: 'pending' | 'approved' | 'rejected';
+// Types based on actual API data structure
+interface ConsultantSlot {
+  consultantID: string;
+  slotID: number;
+  maxAppointment: number;
+  assignedDate: string;
+  slot?: {
+    slotID: number;
+    startTime: string;
+    endTime: string;
+    maxConsultant: number;
+    maxTestAppointment: number;
+  };
+  consultant?: {
+    name: string;
+    specialty?: string;
+    imageUrl?: string;
+  };
 }
 
-interface SlotRequest {
-  id: number;
-  consultantId: number;
-  consultantName: string;
-  consultantImage: string;
+interface ConsultantProfile {
+  consultantProfileID: number;
+  accountID: string;
+  description: string;
   specialty: string;
-  day: string;
-  date: string;
-  slots: TimeSlot[];
-  requestDate: string;
-  status: 'pending' | 'approved' | 'rejected';
+  experience: string;
+  consultantPrice: number;
+  account?: {
+    name: string;
+    email: string;
+    phone: string;
+  };
 }
 
 const SlotManagement = () => {
   // State
-  const [slotRequests, setSlotRequests] = useState<SlotRequest[]>([]);
-  const [filteredRequests, setFilteredRequests] = useState<SlotRequest[]>([]);
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [consultantSlots, setConsultantSlots] = useState<ConsultantSlot[]>([]);
+  const [consultantProfiles, setConsultantProfiles] = useState<ConsultantProfile[]>([]);
+  const [filteredSlots, setFilteredSlots] = useState<ConsultantSlot[]>([]);
+  const [filteredProfiles, setFilteredProfiles] = useState<ConsultantProfile[]>([]);
+  const [activeTab, setActiveTab] = useState<'slots' | 'profiles'>('slots');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false);
-  const [currentRequest, setCurrentRequest] = useState<SlotRequest | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedConsultantId, setSelectedConsultantId] = useState<string>('');
+  
+  // Modal states
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
+  const [isCreateProfileModalOpen, setIsCreateProfileModalOpen] = useState<boolean>(false);
+  const [currentProfile, setCurrentProfile] = useState<ConsultantProfile | null>(null);
+  const [isSwapModalOpen, setIsSwapModalOpen] = useState<boolean>(false);
 
   // Constants
-  const requestsPerPage = 10;
+  const itemsPerPage = 10;
 
-  // Mock data
-  useEffect(() => {
-    const mockSlotRequests: SlotRequest[] = [
-      {
-        id: 1,
-        consultantId: 1,
-        consultantName: 'Dr. John Smith',
-        consultantImage: 'https://randomuser.me/api/portraits/men/1.jpg',
-        specialty: 'Reproductive Health',
-        day: 'monday',
-        date: '2023-06-10',
-        slots: [
-          { id: 1, start: '09:00', end: '10:00', status: 'pending' },
-          { id: 2, start: '10:00', end: '11:00', status: 'pending' },
-          { id: 3, start: '14:00', end: '15:00', status: 'pending' }
-        ],
-        requestDate: '2023-06-05',
-        status: 'pending'
-      },
-      {
-        id: 2,
-        consultantId: 2,
-        consultantName: 'Dr. Sarah Johnson',
-        consultantImage: 'https://randomuser.me/api/portraits/women/2.jpg',
-        specialty: 'HIV/AIDS',
-        day: 'tuesday',
-        date: '2023-06-11',
-        slots: [
-          { id: 4, start: '13:00', end: '14:00', status: 'pending' },
-          { id: 5, start: '14:00', end: '15:00', status: 'pending' }
-        ],
-        requestDate: '2023-06-06',
-        status: 'pending'
-      },
-      {
-        id: 3,
-        consultantId: 3,
-        consultantName: 'Dr. Michael Brown',
-        consultantImage: 'https://randomuser.me/api/portraits/men/3.jpg',
-        specialty: 'STI Treatment',
-        day: 'wednesday',
-        date: '2023-06-12',
-        slots: [
-          { id: 6, start: '10:00', end: '11:00', status: 'pending' },
-          { id: 7, start: '11:00', end: '12:00', status: 'pending' },
-          { id: 8, start: '15:00', end: '16:00', status: 'pending' }
-        ],
-        requestDate: '2023-06-07',
-        status: 'pending'
-      },
-      {
-        id: 4,
-        consultantId: 4,
-        consultantName: 'Dr. Emily Davis',
-        consultantImage: 'https://randomuser.me/api/portraits/women/4.jpg',
-        specialty: 'Reproductive Health',
-        day: 'thursday',
-        date: '2023-06-13',
-        slots: [
-          { id: 9, start: '09:00', end: '10:00', status: 'pending' },
-          { id: 10, start: '16:00', end: '17:00', status: 'pending' }
-        ],
-        requestDate: '2023-06-08',
-        status: 'pending'
-      },
-      {
-        id: 5,
-        consultantId: 5,
-        consultantName: 'Dr. Robert Wilson',
-        consultantImage: 'https://randomuser.me/api/portraits/men/5.jpg',
-        specialty: 'HIV/AIDS',
-        day: 'friday',
-        date: '2023-06-14',
-        slots: [
-          { id: 11, start: '13:00', end: '14:00', status: 'pending' },
-          { id: 12, start: '14:00', end: '15:00', status: 'pending' },
-          { id: 13, start: '15:00', end: '16:00', status: 'pending' }
-        ],
-        requestDate: '2023-06-09',
-        status: 'pending'
+  // Fetch consultant slots from API
+  const fetchConsultantSlots = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await consultantSlotAPI.getAllConsultantSlots();
+      
+      if (response.statusCode === 200 && response.data) {
+        setConsultantSlots(response.data);
+        setFilteredSlots(response.data);
+      } else {
+        setError('Không thể tải dữ liệu consultant slots');
+        setConsultantSlots([]);
+        setFilteredSlots([]);
       }
-    ];
+    } catch (error) {
+      console.error('Error fetching consultant slots:', error);
+      setError('Có lỗi xảy ra khi tải dữ liệu slots');
+      setConsultantSlots([]);
+      setFilteredSlots([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    setSlotRequests(mockSlotRequests);
-    setFilteredRequests(mockSlotRequests);
-  }, []);
+  // Fetch consultant profiles from API
+  const fetchConsultantProfiles = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await consultantSlotAPI.getAllConsultantProfiles();
+      
+      if (response.statusCode === 200 && response.data) {
+        setConsultantProfiles(response.data);
+        setFilteredProfiles(response.data);
+      } else {
+        setError('Không thể tải dữ liệu consultant profiles');
+        setConsultantProfiles([]);
+        setFilteredProfiles([]);
+      }
+    } catch (error) {
+      console.error('Error fetching consultant profiles:', error);
+      setError('Có lỗi xảy ra khi tải dữ liệu profiles');
+      setConsultantProfiles([]);
+      setFilteredProfiles([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Filter requests based on status and search query
+  // Load data based on active tab
   useEffect(() => {
-    let filtered = slotRequests;
-
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter(request => request.status === filterStatus);
+    if (activeTab === 'slots') {
+      fetchConsultantSlots();
+    } else {
+      fetchConsultantProfiles();
     }
+  }, [activeTab]);
 
-    if (searchQuery.trim() !== '') {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(request =>
-        request.consultantName.toLowerCase().includes(query) ||
-        request.specialty.toLowerCase().includes(query)
-      );
+  // Filter data based on search query and selected consultant
+  useEffect(() => {
+    if (activeTab === 'slots') {
+      let filtered = consultantSlots;
+
+      if (selectedConsultantId) {
+        filtered = filtered.filter(slot => slot.consultantID === selectedConsultantId);
+      }
+
+      if (searchQuery.trim() !== '') {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter(slot =>
+          slot.consultant?.name?.toLowerCase().includes(query) ||
+          slot.consultant?.specialty?.toLowerCase().includes(query)
+        );
+      }
+
+      setFilteredSlots(filtered);
+    } else {
+      let filtered = consultantProfiles;
+
+      if (searchQuery.trim() !== '') {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter(profile =>
+          profile.account?.name?.toLowerCase().includes(query) ||
+          profile.specialty?.toLowerCase().includes(query) ||
+          profile.description?.toLowerCase().includes(query)
+        );
+      }
+
+      setFilteredProfiles(filtered);
     }
+    
+    setCurrentPage(1);
+  }, [searchQuery, selectedConsultantId, consultantSlots, consultantProfiles, activeTab]);
 
-    setFilteredRequests(filtered);
-    setCurrentPage(1); // Reset to first page when filters change
-  }, [filterStatus, searchQuery, slotRequests]);
+  // Search function using API
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+
+    try {
+      setLoading(true);
+      const response = await consultantSlotAPI.searchConsultantSlots({ query: searchQuery });
+      
+      if (response.statusCode === 200 && response.data) {
+        if (activeTab === 'slots') {
+          setFilteredSlots(response.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error searching:', error);
+      setError('Có lỗi xảy ra khi tìm kiếm');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get consultant slots by specific consultant ID
+  const fetchConsultantSlotsById = async (consultantId: string) => {
+    try {
+      setLoading(true);
+      const response = await consultantSlotAPI.getConsultantSlots(consultantId);
+      
+      if (response.statusCode === 200 && response.data) {
+        setFilteredSlots(response.data);
+      } else {
+        setFilteredSlots([]);
+      }
+    } catch (error) {
+      console.error('Error fetching consultant slots by ID:', error);
+      setError('Không thể tải dữ liệu cho consultant này');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get consultant profile by ID
+  const fetchConsultantProfile = async (profileId: number) => {
+    try {
+      const response = await consultantSlotAPI.getConsultantProfileById(profileId);
+      
+      if (response.statusCode === 200 && response.data) {
+        setCurrentProfile(response.data);
+        setIsProfileModalOpen(true);
+      }
+    } catch (error) {
+      console.error('Error fetching consultant profile:', error);
+      alert('Không thể tải thông tin profile');
+    }
+  };
+
+  // Register a new slot for consultant
+  const handleRegisterSlot = async (slotId: number, maxAppointment: number) => {
+    try {
+      const response = await consultantSlotAPI.registerSlot(slotId, maxAppointment);
+      
+      if (response.statusCode === 200) {
+        alert('Đăng ký slot thành công!');
+        fetchConsultantSlots();
+      } else {
+        alert('Đăng ký slot thất bại');
+      }
+    } catch (error) {
+      console.error('Error registering slot:', error);
+      alert('Có lỗi xảy ra khi đăng ký slot');
+    }
+  };
+
+  // Create consultant profile
+  const handleCreateProfile = async (profileData: any) => {
+    try {
+      const response = await consultantSlotAPI.createConsultantProfile(profileData);
+      
+      if (response.statusCode === 200) {
+        alert('Tạo profile thành công!');
+        setIsCreateProfileModalOpen(false);
+        if (activeTab === 'profiles') {
+          fetchConsultantProfiles();
+        }
+      } else {
+        alert('Tạo profile thất bại');
+      }
+    } catch (error) {
+      console.error('Error creating profile:', error);
+      alert('Có lỗi xảy ra khi tạo profile');
+    }
+  };
+
+  // Update consultant profile
+  const handleUpdateProfile = async (profileId: number, profileData: any) => {
+    try {
+      const response = await consultantSlotAPI.updateConsultantProfile(profileId, profileData);
+      
+      if (response.statusCode === 200) {
+        alert('Cập nhật profile thành công!');
+        setIsProfileModalOpen(false);
+        if (activeTab === 'profiles') {
+          fetchConsultantProfiles();
+        }
+      } else {
+        alert('Cập nhật profile thất bại');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Có lỗi xảy ra khi cập nhật profile');
+    }
+  };
+
+  // Swap slots between consultants
+  const handleSwapSlots = async (consultantA: string, slotA: number, consultantB: string, slotB: number) => {
+    try {
+      const response = await consultantSlotAPI.swapSlots(consultantA, slotA, consultantB, slotB);
+      
+      if (response.statusCode === 200) {
+        alert('Hoán đổi slot thành công!');
+        fetchConsultantSlots();
+      } else {
+        alert('Hoán đổi slot thất bại');
+      }
+    } catch (error) {
+      console.error('Error swapping slots:', error);
+      alert('Có lỗi xảy ra khi hoán đổi slot');
+    }
+  };
 
   // Pagination
-  const indexOfLastRequest = currentPage * requestsPerPage;
-  const indexOfFirstRequest = indexOfLastRequest - requestsPerPage;
-  const currentRequests = filteredRequests.slice(indexOfFirstRequest, indexOfLastRequest);
-  const totalPages = Math.ceil(filteredRequests.length / requestsPerPage);
+  const currentData = activeTab === 'slots' ? filteredSlots : filteredProfiles;
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = currentData.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(currentData.length / itemsPerPage);
 
-  // Open detail modal
-  const openDetailModal = (request: SlotRequest) => {
-    setCurrentRequest(request);
-    setIsDetailModalOpen(true);
-  };
-
-  // Close detail modal
-  const closeDetailModal = () => {
-    setIsDetailModalOpen(false);
-    setCurrentRequest(null);
-  };
-
-  // Approve all slots in a request
-  const approveAllSlots = (requestId: number) => {
-    setSlotRequests(prevRequests => 
-      prevRequests.map(request => 
-        request.id === requestId 
-          ? { 
-              ...request, 
-              status: 'approved' as const,
-              slots: request.slots.map(slot => ({ ...slot, status: 'approved' as const }))
-            }
-          : request
-      )
-    );
-    closeDetailModal();
-  };
-
-  // Reject all slots in a request
-  const rejectAllSlots = (requestId: number) => {
-    setSlotRequests(prevRequests => 
-      prevRequests.map(request => 
-        request.id === requestId 
-          ? { 
-              ...request, 
-              status: 'rejected' as const,
-              slots: request.slots.map(slot => ({ ...slot, status: 'rejected' as const }))
-            }
-          : request
-      )
-    );
-    closeDetailModal();
-  };
-
-  // Approve a specific slot
-  const approveSlot = (requestId: number, slotId: number) => {
-    setSlotRequests(prevRequests => 
-      prevRequests.map(request => 
-        request.id === requestId 
-          ? { 
-              ...request, 
-              slots: request.slots.map(slot => 
-                slot.id === slotId 
-                  ? { ...slot, status: 'approved' as const }
-                  : slot
-              ),
-              // If all slots are approved, mark the request as approved
-              status: request.slots.every(slot => 
-                slot.id === slotId ? true : slot.status === 'approved'
-              ) ? 'approved' as const : request.status
-            }
-          : request
-      )
-    );
-  };
-
-  // Reject a specific slot
-  const rejectSlot = (requestId: number, slotId: number) => {
-    setSlotRequests(prevRequests => 
-      prevRequests.map(request => 
-        request.id === requestId 
-          ? { 
-              ...request, 
-              slots: request.slots.map(slot => 
-                slot.id === slotId 
-                  ? { ...slot, status: 'rejected' as const }
-                  : slot
-              ),
-              // If all slots are rejected, mark the request as rejected
-              status: request.slots.every(slot => 
-                slot.id === slotId ? true : slot.status === 'rejected'
-              ) ? 'rejected' as const : request.status
-            }
-          : request
-      )
-    );
-  };
-
-  // Helper function to translate day name to Vietnamese
-  const translateDayName = (day: string): string => {
-    const translations: { [key: string]: string } = {
-      monday: 'Thứ Hai',
-      tuesday: 'Thứ Ba',
-      wednesday: 'Thứ Tư',
-      thursday: 'Thứ Năm',
-      friday: 'Thứ Sáu',
-      saturday: 'Thứ Bảy',
-      sunday: 'Chủ Nhật'
-    };
-    return translations[day] || day;
-  };
-
-  // Helper function to format date
+  // Helper functions
   const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN');
+    return new Date(dateString).toLocaleDateString('vi-VN');
   };
 
-  // Helper function to get status badge class
-  const getStatusBadgeClass = (status: string): string => {
-    switch (status) {
-      case 'pending':
-        return 'status-badge status-badge-warning';
-      case 'approved':
-        return 'status-badge status-badge-success';
-      case 'rejected':
-        return 'status-badge status-badge-danger';
-      default:
-        return 'status-badge status-badge-secondary';
+  const formatTime = (timeString: string): string => {
+    return new Date(timeString).toLocaleTimeString('vi-VN', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
+
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(amount);
+  };
+
+  // Get unique consultants for filter dropdown
+  const uniqueConsultants = consultantSlots.reduce((acc: { id: string, name: string }[], slot) => {
+    if (slot.consultant?.name && !acc.find(c => c.id === slot.consultantID)) {
+      acc.push({
+        id: slot.consultantID,
+        name: slot.consultant.name
+      });
     }
-  };
-
-  // Helper function to translate status to Vietnamese
-  const translateStatus = (status: string): string => {
-    const translations: { [key: string]: string } = {
-      pending: 'Chờ duyệt',
-      approved: 'Đã duyệt',
-      rejected: 'Từ chối'
-    };
-    return translations[status] || status;
-  };
+    return acc;
+  }, []);
 
   // Render pagination
   const renderPagination = () => {
@@ -320,265 +361,264 @@ const SlotManagement = () => {
     );
   };
 
-  // Render detail modal
-  const renderDetailModal = () => {
-    if (!isDetailModalOpen || !currentRequest) return null;
-
-    return (
-      <div className="modal-overlay">
-        <div className="slot-detail-modal">
-          <div className="modal-header">
-            <h2>Chi Tiết Yêu Cầu Lịch Làm Việc</h2>
-            <button className="close-button" onClick={closeDetailModal}>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="28" height="28">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
-          </div>
-          
-          <div className="modal-body">
-            <div className="consultant-info">
-              <img 
-                src={currentRequest.consultantImage} 
-                alt={currentRequest.consultantName} 
-                className="consultant-image"
-              />
-              <div className="consultant-details">
-                <h3>{currentRequest.consultantName}</h3>
-                <p className="specialty">{currentRequest.specialty}</p>
-                <p className="request-date">
-                  Ngày yêu cầu: {formatDate(currentRequest.requestDate)}
-                </p>
-              </div>
-            </div>
-            
-            <div className="schedule-info">
-              <div className="schedule-header">
-                <h4>Lịch Làm Việc - {translateDayName(currentRequest.day)} ({formatDate(currentRequest.date)})</h4>
-                <div className="schedule-actions">
-                  <button 
-                    className="approve-all-button"
-                    onClick={() => approveAllSlots(currentRequest.id)}
-                    title="Duyệt tất cả"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>Duyệt Tất Cả</span>
-                  </button>
-                  <button 
-                    className="reject-all-button"
-                    onClick={() => rejectAllSlots(currentRequest.id)}
-                    title="Từ chối tất cả"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                    <span>Từ Chối Tất Cả</span>
-                  </button>
-                </div>
-              </div>
-              
-              <div className="time-slots-list">
-                {currentRequest.slots.map(slot => (
-                  <div key={slot.id} className={`time-slot-item ${slot.status}`}>
-                    <span className="time-range">{slot.start} - {slot.end}</span>
-                    <span className={getStatusBadgeClass(slot.status)}>
-                      {translateStatus(slot.status)}
-                    </span>
-                    <div className="slot-actions">
-                      {slot.status === 'pending' && (
-                        <>
-                          <button 
-                            className="approve-button"
-                            onClick={() => approveSlot(currentRequest.id, slot.id)}
-                            title="Duyệt"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
-                            </svg>
-                          </button>
-                          <button 
-                            className="reject-button"
-                            onClick={() => rejectSlot(currentRequest.id, slot.id)}
-                            title="Từ chối"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </>
-                      )}
-                      {slot.status === 'approved' && (
-                        <button 
-                          className="reject-button"
-                          onClick={() => rejectSlot(currentRequest.id, slot.id)}
-                          title="Hủy duyệt"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      )}
-                      {slot.status === 'rejected' && (
-                        <button 
-                          className="approve-button"
-                          onClick={() => approveSlot(currentRequest.id, slot.id)}
-                          title="Duyệt"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="slot-management-container">
       <div className="page-header">
-        <h1 className="page-title">Quản Lý Lịch Làm Việc Chuyên Gia</h1>
+        <h1 className="page-title">Quản Lý Consultant Slots & Profiles</h1>
         <p className="page-subtitle">
-          Duyệt các yêu cầu lịch làm việc từ chuyên gia
+          Quản lý slots và profiles của chuyên gia theo API ConsultantSlot
         </p>
       </div>
 
-      {/* Filter and search */}
-      <div className="filter-search-container">
-        <div className="filter-container">
-          <label htmlFor="status-filter">Trạng thái:</label>
-          <select 
-            id="status-filter" 
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="filter-select"
-          >
-            <option value="all">Tất cả</option>
-            <option value="pending">Chờ duyệt</option>
-            <option value="approved">Đã duyệt</option>
-            <option value="rejected">Từ chối</option>
-          </select>
-        </div>
-        
-        <div className="search-container">
-          <input 
-            type="text"
-            placeholder="Tìm kiếm theo tên chuyên gia hoặc chuyên môn..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
-          />
-          <svg xmlns="http://www.w3.org/2000/svg" className="search-icon" viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
-            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-          </svg>
-        </div>
+      {/* Tab Navigation */}
+      <div className="tab-navigation" style={{
+        display: 'flex',
+        marginBottom: '1rem',
+        borderBottom: '1px solid #e5e7eb'
+      }}>
+        <button 
+          className={`tab-button ${activeTab === 'slots' ? 'active' : ''}`}
+          onClick={() => setActiveTab('slots')}
+          style={{
+            padding: '0.75rem 1.5rem',
+            border: 'none',
+            background: activeTab === 'slots' ? '#3b82f6' : 'transparent',
+            color: activeTab === 'slots' ? 'white' : '#6b7280',
+            borderRadius: '0.5rem 0.5rem 0 0',
+            cursor: 'pointer'
+          }}
+        >
+          Consultant Slots
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'profiles' ? 'active' : ''}`}
+          onClick={() => setActiveTab('profiles')}
+          style={{
+            padding: '0.75rem 1.5rem',
+            border: 'none',
+            background: activeTab === 'profiles' ? '#3b82f6' : 'transparent',
+            color: activeTab === 'profiles' ? 'white' : '#6b7280',
+            borderRadius: '0.5rem 0.5rem 0 0',
+            cursor: 'pointer'
+          }}
+        >
+          Consultant Profiles
+        </button>
       </div>
 
-      {/* Requests table */}
-      <div className="requests-table-container">
-        <table className="requests-table">
-          <thead>
-            <tr>
-              <th>Chuyên Gia</th>
-              <th>Chuyên Môn</th>
-              <th>Ngày</th>
-              <th>Số Khung Giờ</th>
-              <th>Ngày Yêu Cầu</th>
-              <th>Trạng Thái</th>
-              <th>Thao Tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentRequests.map(request => (
-              <tr key={request.id}>
-                <td>
-                  <div className="consultant-info-cell">
-                    <img 
-                      src={request.consultantImage} 
-                      alt={request.consultantName} 
-                      className="consultant-image-small"
-                    />
-                    <span>{request.consultantName}</span>
-                  </div>
-                </td>
-                <td>{request.specialty}</td>
-                <td>
-                  <div className="date-info">
-                    <div>{translateDayName(request.day)}</div>
-                    <div className="date-value">{formatDate(request.date)}</div>
-                  </div>
-                </td>
-                <td className="text-center">{request.slots.length}</td>
-                <td>{formatDate(request.requestDate)}</td>
-                <td>
-                  <span className={getStatusBadgeClass(request.status)}>
-                    {translateStatus(request.status)}
-                  </span>
-                </td>
-                <td>
-                  <div className="request-actions">
-                    <button 
-                      className="view-details-button"
-                      onClick={() => openDetailModal(request)}
-                      title="Xem chi tiết"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    </button>
-                    {request.status === 'pending' && (
-                      <>
-                        <button 
-                          className="approve-button"
-                          onClick={() => approveAllSlots(request.id)}
-                          title="Duyệt tất cả"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </button>
-                        <button 
-                          className="reject-button"
-                          onClick={() => rejectAllSlots(request.id)}
-                          title="Từ chối tất cả"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </>
-                    )}
-                    <button 
-                      className="delete-button"
-                      onClick={() => window.confirm('Bạn có chắc chắn muốn xóa yêu cầu này?') && setSlotRequests(prevRequests => prevRequests.filter(r => r.id !== request.id))}
-                      title="Xóa"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Loading and Error States */}
+      {loading && (
+        <div className="loading-container" style={{ textAlign: 'center', padding: '2rem' }}>
+          <p>Đang tải dữ liệu...</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="error-container" style={{ 
+          backgroundColor: '#fef2f2', 
+          border: '1px solid #fecaca', 
+          padding: '1rem', 
+          borderRadius: '0.5rem', 
+          marginBottom: '1rem',
+          color: '#dc2626'
+        }}>
+          <p>{error}</p>
+        </div>
+      )}
+
+      {/* Filter and search */}
+      {!loading && (
+        <div className="filter-search-container">
+          {activeTab === 'slots' && (
+            <div className="filter-container">
+              <label htmlFor="consultant-filter">Chuyên gia:</label>
+              <select 
+                id="consultant-filter" 
+                value={selectedConsultantId}
+                onChange={(e) => setSelectedConsultantId(e.target.value)}
+                className="filter-select"
+              >
+                <option value="">Tất cả chuyên gia</option>
+                {uniqueConsultants.map(consultant => (
+                  <option key={consultant.id} value={consultant.id}>
+                    {consultant.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          
+          <div className="search-container">
+            <input 
+              type="text"
+              placeholder={activeTab === 'slots' ? 
+                "Tìm kiếm theo tên chuyên gia hoặc chuyên môn..." :
+                "Tìm kiếm theo tên, chuyên môn hoặc mô tả..."
+              }
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+            <button onClick={handleSearch} className="search-button">
+              <svg xmlns="http://www.w3.org/2000/svg" className="search-icon" viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* API Actions */}
+      {!loading && (
+        <div className="api-actions" style={{ 
+          marginBottom: '1rem', 
+          padding: '1rem', 
+          backgroundColor: '#f9fafb',
+          borderRadius: '0.5rem',
+          border: '1px solid #e5e7eb'
+        }}>
+          <h3>Các chức năng có sẵn:</h3>
+          <div className="action-buttons" style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+            {activeTab === 'slots' ? (
+              <>
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => {
+                    const slotId = prompt('Nhập Slot ID:');
+                    const maxAppointment = prompt('Nhập số lượng appointment tối đa:');
+                    if (slotId && maxAppointment) {
+                      handleRegisterSlot(parseInt(slotId), parseInt(maxAppointment));
+                    }
+                  }}
+                >
+                  Đăng ký Slot mới
+                </button>
+                <button 
+                  className="btn btn-secondary"
+                  onClick={() => setIsSwapModalOpen(true)}
+                >
+                  Hoán đổi Slots
+                </button>
+              </>
+            ) : (
+              <button 
+                className="btn btn-success"
+                onClick={() => setIsCreateProfileModalOpen(true)}
+              >
+                Tạo Profile mới
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Data table */}
+      {!loading && (
+        <div className="requests-table-container">
+          {activeTab === 'slots' ? (
+            <table className="requests-table">
+              <thead>
+                <tr>
+                  <th>Chuyên Gia ID</th>
+                  <th>Tên Chuyên Gia</th>
+                  <th>Chuyên Môn</th>
+                  <th>Slot ID</th>
+                  <th>Ngày</th>
+                  <th>Thời Gian</th>
+                  <th>Max Appointment</th>
+                  <th>Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(currentItems as ConsultantSlot[]).map((slot, index) => (
+                  <tr key={`${slot.consultantID}-${slot.slotID}-${index}`}>
+                    <td>{slot.consultantID}</td>
+                    <td>{slot.consultant?.name || 'Chưa có tên'}</td>
+                    <td>{slot.consultant?.specialty || 'Chưa có chuyên môn'}</td>
+                    <td>{slot.slotID}</td>
+                    <td>{formatDate(slot.assignedDate)}</td>
+                    <td>
+                      {slot.slot ? 
+                        `${formatTime(slot.slot.startTime)} - ${formatTime(slot.slot.endTime)}` 
+                        : 'Chưa có thông tin'
+                      }
+                    </td>
+                    <td>{slot.maxAppointment}</td>
+                    <td>
+                      <button
+                        className="btn btn-sm btn-info"
+                        onClick={() => fetchConsultantSlotsById(slot.consultantID)}
+                        title="Xem tất cả slots của consultant này"
+                      >
+                        Chi tiết
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <table className="requests-table">
+              <thead>
+                <tr>
+                  <th>Profile ID</th>
+                  <th>Account ID</th>
+                  <th>Tên</th>
+                  <th>Chuyên Môn</th>
+                  <th>Kinh Nghiệm</th>
+                  <th>Giá Tư Vấn</th>
+                  <th>Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(currentItems as ConsultantProfile[]).map((profile, index) => (
+                  <tr key={`${profile.consultantProfileID}-${index}`}>
+                    <td>{profile.consultantProfileID}</td>
+                    <td>{profile.accountID}</td>
+                    <td>{profile.account?.name || 'Chưa có tên'}</td>
+                    <td>{profile.specialty || 'Chưa có chuyên môn'}</td>
+                    <td>{profile.experience || 'Chưa có thông tin'}</td>
+                    <td>{formatCurrency(profile.consultantPrice)}</td>
+                    <td>
+                      <button
+                        className="btn btn-sm btn-info"
+                        onClick={() => fetchConsultantProfile(profile.consultantProfileID)}
+                        title="Xem chi tiết profile"
+                      >
+                        Chi tiết
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* No data message */}
+      {!loading && currentData.length === 0 && (
+        <div className="no-data-container" style={{ 
+          textAlign: 'center', 
+          padding: '2rem',
+          backgroundColor: '#f9fafb',
+          borderRadius: '0.5rem',
+          border: '1px solid #e5e7eb'
+        }}>
+          <p>
+            {activeTab === 'slots' ? 
+              'Không có slot nào được đăng ký.' : 
+              'Không có profile nào.'
+            }
+          </p>
+        </div>
+      )}
 
       {/* Pagination */}
-      {renderPagination()}
+      {!loading && renderPagination()}
 
-      {/* Detail modal */}
-      {renderDetailModal()}
+      {/* Modals would be implemented here */}
+      {/* Create Profile Modal, Update Profile Modal, Swap Slots Modal */}
     </div>
   );
 };
