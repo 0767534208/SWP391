@@ -828,88 +828,152 @@ export const feedbackAPI = {
   }
 };
 
-// LabTest API endpoints (Xét nghiệm)
+/**
+ * Thông tin xét nghiệm từ API (theo swagger LabTest schema)
+ */
+export interface LabTestData {
+  labTestID: number;
+  customerID: string | null;
+  customer?: any; // Account schema
+  staffID: string | null;
+  staff?: any; // Account schema
+  treatmentID: number | null;
+  treatmentOutcome?: any; // TreatmentOutcome schema
+  testName: string | null;
+  result: string | null;
+  referenceRange: string | null;
+  unit: string | null;
+  isPositive: boolean | null;
+  testDate: string; // ISO date format
+}
+
+/**
+ * Request để tạo xét nghiệm mới (theo swagger CreateLabTestRequest schema)
+ */
+export interface CreateLabTestRequest {
+  customerID: string; // required
+  staffID: string; // required
+  treatmentID?: number | null;
+  testName: string; // required, max 200 chars
+  result: string; // required, max 500 chars
+  referenceRange?: string | null; // max 200 chars
+  unit?: string | null; // max 50 chars
+  isPositive?: boolean | null;
+  testDate: string; // required, ISO date format
+}
+
+/**
+ * Request để cập nhật xét nghiệm (theo swagger UpdateLabTestRequest schema)
+ */
+export interface UpdateLabTestRequest {
+  labTestID: number; // required
+  customerID?: string | null;
+  staffID?: string | null;
+  treatmentID?: number | null;
+  testName?: string | null; // max 200 chars
+  result?: string | null; // max 500 chars
+  referenceRange?: string | null; // max 200 chars
+  unit?: string | null; // max 50 chars
+  isPositive?: boolean | null;
+  testDate?: string | null; // ISO date format
+}
+
+// LabTest API endpoints (Xét nghiệm) - Theo đúng swagger specification
 export const labTestAPI = {
   /**
    * Lấy tất cả xét nghiệm
+   * Endpoint: GET /api/LabTest
    */
-  getAllLabTests: async (): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>('/api/LabTest', 'GET');
+  getAllLabTests: async (): Promise<ApiResponse<LabTestData[]>> => {
+    return apiRequest<LabTestData[]>('/api/LabTest', 'GET');
   },
 
   /**
    * Tạo xét nghiệm mới
-   * @param labTestData - Thông tin xét nghiệm
+   * Endpoint: POST /api/LabTest
+   * @param labTestData - Thông tin xét nghiệm theo CreateLabTestRequest schema
    */
-  createLabTest: async (labTestData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/api/LabTest', 'POST', labTestData);
-  },
-
-  /**
-   * Lấy xét nghiệm theo ID
-   * @param id - ID của xét nghiệm
-   */
-  getLabTestById: async (id: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/LabTest/${id}`, 'GET');
+  createLabTest: async (labTestData: CreateLabTestRequest): Promise<ApiResponse<LabTestData>> => {
+    return apiRequest<LabTestData>('/api/LabTest', 'POST', labTestData);
   },
 
   /**
    * Cập nhật xét nghiệm
-   * @param id - ID của xét nghiệm
-   * @param labTestData - Thông tin xét nghiệm cần cập nhật
+   * Endpoint: PUT /api/LabTest
+   * @param labTestData - Thông tin xét nghiệm cần cập nhật theo UpdateLabTestRequest schema
    */
-  updateLabTest: async (id: string, labTestData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/LabTest/${id}`, 'PUT', labTestData);
+  updateLabTest: async (labTestData: UpdateLabTestRequest): Promise<ApiResponse<LabTestData>> => {
+    return apiRequest<LabTestData>('/api/LabTest', 'PUT', labTestData);
+  },
+
+  /**
+   * Lấy xét nghiệm theo ID
+   * Endpoint: GET /api/LabTest/{id}
+   * @param id - ID của xét nghiệm (integer)
+   */
+  getLabTestById: async (id: number): Promise<ApiResponse<LabTestData>> => {
+    return apiRequest<LabTestData>(`/api/LabTest/${id}`, 'GET');
   },
 
   /**
    * Xóa xét nghiệm
-   * @param id - ID của xét nghiệm
+   * Endpoint: DELETE /api/LabTest/{id}
+   * @param id - ID của xét nghiệm (integer)
    */
-  deleteLabTest: async (id: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/LabTest/${id}`, 'DELETE');
+  deleteLabTest: async (id: number): Promise<ApiResponse<void>> => {
+    return apiRequest<void>(`/api/LabTest/${id}`, 'DELETE');
   },
 
   /**
    * Lấy xét nghiệm theo ID khách hàng
-   * @param customerId - ID của khách hàng
+   * Endpoint: GET /api/LabTest/customer/{customerId}
+   * @param customerId - ID của khách hàng (string)
    */
-  getLabTestByCustomer: async (customerId: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>(`/api/LabTest/customer/${customerId}`, 'GET');
+  getLabTestByCustomer: async (customerId: string): Promise<ApiResponse<LabTestData[]>> => {
+    return apiRequest<LabTestData[]>(`/api/LabTest/customer/${customerId}`, 'GET');
   },
 
   /**
    * Lấy xét nghiệm theo ID nhân viên
-   * @param staffId - ID của nhân viên
+   * Endpoint: GET /api/LabTest/staff/{staffId}
+   * @param staffId - ID của nhân viên (string)
    */
-  getLabTestByStaff: async (staffId: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>(`/api/LabTest/staff/${staffId}`, 'GET');
+  getLabTestByStaff: async (staffId: string): Promise<ApiResponse<LabTestData[]>> => {
+    return apiRequest<LabTestData[]>(`/api/LabTest/staff/${staffId}`, 'GET');
   },
 
   /**
    * Lấy xét nghiệm theo ID điều trị
-   * @param treatmentId - ID của điều trị
+   * Endpoint: GET /api/LabTest/treatment/{treatmentId}
+   * @param treatmentId - ID của điều trị (integer)
    */
-  getLabTestByTreatment: async (treatmentId: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>(`/api/LabTest/treatment/${treatmentId}`, 'GET');
+  getLabTestByTreatment: async (treatmentId: number): Promise<ApiResponse<LabTestData[]>> => {
+    return apiRequest<LabTestData[]>(`/api/LabTest/treatment/${treatmentId}`, 'GET');
   },
 
   /**
    * Lấy xét nghiệm theo khoảng thời gian
-   * @param startDate - Ngày bắt đầu
-   * @param endDate - Ngày kết thúc
+   * Endpoint: GET /api/LabTest/date-range
+   * @param fromDate - Ngày bắt đầu (ISO format: 2025-05-10T00:00:00)
+   * @param toDate - Ngày kết thúc (ISO format: 2025-05-10T00:00:00)
    */
-  getLabTestByDateRange: async (startDate: string, endDate: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>(`/api/LabTest/date-range?startDate=${startDate}&endDate=${endDate}`, 'GET');
+  getLabTestByDateRange: async (fromDate: string, toDate: string): Promise<ApiResponse<LabTestData[]>> => {
+    return apiRequest<LabTestData[]>(`/api/LabTest/date-range?fromDate=${fromDate}&toDate=${toDate}`, 'GET');
   },
 
   /**
    * Tìm kiếm xét nghiệm
-   * @param searchParams - Tham số tìm kiếm
+   * Endpoint: GET /api/LabTest/search
+   * @param search - Từ khóa tìm kiếm
+   * @param pageIndex - Trang hiện tại (mặc định: 1)
+   * @param pageSize - Số bản ghi trên mỗi trang (mặc định: 10)
    */
-  searchLabTests: async (searchParams: any): Promise<ApiResponse<any[]>> => {
-    const queryParams = new URLSearchParams(searchParams);
-    return apiRequest<any[]>(`/api/LabTest/search?${queryParams.toString()}`, 'GET');
+  searchLabTests: async (search?: string, pageIndex: number = 1, pageSize: number = 10): Promise<ApiResponse<LabTestData[]>> => {
+    const queryParams = new URLSearchParams();
+    if (search) queryParams.append('search', search);
+    queryParams.append('pageIndex', pageIndex.toString());
+    queryParams.append('pageSize', pageSize.toString());
+    return apiRequest<LabTestData[]>(`/api/LabTest/search?${queryParams.toString()}`, 'GET');
   }
 };
 
