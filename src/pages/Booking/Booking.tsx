@@ -488,6 +488,8 @@ const Booking = () => {
         if (response.statusCode === 201) {
           const serviceDetails = services.find(s => s.id === selectedService);
           const consultantDetails = filteredConsultants.find(c => c.id === selectedConsultant || c.consultantID === selectedConsultant);
+          // Lưu appointmentID vào localStorage để backup
+          localStorage.setItem('lastAppointmentId', response.data.appointmentID);
           navigate('/confirm-booking', { 
             state: { 
               service: {

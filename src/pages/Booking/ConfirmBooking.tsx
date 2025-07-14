@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './ConfirmBooking.css';
+import { getAppointmentsByCustomerId, getAppointmentPaymentUrl } from '../../utils/api';
 
 interface Service {
   id: number;
@@ -57,11 +58,73 @@ const ConfirmBooking: React.FC = () => {
     return null;
   }
 
+  // Debug: log state và các trường liên quan
+  console.log('ConfirmBooking state:', state);
   const { service, consultant, date, time, personal, appointmentId } = state;
 
-  const handleFinalConfirm = () => {
-    // Navigate to payment page with booking details
-    navigate('/payment', { state: { ...state, appointmentId } });
+  // Lấy appointmentId từ state, nếu không có thì lấy từ localStorage, nếu vẫn không có thì gọi API lấy cuộc hẹn mới nhất có paymentStatus=0
+  const [realAppointmentId, setRealAppointmentId] = useState<string | null>(appointmentId || null);
+  React.useEffect(() => {
+    if (appointmentId) {
+      setRealAppointmentId(appointmentId);
+      return;
+    }
+    const localId = localStorage.getItem('lastAppointmentId');
+    if (localId && localId !== 'undefined') {
+      setRealAppointmentId(localId);
+      console.log('Lấy appointmentId từ localStorage:', localId);
+      return;
+    }
+    // Nếu vẫn không có, lấy customerID từ localStorage
+    const userData = localStorage.getItem('user');
+    let customerId = '';
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        customerId = user.customerID || user.userID || '';
+      } catch {}
+    }
+    if (customerId) {
+      // Gọi API lấy danh sách cuộc hẹn của khách hàng
+      getAppointmentsByCustomerId(customerId)
+        .then(data => {
+          if (data && data.data && Array.isArray(data.data)) {
+            // Lấy appointmentID có paymentStatus=0 mới nhất
+            const unpaid = data.data.filter((a: any) => a.paymentStatus === 0);
+            if (unpaid.length > 0) {
+              // Sắp xếp theo createAt giảm dần nếu có
+              unpaid.sort((a: any, b: any) => new Date(b.createAt || b.appointmentDate).getTime() - new Date(a.createAt || a.appointmentDate).getTime());
+              setRealAppointmentId(unpaid[0].appointmentID?.toString() || '');
+              console.log('Lấy appointmentId từ API:', unpaid[0].appointmentID);
+            }
+          }
+        });
+    }
+  }, [appointmentId]);
+
+  const handleFinalConfirm = async () => {
+    // Lấy giá trị mới nhất của realAppointmentId
+    const appointmentIdToUse = realAppointmentId;
+    if (!appointmentIdToUse || appointmentIdToUse === 'undefined') {
+      alert('Không tìm thấy mã lịch hẹn. Vui lòng đặt lại lịch hoặc liên hệ hỗ trợ.');
+      return;
+    }
+    try {
+      // Gọi API lấy link thanh toán
+      const data = await getAppointmentPaymentUrl(appointmentIdToUse);
+      // Nếu API trả về link thanh toán
+      if (data && typeof data.data === 'string' && data.data.startsWith('http')) {
+        window.location.href = data.data;
+      } else if (data && data.data && data.data.paymentUrl) {
+        window.location.href = data.data.paymentUrl;
+      } else if (data && (data as any).paymentUrl) {
+        window.location.href = (data as any).paymentUrl;
+      } else {
+        alert('Không nhận được link thanh toán từ hệ thống.');
+      }
+    } catch (err) {
+      alert('Có lỗi khi lấy link thanh toán.');
+    }
   };
 
   // Format date to display in Vietnamese format
@@ -160,7 +223,7 @@ const ConfirmBooking: React.FC = () => {
             Chỉnh Sửa
           </button>
           <button className="btn-confirm" onClick={handleFinalConfirm}>
-            Tiếp tục thanh toán
+          Thanh toán
           </button>
         </div>
       </div>

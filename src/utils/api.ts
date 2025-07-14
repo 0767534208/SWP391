@@ -1,3 +1,12 @@
+// API lấy danh sách cuộc hẹn theo customerID
+export const getAppointmentsByCustomerId = async (customerId: string) => {
+  return apiRequest<any[]>(`/api/appointment/GetAppointmentByCustomerID/${customerId}`, 'GET');
+};
+
+// API lấy link thanh toán theo appointmentID
+export const getAppointmentPaymentUrl = async (appointmentId: string) => {
+  return apiRequest<any>(`/api/appointment/AppointmentPayment?appointmentID=${appointmentId}`, 'GET');
+};
 // Lấy tất cả profile tư vấn viên
 export const consultantProfileAPI = {
   getAllConsultantProfiles: async (): Promise<ApiResponse<any[]>> => {
