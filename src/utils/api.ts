@@ -5,7 +5,7 @@ export const getAppointmentsByCustomerId = async (customerId: string) => {
 
 // API lấy link thanh toán theo appointmentID
 export const getAppointmentPaymentUrl = async (appointmentId: string) => {
-  return apiRequest<any>(`/api/appointment/AppointmentPayment?appointmentID=${appointmentId}`, 'GET');
+  return apiRequest<any>(`/api/appointment/AppointmentPayment?appointmentID=${appointmentId}`, 'POST');
 };
 // Lấy tất cả profile tư vấn viên
 export const consultantProfileAPI = {
