@@ -154,7 +154,7 @@ function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="confirm-booking" element={<ConfirmBooking />} />
           <Route path="payment" element={<Payment />} />
-          <Route path="payment-success" element={<PaymentSuccess />} />
+          <Route path="payment-success/:appointmentId" element={<PaymentSuccess />} />
           <Route path="contact" element={<Contact />} />
           <Route path="test-results/:id" element={<TestResults />} />
           <Route path="qna" element={<QnA />} />

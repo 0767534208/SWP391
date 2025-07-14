@@ -190,7 +190,7 @@ export const ROUTES = {
   BOOKING: '/booking',
   CONFIRM_BOOKING: '/confirm-booking',
   PAYMENT: '/payment',
-  PAYMENT_SUCCESS: '/payment-success',
+  PAYMENT_SUCCESS: '/payment-success/:appointmentId',
   BLOGS: '/blogUser',
   BLOG_DETAIL: '/blog/:id',
   CYCLE_TRACKER: '/CycleTracker',
