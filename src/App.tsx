@@ -21,7 +21,6 @@ import BlogDetail from './pages/Blog/BlogDetail';
 import CycleTracker from './pages/CycleTracker/CycleTracker';
 import Profile from './pages/User/Profile';
 import ConsultantProfile from './pages/Consultant/ConsultantProfile';
-import ConsultantDashboard from './pages/Consultant/ConsultantDashboard';
 import TestResults from './pages/User/TestResultUser';
 import TestResultConsultant from './pages/Consultant/TestResultConsultant';
 import TestResultConsultantDetail from './pages/Consultant/TestResultConsultantDetail';
@@ -36,14 +35,12 @@ import Users from './pages/Admin/User';
 import Appointments from './pages/Admin/Appointment';
 import Consultants from './pages/Admin/Consultant';
 
-import ManagerDashboard from './pages/Manager/ManagerDashboard';
 import ServiceManagement from './pages/Manager/ServiceManagement';
 import CategoryManagement from './pages/Manager/CategoryManagement';
 import BlogManagement from './pages/Manager/BlogManagement';
 import SlotManagement from './pages/Manager/SlotManagement';
 import SlotCreation from './pages/Manager/SlotCreation';
 import WeeklyCalendar from './pages/Manager/WeeklyCalendar';
-import StaffDashboard from './pages/Staff/StaffDashboard';
 import StaffAppointments from './pages/Staff/StaffAppointments';
 import TestResultView from './pages/Staff/TestResultView';
 import TestResultManagementStaff from './pages/Staff/TestResultManagementStaff';
@@ -70,10 +67,10 @@ const RoleBasedRedirect = () => {
           window.location.href = '/admin';
           break;
         case 'manager':
-          window.location.href = '/manager';
+          window.location.href = '/manager/services';
           break;
         case 'staff':
-          window.location.href = '/staff';
+          window.location.href = '/staff/appointments';
           break;
         case 'consultant':
           window.location.href = '/consultant/profile';
@@ -168,8 +165,7 @@ function App() {
             <ConsultantLayout />
           </ConsultantRoute>
         }>
-          <Route index element={<ConsultantDashboard />} />
-          <Route path="dashboard" element={<ConsultantDashboard />} />
+          <Route index element={<ConsultantProfile />} />
           <Route path="profile" element={<ConsultantProfile />} />
           <Route path="appointments" element={<ConsultantAppointments />} />
           <Route path="test-results" element={<TestResultConsultant />} />
@@ -182,7 +178,7 @@ function App() {
             <ManagerLayout />
           </ManagerRoute>
         }>
-          <Route index element={<ManagerDashboard />} />
+          <Route index element={<ServiceManagement />} />
           <Route path="services" element={<ServiceManagement />} />
           <Route path="categories" element={<CategoryManagement />} />
           <Route path="blogs" element={<BlogManagement />} />
@@ -197,8 +193,7 @@ function App() {
             <StaffLayout />
           </StaffRoute>
         }>
-          <Route index element={<StaffDashboard />} />
-          <Route path="dashboard" element={<StaffDashboard />} />
+          <Route index element={<StaffAppointments />} />
           <Route path="appointments" element={<StaffAppointments />} />
           <Route path="test-results" element={<TestResultManagementStaff />} />
           <Route path="test-results/new" element={<TestResultForm />} />
