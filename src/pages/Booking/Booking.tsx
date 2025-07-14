@@ -506,7 +506,8 @@ const Booking = () => {
                 image: consultantDetails.imageUrl || '',
                 education: consultantDetails.education || '',
                 experience: `${consultantDetails.experience} năm kinh nghiệm`,
-                certificates: consultantDetails.certificates || []
+                certificates: consultantDetails.certificates || [],
+                price: (consultantProfiles.find((p: any) => p.account?.name && p.account.name.trim().toLowerCase() === consultantDetails.name.trim().toLowerCase())?.consultantPrice) || 0
               } : null,
               date: selectedDate,
               time: selectedTime,

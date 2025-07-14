@@ -29,6 +29,7 @@ interface Consultant {
   schedule: {
     [key: string]: Array<{ start: string; end: string }>;
   };
+  price?: number | string;
 }
 
 interface PersonalInfo {
@@ -111,9 +112,11 @@ const ConfirmBooking: React.FC = () => {
     }
     try {
       // Gọi API lấy link thanh toán
-      const data = await getAppointmentPaymentUrl(appointmentIdToUse);
-      // Nếu API trả về link thanh toán
-      if (data && typeof data.data === 'string' && data.data.startsWith('http')) {
+      const data: any = await getAppointmentPaymentUrl(appointmentIdToUse);
+      // Ưu tiên lấy link nếu trả về trực tiếp là string (raw response body)
+      if (typeof data === 'string' && data.startsWith('http')) {
+        window.location.href = data;
+      } else if (data && typeof data.data === 'string' && data.data.startsWith('http')) {
         window.location.href = data.data;
       } else if (data && data.data && data.data.paymentUrl) {
         window.location.href = data.data.paymentUrl;
@@ -160,7 +163,14 @@ const ConfirmBooking: React.FC = () => {
             </div>
             <div className="confirm-item">
               <span className="label">Giá:</span>
-              <span className="value">{service.price}</span>
+              <span className="value">
+                {(() => {
+                  const servicePrice = Number(service.price.toString().replace(/[^\d]/g, '')) || 0;
+                  const consultantPrice = consultant && consultant.price ? Number(consultant.price.toString().replace(/[^\d]/g, '')) : 0;
+                  const total = servicePrice + consultantPrice;
+                  return total > 0 ? total.toLocaleString('vi-VN') + ' VNĐ' : service.price;
+                })()}
+              </span>
             </div>
             
             {consultant && (
