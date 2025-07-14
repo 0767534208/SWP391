@@ -39,14 +39,12 @@ export interface AppointmentData {
   consultantID: string | null;
   appointmentDate: string;
   status: number;
-  appointmentType: number;
   totalAmount: number;
   paymentStatus: number;
   treatmentID?: string | null;
   treatmentOutcome?: any | null;
   slot: {
     slotID: number;
-    startConsultant: string;
     startTime: string;
     endTime: string;
   };
@@ -57,9 +55,24 @@ export interface AppointmentData {
     name: string;
     address: string;
     phone: string;
+    email?: string;
     status: boolean;
     dateOfBirth: string;
   };
+  appointmentDetails?: {
+    appointmentDetailID: number;
+    servicesID: number;
+    service: {
+      servicesID: number;
+      servicesName: string;
+      servicesPrice: number;
+      description: string;
+    };
+    consultantProfileID: number;
+    quantity: number;
+    servicePrice: number;
+    totalPrice: number;
+  }[];
   appointmentCode?: string;
   expiredTime?: string;
   createAt?: string;
