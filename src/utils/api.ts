@@ -977,10 +977,11 @@ export const workingHourAPI = {
 
   /**
    * Cập nhật giờ làm việc
+   * @param workingHourID - ID của working hour cần cập nhật
    * @param workingHourData - Thông tin giờ làm việc cần cập nhật
    */
-  updateWorkingHour: async (workingHourData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/api/WorkingHour/UpdateWorkingHour', 'PUT', workingHourData);
+  updateWorkingHour: async (workingHourID: number, workingHourData: any): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/WorkingHour/UpdateWorkingHour?workingHourID=${workingHourID}`, 'PUT', workingHourData);
   }
 };
 

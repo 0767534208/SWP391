@@ -66,12 +66,12 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({ value, onChange, is
     }
   }, [value]);
 
-  const hours = Array.from({ length: 13 }, (_, i) => {
-    const hour = i + 8;
+  const hours = Array.from({ length: 11 }, (_, i) => {
+    const hour = i + 7;
     return hour < 10 ? `0${hour}` : `${hour}`;
   });
   const minutes = Array.from({ length: 60 }, (_, i) => (i < 10 ? `0${i}` : `${i}`));
-  const availableMinutes = selectedHour === '20' ? ['00'] : minutes;
+  const availableMinutes = selectedHour === '17' ? ['00'] : minutes;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -92,7 +92,7 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({ value, onChange, is
     setIsOpen(false);
   };
   const handleHourSelection = (hour: string) => {
-    if (hour === '20') {
+    if (hour === '17') {
       handleTimeSelection(hour, '00');
     } else {
       setSelectedHour(hour);
@@ -646,7 +646,7 @@ const WeeklyCalendar: React.FC = () => {
     ? workingHours.find(wh => wh.workingHourID === Number(selectedSlot.slot.workingHourID))
     : null;
   const minTime = editingWorkingHour ? editingWorkingHour.openingTime.slice(0,5) : '07:00';
-  const maxTime = editingWorkingHour ? editingWorkingHour.closingTime.slice(0,5) : '19:00';
+  const maxTime = editingWorkingHour ? editingWorkingHour.closingTime.slice(0,5) : '17:00';
 
   // Lưu thay đổi thời gian slot
   const handleSaveSlot = async () => {
@@ -770,25 +770,31 @@ const WeeklyCalendar: React.FC = () => {
   const handleSaveWorkingHour = async () => {
     try {
       setIsLoading(true);
-      
-      const workingHourData = {
-        ...workingHourForm,
-        openingTime: workingHourForm.openingTime,
-        closingTime: workingHourForm.closingTime
-      };
 
       if (isCreateWorkingHour) {
-        await workingHourAPI.createWorkingHour(workingHourData);
+        // Cho CREATE - gửi tất cả fields
+        const createData = {
+          clinicID: workingHourForm.clinicID,
+          dayInWeek: workingHourForm.dayInWeek,
+          shift: workingHourForm.shift,
+          openingTime: workingHourForm.openingTime,
+          closingTime: workingHourForm.closingTime,
+          status: workingHourForm.status
+        };
+        await workingHourAPI.createWorkingHour(createData);
         setNotification({
           show: true,
           message: 'Giờ làm việc đã được tạo thành công!'
         });
       } else {
+        // Cho UPDATE - chỉ gửi các fields theo UpdateWorkingHourRequest schema
         const updateData = {
-          ...workingHourData,
-          workingHourID: selectedWorkingHour.workingHourID
+          shift: workingHourForm.shift,
+          openingTime: workingHourForm.openingTime,
+          closingTime: workingHourForm.closingTime,
+          status: workingHourForm.status
         };
-        await workingHourAPI.updateWorkingHour(updateData);
+        await workingHourAPI.updateWorkingHour(selectedWorkingHour.workingHourID, updateData);
         setNotification({
           show: true,
           message: 'Giờ làm việc đã được cập nhật thành công!'
@@ -959,31 +965,17 @@ const WeeklyCalendar: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <button
-              className={`create-slot-button ${!selectedDate ? 'disabled' : ''}`}
-              onClick={navigateToSlotCreation}
-              disabled={!selectedDate}
-              title={!selectedDate ? "Vui lòng chọn một ngày" : "Tạo khung giờ cho ngày đã chọn"}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-              </svg>
-              Tạo khung giờ
-            </button>
-            
-            <button
-              className="create-slot-button"
-              onClick={openCreateWorkingHourModal}
-              title="Quản lý giờ làm việc"
-              style={{ backgroundColor: '#10b981' }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Quản lý Giờ Làm Việc
-            </button>
-          </div>
+          <button
+            className={`create-slot-button ${!selectedDate ? 'disabled' : ''}`}
+            onClick={navigateToSlotCreation}
+            disabled={!selectedDate}
+            title={!selectedDate ? "Vui lòng chọn một ngày" : "Tạo khung giờ cho ngày đã chọn"}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            Tạo khung giờ
+          </button>
         </div>
       </div>
 
@@ -1069,9 +1061,32 @@ const WeeklyCalendar: React.FC = () => {
 
       {/* Working Hours Management Section */}
       <div style={{ marginTop: '2rem', backgroundColor: 'white', padding: '1.5rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem', color: '#374151' }}>
-          Giờ Làm Việc Hiện Tại
-        </h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#374151' }}>
+            Giờ Làm Việc Hiện Tại
+          </h2>
+          <button
+            onClick={openCreateWorkingHourModal}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.375rem',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            Tạo Giờ Làm Việc
+          </button>
+        </div>
         {workingHours.length > 0 ? (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
