@@ -1,3 +1,9 @@
+// Lấy tất cả profile tư vấn viên
+export const consultantProfileAPI = {
+  getAllConsultantProfiles: async (): Promise<ApiResponse<any[]>> => {
+    return apiRequest<any[]>(`/api/consultantSlot/GetAllConsultantProfile`, 'GET');
+  }
+};
 /**
  * API Utilities
  * 
