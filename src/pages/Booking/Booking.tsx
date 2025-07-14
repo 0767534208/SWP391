@@ -436,26 +436,32 @@ const Booking = () => {
     
     const user = JSON.parse(userData);
 
-    // Prepare appointment data with new format
+    // Chuẩn hóa appointmentDate về ISO string (yyyy-MM-ddT00:00:00)
+    const appointmentDateISO = selectedDate + 'T00:00:00';
+
+    // Chuẩn hóa dữ liệu gửi API đúng format mẫu
     const appointmentData = {
       customerID: user.customerID || user.userID,
       consultantID: selectedConsultant,
       clinicID: 1, // Default clinic ID
       slotID: parseInt(selectedSlotInfo.slotID),
-      appointmentDate: selectedDate,
+      appointmentDate: appointmentDateISO,
       appointmentDetails: [
         {
           servicesID: selectedService,
-          consultantProfileID: parseInt(selectedConsultant),
+          consultantProfileID: 1,
           quantity: 1
         }
       ]
     };
 
+    // Log dữ liệu gửi API
+    console.log("DEBUG appointmentData:\n" + JSON.stringify(appointmentData, null, 2));
+
     // Call API to create appointment
     appointmentAPI.createAppointment(appointmentData)
-      .then((response: any) => {
-        if (response.statusCode === 200 && response.data) {
+      .then((response: any) => {  
+        if (response.statusCode === 201) {
           // Prepare booking data for confirmation page
           const serviceDetails = services.find(s => s.id === selectedService);
           // Sửa lấy consultantDetails cho đúng key id
