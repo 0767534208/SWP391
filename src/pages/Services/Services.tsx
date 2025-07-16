@@ -45,50 +45,26 @@ const Services = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        setError(null);
-
-        console.log('Fetching services and categories...');
-
-        // Fetch services and categories in parallel
-        const [serviceResponse, categoryResponse] = await Promise.allSettled([
-          serviceAPI.getServices(),
-          categoryAPI.getCategories()
-        ]);
-
-        // Handle services response
-        if (serviceResponse.status === 'fulfilled') {
-          console.log('Service response:', serviceResponse.value);
-          if (serviceResponse.value.statusCode === 200 && serviceResponse.value.data) {
-            setServices(serviceResponse.value.data);
-            console.log('Services loaded successfully:', serviceResponse.value.data.length, 'services');
-          } else {
-            console.error('Service API error:', serviceResponse.value);
-            setError(`Lỗi tải dịch vụ: ${serviceResponse.value.message || 'Unknown error'}`);
-          }
+        
+        // Fetch services
+        const serviceResponse = await serviceAPI.getServices();
+        
+        // Fetch categories
+        const categoryResponse = await categoryAPI.getCategories();
+        
+        if (serviceResponse.statusCode === 200 && serviceResponse.data) {
+          // Use only the data from the API without adding default values
+          setServices(serviceResponse.data);
         } else {
-          console.error('Service API failed:', serviceResponse.reason);
-          setError(`Không thể kết nối đến API dịch vụ: ${serviceResponse.reason.message}`);
+          setError('Failed to fetch services');
         }
-
-        // Handle categories response
-        if (categoryResponse.status === 'fulfilled') {
-          console.log('Category response:', categoryResponse.value);
-          if (categoryResponse.value.statusCode === 200 && categoryResponse.value.data) {
-            setCategories(categoryResponse.value.data);
-            console.log('Categories loaded successfully:', categoryResponse.value.data.length, 'categories');
-          } else {
-            console.error('Category API error:', categoryResponse.value);
-            // Don't set error for categories, just log it
-            console.warn('Failed to load categories, continuing without category filter');
-          }
-        } else {
-          console.error('Category API failed:', categoryResponse.reason);
-          console.warn('Failed to load categories, continuing without category filter');
+        
+        if (categoryResponse.statusCode === 200 && categoryResponse.data) {
+          setCategories(categoryResponse.data);
         }
-
-      } catch (err: any) {
-        console.error('Unexpected error in fetchData:', err);
-        setError(`Lỗi không mong muốn: ${err.message || 'Unknown error'}`);
+      } catch (err) {
+        setError('Error fetching data');
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -99,11 +75,11 @@ const Services = () => {
 
   // Filter services based on search query and category
   const filteredServices = services.filter(service => {
-    const matchesSearch = service.servicesName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      service.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = filterCategory === 'all' ||
-      service.categoryID.toString() === filterCategory;
-
+    const matchesSearch = service.servicesName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          service.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = filterCategory === 'all' || 
+                           service.categoryID.toString() === filterCategory;
+    
     return matchesSearch && matchesCategory;
   });
 
@@ -146,8 +122,6 @@ const Services = () => {
       .replace('₫', 'VNĐ');
   };
 
-
-
   return (
     <div className="services-container">
       <div className="services-header">
@@ -173,7 +147,7 @@ const Services = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
-
+        
         <div className="category-filter">
           {categoryOptions.map((category, index) => (
             <button
@@ -208,12 +182,12 @@ const Services = () => {
             filteredServices.map((service) => (
               <div key={service.servicesID} className="service-card">
                 <div className="service-card-image">
-                  {service.imageServices && service.imageServices.length > 0 && (
-                    <img
-                      src={service.imageServices[0]}
-                      alt={service.servicesName}
-                    />
-                  )}
+                  <img 
+                    src={service.imageServices && service.imageServices.length > 0 
+                      ? service.imageServices[0] 
+                      : "https://madisonwomenshealth.com/wp-content/uploads/2023/10/getting-tested-for-stis-1030x687.jpg"} 
+                    alt={service.servicesName} 
+                  />
                   <div className="service-card-category">
                     {getCategoryName(service.categoryID)}
                   </div>
@@ -226,13 +200,13 @@ const Services = () => {
                   </div>
                 </div>
                 <div className="service-card-actions">
-                  <button
+                  <button 
                     className="service-action-button book-button"
                     onClick={() => handleBookService(service.servicesID)}
                   >
                     Đặt lịch
                   </button>
-                  <button
+                  <button 
                     className="service-action-button menu-button"
                     onClick={() => handleViewDetails(service)}
                   >
@@ -261,22 +235,22 @@ const Services = () => {
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
             </button>
-
+            
             <div className="service-modal-header">
-              {selectedService.imageServices && selectedService.imageServices.length > 0 && (
-                <img
-                  src={selectedService.imageServices[0]}
-                  alt={selectedService.servicesName}
-                />
-              )}
+              <img 
+                src={selectedService.imageServices && selectedService.imageServices.length > 0 
+                  ? selectedService.imageServices[0] 
+                  : "https://madisonwomenshealth.com/wp-content/uploads/2023/10/getting-tested-for-stis-1030x687.jpg"} 
+                alt={selectedService.servicesName} 
+              />
               <div className="service-modal-badge">
                 {getCategoryName(selectedService.categoryID)}
               </div>
             </div>
-
+            
             <div className="service-modal-body">
               <h2 className="service-modal-title">{selectedService.servicesName}</h2>
-
+              
               <div className="service-modal-meta">
                 <div className="service-meta-item">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -285,14 +259,14 @@ const Services = () => {
                   <span>{formatPrice(selectedService.servicesPrice)}</span>
                 </div>
               </div>
-
+              
               <div className="service-modal-description">
                 <h3>Mô tả</h3>
                 <p>{selectedService.description}</p>
               </div>
-
+              
               <div className="service-modal-actions">
-                <button
+                <button 
                   className="service-modal-book-button"
                   onClick={() => {
                     handleCloseModal();

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import './Booking.css';
 import AdvisorModal from '../Booking/AdvisorModal';
 import ServiceCard from './ServiceCard';
-import { serviceAPI, categoryAPI, consultantSlotAPI, appointmentAPI } from '../../utils/api';
+import { serviceAPI, categoryAPI, consultantSlotAPI, appointmentAPI, consultantProfileAPI } from '../../utils/api';
 
 interface PersonalDetails {
   name: string;
@@ -145,10 +145,41 @@ const Booking = () => {
   const [consultantCategoryId, setConsultantCategoryId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [consultants, setConsultants] = useState<any[]>([]);
-  const [consultantSlots, setConsultantSlots] = useState<ConsultantSlot[]>([]);
+  const [consultantSlotData, setConsultantSlotData] = useState<any[]>([]);
+  const [filteredConsultants, setFilteredConsultants] = useState<any[]>([]);
+  const [filteredSlots, setFilteredSlots] = useState<ConsultantSlot[]>([]);
   const [consultantLoading, setConsultantLoading] = useState(false);
-  const [slotLoading, setSlotLoading] = useState(false);
+  const [consultantProfiles, setConsultantProfiles] = useState<any[]>([]);
+  // Lấy thông tin profile tư vấn viên khi load trang
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await consultantProfileAPI.getAllConsultantProfiles();
+        if (res && res.statusCode === 200 && Array.isArray(res.data)) {
+          setConsultantProfiles(res.data);
+        } else {
+          setConsultantProfiles([]);
+        }
+      } catch (e) {
+        setConsultantProfiles([]);
+      }
+    })();
+  }, []);
+
+  // Hàm chuyển lỗi tiếng Anh phổ biến sang tiếng Việt
+  const translateError = (msg: string): string => {
+    if (!msg) return 'Đã xảy ra lỗi không xác định.';
+    const lower = msg.toLowerCase();
+    if (lower.includes('network')) return 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng.';
+    if (lower.includes('unauthorized') || lower.includes('401')) return 'Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn.';
+    if (lower.includes('not found') || lower.includes('404')) return 'Không tìm thấy tài nguyên.';
+    if (lower.includes('slot') && lower.includes('booked')) return 'Khung giờ này đã được đặt. Vui lòng chọn khung giờ khác.';
+    if (lower.includes('duplicate')) return 'Bạn đã đặt lịch cho dịch vụ này hoặc khung giờ này.';
+    if (lower.includes('required')) return 'Vui lòng điền đầy đủ thông tin.';
+    if (lower.includes('invalid')) return 'Thông tin không hợp lệ. Vui lòng kiểm tra lại.';
+    // Thêm các trường hợp khác nếu cần
+    return msg;
+  };
 
   // Load user data from localStorage when component mounts
   useEffect(() => {
@@ -240,109 +271,104 @@ const Booking = () => {
     }
   }, [location.state]);
 
-  // Get consultants available on the selected date
-  const getConsultantsByDate = async (date: string) => {
-    setConsultantLoading(true);
-    try {
-      const res = await appointmentAPI.getSlots();
-      if (res.statusCode === 200 && res.data) {
-        // Filter slots by the selected date
-        const slotsOnSelectedDate = res.data.filter(item => {
-          const slotDate = new Date(item.assignedDate).toISOString().split('T')[0];
-          const selectedDateFormatted = new Date(date).toISOString().split('T')[0];
-          return slotDate === selectedDateFormatted;
-        });
-        
-        // Get unique consultants from the filtered slots
-        const uniqueConsultants = Array.from(
-          new Map(slotsOnSelectedDate.map(item => [
-            item.consultantID,
-            {
-              id: item.consultantID,
-              name: item.consultant.name,
-              specialty: "Tư vấn sức khỏe",
-              address: item.consultant.address,
-              phone: item.consultant.phone,
-              dateOfBirth: item.consultant.dateOfBirth,
-              status: item.consultant.status
-            }
-          ])).values()
-        );
-        setConsultants(uniqueConsultants);
-      } else {
-        setConsultants([]);
+  // Fetch all consultant-slot data ONCE
+  useEffect(() => {
+    const fetchConsultantSlotData = async () => {
+      setConsultantLoading(true);
+      try {
+        // Lấy toàn bộ slot của tất cả consultant (API trả về dạng tham khảo ở trên)
+        const res = await consultantSlotAPI.getAllConsultants();
+        if (res.statusCode === 200 && res.data) {
+          // Chuẩn hóa dữ liệu: mỗi item gồm consultantID, consultant, slotID, slot, assignedDate
+          setConsultantSlotData(res.data.map((item: any) => ({
+            consultantID: item.consultantID,
+            consultant: {
+              ...item.consultant,
+              consultantID: item.consultantID // thêm consultantID vào object consultant cho tiện truy xuất
+            },
+            slotID: item.slotID,
+            slot: item.slot,
+            assignedDate: item.assignedDate,
+            isBooked: item.isBooked || false
+          })));
+        } else {
+          setConsultantSlotData([]);
+        }
+      } catch (error) {
+        setConsultantSlotData([]);
+      } finally {
+        setConsultantLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching consultants by date:', error);
-      setConsultants([]);
-    } finally {
-      setConsultantLoading(false);
-    }
-  };
+    };
+    fetchConsultantSlotData();
+  }, []);
 
-  // Handle date selection
-  const handleDateSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newDate = e.target.value;
-    setSelectedDate(newDate);
+  // Khi chọn ngày, lọc ra các consultant có slot vào ngày đó
+  useEffect(() => {
+    if (!selectedDate) {
+      setFilteredConsultants([]);
+      setFilteredSlots([]);
+      return;
+    }
+    const selectedDateStr = selectedDate;
+    // Debug: log slot.startTime
+    consultantSlotData.forEach(item => {
+      console.log('DEBUG slot.startTime:', item.slot.startTime, '->', item.slot.startTime.split('T')[0]);
+    });
+    const slotsOnDate = consultantSlotData.filter(item => {
+      const slotDateStr = item.slot.startTime.split('T')[0];
+      return slotDateStr === selectedDateStr;
+    });
+    // Lấy unique consultant theo consultantID
+    const uniqueConsultants = Array.from(
+      new Map(slotsOnDate.map(item => [
+        item.consultantID,
+        {
+          id: item.consultantID,
+          name: item.consultant.name,
+          specialty: item.consultant.specialty || 'Tư vấn sức khỏe',
+          address: item.consultant.address,
+          phone: item.consultant.phone,
+          dateOfBirth: item.consultant.dateOfBirth,
+          status: item.consultant.status,
+          imageUrl: item.consultant.imageUrl || '',
+          experience: item.consultant.experience || '',
+          education: item.consultant.education || '',
+          certificates: item.consultant.certificates || [],
+          consultantID: item.consultantID
+        }
+      ])).values()
+    );
+    setFilteredConsultants(uniqueConsultants);
+    setFilteredSlots([]); // reset slot khi đổi ngày
     setSelectedConsultant(null);
     setSelectedTime('');
-    
-    // Fetch consultants available on this date
-    if (newDate) {
-      getConsultantsByDate(newDate);
-    } else {
-      setConsultants([]);
-    }
-  };
+  }, [selectedDate, consultantSlotData]);
 
-  // Fetch slots when consultant is selected (date is already selected)
+  // Khi chọn consultant, lọc ra các slot của consultant đó vào ngày đã chọn
   useEffect(() => {
-    if (selectedConsultant && selectedDate) {
-      setSlotLoading(true);
-      appointmentAPI.getSlots()
-        .then(res => {
-          if (res.statusCode === 200 && res.data) {
-            // Xử lý dữ liệu từ API để lấy danh sách slot
-            const slots = res.data.map(item => ({
-              slotID: item.slotID,
-              consultantID: item.consultantID,
-              date: new Date(item.assignedDate).toISOString().split('T')[0],
-              startTime: new Date(item.slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              endTime: new Date(item.slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              isBooked: false
-            }));
-            setConsultantSlots(slots);
-          } else {
-            setConsultantSlots([]);
-          }
-        })
-        .catch(() => setConsultantSlots([]))
-        .finally(() => setSlotLoading(false));
-    } else {
-      setConsultantSlots([]);
+    if (!selectedConsultant || !selectedDate) {
+      setFilteredSlots([]);
+      return;
     }
-  }, [selectedConsultant, selectedDate]);
-
-  // Get day of week from date string
-  const getDayOfWeek = (dateString: string): string => {
-    const date = new Date(dateString);
-    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    return days[date.getDay()];
-  };
-
-  // Translate day name to Vietnamese
-  const translateDayName = (day: string): string => {
-    const translations: { [key: string]: string } = {
-      monday: 'Thứ Hai',
-      tuesday: 'Thứ Ba',
-      wednesday: 'Thứ Tư',
-      thursday: 'Thứ Năm',
-      friday: 'Thứ Sáu',
-      saturday: 'Thứ Bảy',
-      sunday: 'Chủ Nhật'
-    };
-    return translations[day] || day;
-  };
+    const selectedDateStr = selectedDate;
+    const slots = consultantSlotData.filter(item => {
+      const slotDateStr = item.slot.startTime.split('T')[0];
+      return (
+        slotDateStr === selectedDateStr &&
+        item.consultantID === selectedConsultant
+      );
+    }).map(item => ({
+      slotID: item.slotID.toString(),
+      consultantID: item.consultantID,
+      date: selectedDateStr,
+      startTime: new Date(item.slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      endTime: new Date(item.slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isBooked: item.isBooked || false
+    }));
+    setFilteredSlots(slots);
+    setSelectedTime('');
+  }, [selectedConsultant, selectedDate, consultantSlotData]);
 
   // Check if selected service requires consultant
   const serviceRequiresConsultant = (): boolean => {
@@ -368,9 +394,13 @@ const Booking = () => {
     setSelectedTime('');
   };
 
+  const handleDateSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = e.target.value;
+    setSelectedDate(newDate);
+  };
+
   const handleConsultantSelect = (consultantId: string) => {
     setSelectedConsultant(consultantId);
-    setSelectedTime('');
   };
 
   const openConsultantModal = (consultant: Consultant) => {
@@ -388,80 +418,78 @@ const Booking = () => {
       alert('Vui lòng chọn dịch vụ');
       return;
     }
-
     if (!selectedDate) {
       alert('Vui lòng chọn ngày');
       return;
     }
-
     if (!selectedConsultant) {
       alert('Vui lòng chọn tư vấn viên');
       return;
     }
-
     if (!selectedTime) {
       alert('Vui lòng chọn giờ');
       return;
     }
-
     if (!personalDetails.name || !personalDetails.phone || !personalDetails.email) {
       alert('Vui lòng điền đầy đủ thông tin cá nhân');
       return;
     }
-
-    // Check if user is logged in
     if (!isLoggedIn) {
       alert('Vui lòng đăng nhập để đặt lịch');
       navigate('/auth/login', { state: { returnUrl: '/booking' } });
       return;
     }
-
-    // Get the selected slot information
-    const selectedSlotInfo = consultantSlots.find(slot => 
+    const selectedSlotInfo = filteredSlots.find(slot => 
       slot.date === selectedDate && 
       `${slot.startTime} - ${slot.endTime}` === selectedTime
     );
-
     if (!selectedSlotInfo) {
       alert('Không tìm thấy thông tin khung giờ đã chọn');
       return;
     }
-
-    // Get user information from localStorage
     const userData = localStorage.getItem('user');
     if (!userData) {
       alert('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại');
       navigate('/auth/login');
       return;
     }
-    
     const user = JSON.parse(userData);
-
-    // Prepare appointment data with new format
+    const appointmentDateISO = selectedDate + 'T00:00:00';
+    // Tìm đúng consultantProfileID từ consultantProfiles
+    let consultantProfileID = 2;
+    if (selectedConsultant && consultantProfiles.length > 0) {
+      // Tìm profile chỉ theo tên tư vấn viên (không phân biệt hoa thường, trim)
+      const consultantObj = filteredConsultants.find(c => c.id?.toString() === selectedConsultant?.toString());
+      if (consultantObj) {
+        const foundProfile = consultantProfiles.find(
+          (p: any) => p.account?.name && p.account.name.trim().toLowerCase() === consultantObj.name.trim().toLowerCase()
+        );
+        if (foundProfile && foundProfile.consultantProfileID) {
+          consultantProfileID = foundProfile.consultantProfileID;
+        }
+      }
+    }
     const appointmentData = {
       customerID: user.customerID || user.userID,
       consultantID: selectedConsultant,
       clinicID: 1, // Default clinic ID
       slotID: parseInt(selectedSlotInfo.slotID),
-      appointmentDate: selectedDate,
+      appointmentDate: appointmentDateISO,
       appointmentDetails: [
         {
           servicesID: selectedService,
-          consultantProfileID: parseInt(selectedConsultant),
+          consultantProfileID,
           quantity: 1
         }
       ]
     };
-
-    // Call API to create appointment
     appointmentAPI.createAppointment(appointmentData)
-      .then(response => {
-        if (response.statusCode === 200 && response.data) {
-          // Prepare booking data for confirmation page
+      .then((response: any) => {  
+        if (response.statusCode === 201) {
           const serviceDetails = services.find(s => s.id === selectedService);
-          const consultantDetails = consultants.find(c => c.consultantID === selectedConsultant);
-          
-          // Navigate to confirmation page
+          const consultantDetails = filteredConsultants.find(c => c.id === selectedConsultant || c.consultantID === selectedConsultant);
+          // Lưu appointmentID vào localStorage để backup
+          localStorage.setItem('lastAppointmentId', response.data.appointmentID);
           navigate('/confirm-booking', { 
             state: { 
               service: {
@@ -478,7 +506,8 @@ const Booking = () => {
                 image: consultantDetails.imageUrl || '',
                 education: consultantDetails.education || '',
                 experience: `${consultantDetails.experience} năm kinh nghiệm`,
-                certificates: consultantDetails.certificates || []
+                certificates: consultantDetails.certificates || [],
+                price: (consultantProfiles.find((p: any) => p.account?.name && p.account.name.trim().toLowerCase() === consultantDetails.name.trim().toLowerCase())?.consultantPrice) || 0
               } : null,
               date: selectedDate,
               time: selectedTime,
@@ -489,12 +518,20 @@ const Booking = () => {
             } 
           });
         } else {
-          alert('Đã có lỗi khi tạo lịch hẹn. Vui lòng thử lại sau.');
+          const apiError = response?.message || response?.error || 'Đã xảy ra lỗi không xác định.';
+          alert(translateError(apiError));
         }
       })
-      .catch(error => {
-        console.error('Error creating appointment:', error);
-        alert('Đã có lỗi khi tạo lịch hẹn: ' + (error.message || 'Không xác định'));
+      .catch((error: any) => {
+        let errorMsg = 'Đã xảy ra lỗi không xác định.';
+        if (error?.response?.data?.message) {
+          errorMsg = error.response.data.message;
+        } else if (error?.message) {
+          errorMsg = error.message;
+        } else if (typeof error === 'string') {
+          errorMsg = error;
+        }
+        alert(translateError(errorMsg));
       });
   };
 
@@ -525,14 +562,7 @@ const Booking = () => {
   const getConsultantTimeSlots = (): string[] => {
     if (!selectedConsultant || !selectedDate) return [];
     
-    // Filter slots by selectedDate and selectedConsultant
-    const slots = consultantSlots.filter(slot => {
-      const slotDate = new Date(slot.date).toISOString().split('T')[0];
-      const selectedDateFormatted = new Date(selectedDate).toISOString().split('T')[0];
-      return slotDate === selectedDateFormatted && slot.consultantID === selectedConsultant;
-    });
-    
-    return slots.map(slot => `${slot.startTime} - ${slot.endTime}`);
+    return filteredSlots.map(slot => `${slot.startTime} - ${slot.endTime}`);
   };
 
   return (
@@ -627,43 +657,64 @@ const Booking = () => {
                     <div className="loading-spinner"></div>
                     <p>Đang tải tư vấn viên có lịch vào ngày {selectedDate}...</p>
                   </div>
-                ) : consultants.length > 0 ? (
+                ) : filteredConsultants.length > 0 ? (
                   <div className="consultants-grid">
-                    {consultants.map(consultant => (
-                      <div 
-                        key={consultant.id} 
-                        className={`consultant-card-compact ${selectedConsultant === consultant.id ? 'selected' : ''}`}
-                        onClick={() => handleConsultantSelect(consultant.id)}
-                      >
-                        <h4 title={consultant.name}>{consultant.name}</h4>
-                        <p className="consultant-specialty">{consultant.specialty || "Tư vấn sức khỏe"}</p>
-                        <p className="consultant-address">{consultant.address}</p>
-                        <button 
-                          className="view-details-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // Tạo đối tượng consultant phù hợp với interface Consultant
-                            const consultantForModal: Consultant = {
-                              id: consultant.id,
-                              name: consultant.name,
-                              specialty: consultant.specialty || "Tư vấn sức khỏe",
-                              image: "https://via.placeholder.com/150",
-                              education: "Chuyên viên tư vấn",
-                              experience: "5 năm kinh nghiệm",
-                              certificates: [],
-                              schedule: {
-                                monday: [], tuesday: [], wednesday: [], 
-                                thursday: [], friday: [], saturday: [], sunday: []
-                              },
-                              price: ""
-                            };
-                            openConsultantModal(consultantForModal);
-                          }}
+                    {filteredConsultants.map(consultant => {
+                      // So sánh duy nhất theo tên tư vấn viên (không phân biệt hoa thường, trim)
+                      let profile = consultantProfiles.find((p: any) => {
+                        if (p.account?.name && consultant.name) {
+                          return p.account.name.trim().toLowerCase() === consultant.name.trim().toLowerCase();
+                        }
+                        return false;
+                      });
+                      if (!profile) {
+                        // Log chi tiết để debug
+                        console.warn('Không tìm thấy profile cho consultant (so sánh theo tên):', consultant);
+                        console.log('Danh sách profile:', consultantProfiles);
+                        console.log('Consultant đang xét:', consultant);
+                      }
+                      const price = profile?.consultantPrice;
+                      return (
+                        <div 
+                          key={consultant.id} 
+                          className={`consultant-card-compact ${selectedConsultant === consultant.id ? 'selected' : ''}`}
+                          onClick={() => handleConsultantSelect(consultant.id)}
                         >
-                          Chi tiết
-                        </button>
-                      </div>
-                    ))}
+                          <h4 title={consultant.name}>{consultant.name}</h4>
+                          <p className="consultant-specialty">{profile?.specialty || consultant.specialty || "Tư vấn sức khỏe"}</p>
+                          <p className="consultant-address">{consultant.address}</p>
+                          {price && (
+                            <p className="consultant-price" style={{ color: '#0a7c1c', fontWeight: 600 }}>
+                              Giá: {price.toLocaleString('vi-VN')} VNĐ
+                            </p>
+                          )}
+                          <button 
+                            className="view-details-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Lấy thông tin chi tiết từ profile nếu có
+                              const consultantForModal: Consultant = {
+                                id: consultant.id,
+                                name: consultant.name,
+                                specialty: profile?.specialty || consultant.specialty || "Tư vấn sức khỏe",
+                                image: consultant.imageUrl || "https://via.placeholder.com/150",
+                                education: profile?.education || consultant.education || "Chuyên viên tư vấn",
+                                experience: profile?.experience || consultant.experience || "5 năm kinh nghiệm",
+                                certificates: consultant.certificates || [],
+                                schedule: {
+                                  monday: [], tuesday: [], wednesday: [], 
+                                  thursday: [], friday: [], saturday: [], sunday: []
+                                },
+                                price: price ? price.toLocaleString('vi-VN') + ' VNĐ' : ''
+                              };
+                              openConsultantModal(consultantForModal);
+                            }}
+                          >
+                            Chi tiết
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="no-slots-message">Không có tư vấn viên có lịch vào ngày {selectedDate}</p>
@@ -676,7 +727,7 @@ const Booking = () => {
               <div className="form-section">
                 <h3>4. Chọn Giờ</h3>
                 <div className="time-slots">
-                  {slotLoading ? (
+                  {consultantLoading ? (
                     <div className="loading-container">
                       <div className="loading-spinner"></div>
                       <p>Đang tải khung giờ...</p>
@@ -751,6 +802,7 @@ const Booking = () => {
               </div>
             </div>
             
+            {/* Không hiển thị lỗi trên giao diện, chỉ dùng alert */}
             <div className="booking-footer">
               <button
                 className="submit-button"

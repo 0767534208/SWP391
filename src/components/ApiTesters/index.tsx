@@ -5,10 +5,11 @@ import AppointmentApiTester from './AppointmentApiTester';
 import SlotApiTester from './SlotApiTester';
 import ServiceApiTester from './ServiceApiTester';
 import BlogApiTester from './BlogApiTester';
+import ConsultantProfileApiTester from './ConsultantProfileApiTester';
 import './ApiTester.css';
 
 // Define available testers
-type TesterType = 'auth' | 'user' | 'appointment' | 'slot' | 'service' | 'blog';
+type TesterType = 'auth' | 'user' | 'appointment' | 'slot' | 'service' | 'blog' | 'consultant';
 
 const ApiTesters: React.FC = () => {
   const [activeTester, setActiveTester] = useState<TesterType>('auth');
@@ -27,6 +28,8 @@ const ApiTesters: React.FC = () => {
         return <ServiceApiTester />;
       case 'blog':
         return <BlogApiTester />;
+      case 'consultant':
+        return <ConsultantProfileApiTester />;
       default:
         return <div>Select an API tester from the tabs above.</div>;
     }
@@ -73,6 +76,12 @@ const ApiTesters: React.FC = () => {
           onClick={() => setActiveTester('blog')}
         >
           Blog API
+        </button>
+        <button 
+          className={`api-tab ${activeTester === 'consultant' ? 'active' : ''}`}
+          onClick={() => setActiveTester('consultant')}
+        >
+          Consultant API
         </button>
       </div>
       

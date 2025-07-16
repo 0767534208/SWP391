@@ -43,14 +43,7 @@ const ConsultantLayout = () => {
         
         <nav className="consultant-nav py-2">
           <div className="consultant-nav-container px-2 space-y-1">
-            <Link to="/consultant/dashboard" className={`consultant-nav-link flex items-center px-2 py-1.5 rounded-lg transition-colors ${isActive('/consultant/dashboard') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800'}`}>
-              <svg xmlns="http://www.w3.org/2000/svg" className="consultant-sidebar-icon" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-              </svg>
-              <span className="consultant-nav-text text-xs font-medium">Trang chủ</span>
-            </Link>
-            
-            <Link to="/consultant/profile" className={`consultant-nav-link flex items-center px-2 py-1.5 rounded-lg transition-colors ${isActive('/consultant/profile') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800'}`}>
+            <Link to="/consultant/profile" className={`consultant-nav-link flex items-center px-2 py-1.5 rounded-lg transition-colors ${isActive('/consultant/profile') || location.pathname === '/consultant' ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800'}`}>
               <svg xmlns="http://www.w3.org/2000/svg" className="consultant-sidebar-icon" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
               </svg>

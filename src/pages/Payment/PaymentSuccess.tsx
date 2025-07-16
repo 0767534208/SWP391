@@ -1,77 +1,76 @@
-import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import './PaymentSuccess.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faCalendarCheck, 
-  faHome, 
-  faCheckCircle, 
-  faUser, 
-  faClock, 
+import {
+  faCalendarCheck,
+  faHome,
+  faCheckCircle,
+  faUser,
+  faClock,
   faPhone,
   faEnvelope,
   faMoneyBillWave
 } from '@fortawesome/free-solid-svg-icons';
+import { appointmentAPI } from '../../utils/api';
+
 
 const PaymentSuccess: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  
-  // Get booking data from location state
-  const bookingData = location.state || {
-    service: {
-      name: 'Xét nghiệm & Tư vấn HIV',
-      price: '200.000 VNĐ',
-    },
-    date: '2023-06-15',
-    time: '10:00',
-    consultant: { name: 'Bác sĩ Nguyễn Văn A' },
-    personal: {
-      name: 'Nguyễn Văn B',
-      phone: '0987654321',
-      email: 'example@gmail.com',
-    },
-    paymentMethod: 'vnpay',
-    isPaid: true,
-    paymentStatus: 'completed',
-    appointmentId: 'AP123456'
-  };
-  
-  // Format date for display
+  const { appointmentId } = useParams();
+  const [appointment, setAppointment] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!appointmentId) return;
+    setLoading(true);
+    appointmentAPI.getAppointmentById(appointmentId)
+      .then(res => {
+        setAppointment(res.data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError('Không tìm thấy thông tin lịch hẹn.');
+        setLoading(false);
+      });
+  }, [appointmentId]);
+
   const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     };
     return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
-  
-  // Handle return to home
+
   const handleReturnHome = () => {
     navigate('/');
   };
 
-  // Get payment status text
   const getPaymentStatusText = () => {
-    if (bookingData.isPaid) {
-      return "Đã thanh toán";
-    } else if (bookingData.paymentMethod === 'cash') {
-      return "Thanh toán tại cơ sở y tế";
-    } else {
-      return "Đang chờ thanh toán";
-    }
+    if (!appointment) return '';
+    if (appointment.paymentStatus === 1 || appointment.paymentStatus === 2) return 'Đã thanh toán';
+    if (appointment.paymentStatus === 0) return 'Chưa thanh toán';
+    return 'Không xác định';
   };
 
-  // Get payment method text
   const getPaymentMethodText = () => {
-    switch(bookingData.paymentMethod) {
-      case 'vnpay': return 'VNPay';
-      case 'banking': return 'Chuyển khoản ngân hàng';
-      case 'cash': return 'Tiền mặt';
-      default: return 'Không xác định';
-    }
+    if (!appointment) return '';
+    if (appointment.paymentType === 1) return 'VNPay';
+    if (appointment.paymentType === 2) return 'Chuyển khoản ngân hàng';
+    if (appointment.paymentType === 3) return 'Tiền mặt';
+    return 'Không xác định';
   };
+
+  if (loading) {
+    return <div className="success-page"><div className="success-container"><p>Đang tải thông tin lịch hẹn...</p></div></div>;
+  }
+  if (error) {
+    return <div className="success-page"><div className="success-container"><p style={{color:'red'}}>{error}</p></div></div>;
+  }
 
   return (
     <div className="success-page">
@@ -79,19 +78,16 @@ const PaymentSuccess: React.FC = () => {
         <div className="success-icon">
           <FontAwesomeIcon icon={faCheckCircle} />
         </div>
-
         <h1 className="success-title">Đặt Lịch Thành Công!</h1>
         <p className="success-message">
           Cảm ơn bạn đã đặt lịch khám. Thông tin chi tiết về lịch hẹn đã được gửi qua email của bạn.
         </p>
-
         <div className="appointment-details">
           <div className="appointment-card">
             <div className="appointment-header">
               <h3>Thông Tin Lịch Hẹn</h3>
-              <span className="appointment-id">#{bookingData.appointmentId}</span>
+              <span className="appointment-id">#{appointment?.appointmentID}</span>
             </div>
-
             <div className="appointment-info">
               <div className="booking-info-grid">
                 <div className="booking-info-item">
@@ -99,67 +95,59 @@ const PaymentSuccess: React.FC = () => {
                     <FontAwesomeIcon icon={faCalendarCheck} className="info-icon" />
                     <span>Dịch vụ:</span>
                   </div>
-                  <div className="booking-info-value">{bookingData.service.name}</div>
+                  <div className="booking-info-value">{appointment?.serviceName || 'Chưa xác định'}</div>
                 </div>
-                
                 <div className="booking-info-item">
                   <div className="booking-info-label">
                     <FontAwesomeIcon icon={faUser} className="info-icon" />
                     <span>Bác sĩ tư vấn:</span>
                   </div>
-                  <div className="booking-info-value">{bookingData.consultant?.name || 'Chưa xác định'}</div>
+                  <div className="booking-info-value">{appointment?.consultant?.name || 'Chưa xác định'}</div>
                 </div>
-                
                 <div className="booking-info-item">
                   <div className="booking-info-label">
                     <FontAwesomeIcon icon={faCalendarCheck} className="info-icon" />
                     <span>Ngày khám:</span>
                   </div>
-                  <div className="booking-info-value">{formatDate(bookingData.date)}</div>
+                  <div className="booking-info-value">{appointment?.appointmentDate ? formatDate(appointment.appointmentDate) : 'Chưa xác định'}</div>
                 </div>
-                
                 <div className="booking-info-item">
                   <div className="booking-info-label">
                     <FontAwesomeIcon icon={faClock} className="info-icon" />
                     <span>Giờ khám:</span>
                   </div>
-                  <div className="booking-info-value">{bookingData.time}</div>
+                  <div className="booking-info-value">{appointment?.slot?.startTime || 'Chưa xác định'}</div>
                 </div>
-                
                 <div className="booking-info-item">
                   <div className="booking-info-label">
                     <FontAwesomeIcon icon={faUser} className="info-icon" />
                     <span>Họ tên:</span>
                   </div>
-                  <div className="booking-info-value">{bookingData.personal.name}</div>
+                  <div className="booking-info-value">{appointment?.customer?.name || 'Chưa xác định'}</div>
                 </div>
-                
                 <div className="booking-info-item">
                   <div className="booking-info-label">
                     <FontAwesomeIcon icon={faPhone} className="info-icon" />
                     <span>Số điện thoại:</span>
                   </div>
-                  <div className="booking-info-value">{bookingData.personal.phone}</div>
+                  <div className="booking-info-value">{appointment?.customer?.phone || 'Chưa xác định'}</div>
                 </div>
-                
-                {bookingData.personal.email && (
+                {appointment?.customer?.email && (
                   <div className="booking-info-item">
                     <div className="booking-info-label">
                       <FontAwesomeIcon icon={faEnvelope} className="info-icon" />
                       <span>Email:</span>
                     </div>
-                    <div className="booking-info-value">{bookingData.personal.email}</div>
+                    <div className="booking-info-value">{appointment.customer.email}</div>
                   </div>
                 )}
-                
                 <div className="booking-info-item">
                   <div className="booking-info-label">
                     <FontAwesomeIcon icon={faMoneyBillWave} className="info-icon" />
                     <span>Phí dịch vụ:</span>
                   </div>
-                  <div className="booking-info-value price">{bookingData.service.price}</div>
+                  <div className="booking-info-value price">{appointment?.totalAmount ? appointment.totalAmount.toLocaleString('vi-VN') + ' VNĐ' : 'Chưa xác định'}</div>
                 </div>
-                
                 <div className="booking-info-item">
                   <div className="booking-info-label">
                     <FontAwesomeIcon icon={faMoneyBillWave} className="info-icon" />
@@ -167,14 +155,13 @@ const PaymentSuccess: React.FC = () => {
                   </div>
                   <div className="booking-info-value">{getPaymentMethodText()}</div>
                 </div>
-                
                 <div className="booking-info-item">
                   <div className="booking-info-label">
                     <FontAwesomeIcon icon={faMoneyBillWave} className="info-icon" />
                     <span>Trạng thái thanh toán:</span>
                   </div>
-                  <div className="booking-info-value" style={{ 
-                    color: bookingData.isPaid ? 'var(--success-color)' : 'var(--accent-color)'
+                  <div className="booking-info-value" style={{
+                    color: appointment?.paymentStatus === 1 || appointment?.paymentStatus === 2 ? 'var(--success-color)' : 'var(--accent-color)'
                   }}>
                     {getPaymentStatusText()}
                   </div>
@@ -182,7 +169,6 @@ const PaymentSuccess: React.FC = () => {
               </div>
             </div>
           </div>
-
           <div className="reminder-notes">
             <h4>Lưu ý:</h4>
             <ul>
@@ -193,7 +179,6 @@ const PaymentSuccess: React.FC = () => {
             </ul>
           </div>
         </div>
-
         <div className="action-buttons">
           <button className="primary-button" onClick={handleReturnHome}>
             <FontAwesomeIcon icon={faHome} /> Trở về trang chủ

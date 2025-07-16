@@ -31,6 +31,10 @@ const authService = {
         localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.data.refreshToken);
         localStorage.setItem(STORAGE_KEYS.IS_LOGGED_IN, 'true');
         
+        // Lưu userID và AccountID
+        localStorage.setItem(STORAGE_KEYS.USER_ID, response.data.userID);
+        localStorage.setItem(STORAGE_KEYS.ACCOUNT_ID, response.data.userID);
+        
         // Lấy role đầu tiên nếu có
         const role = response.data.roles && response.data.roles.length > 0 
           ? response.data.roles[0].toLowerCase() 
