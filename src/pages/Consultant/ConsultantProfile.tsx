@@ -2,7 +2,22 @@ import React, { useState, useEffect } from 'react';
 import './ConsultantProfile.css';
 import consultantService from '../../services/consultantService';
 import { toast } from 'react-hot-toast';
-import { FaUser, FaGraduationCap, FaClock, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
+import { 
+  FaUser, 
+  FaGraduationCap, 
+  FaClock, 
+  FaEdit, 
+  FaSave, 
+  FaTimes,
+  FaPhone,
+  FaMapMarkerAlt,
+  FaBirthdayCake,
+  FaStethoscope,
+  FaAward,
+  FaDollarSign,
+  FaCalendarAlt,
+  FaUserCheck
+} from 'react-icons/fa';
 import type { ConsultantProfile, UpdateConsultantProfileRequest } from '../../types';
 import { authUtils } from '../../utils/auth';
 
@@ -263,8 +278,9 @@ const ConsultantProfilePage: React.FC = () => {
               <button 
                 onClick={() => setIsEditing(true)}
                 className="edit-button"
+                title="Chỉnh sửa"
               >
-                <FaEdit /> Chỉnh sửa hồ sơ
+                <FaEdit />
               </button>
             ) : (
               <div className="edit-actions">
@@ -296,23 +312,23 @@ const ConsultantProfilePage: React.FC = () => {
             <div className="section-content">
               <div className="info-grid">
                 <div className="info-item">
-                  <label>Họ và tên:</label>
+                  <label><FaUser /> Họ và tên:</label>
                   <span>{profile.account?.name || 'N/A'}</span>
                 </div>
                 <div className="info-item">
-                  <label>Số điện thoại:</label>
+                  <label><FaPhone /> Số điện thoại:</label>
                   <span>{profile.account?.phone || 'N/A'}</span>
                 </div>
                 <div className="info-item">
-                  <label>Địa chỉ:</label>
+                  <label><FaMapMarkerAlt /> Địa chỉ:</label>
                   <span>{profile.account?.address || 'N/A'}</span>
                 </div>
                 <div className="info-item">
-                  <label>Ngày sinh:</label>
+                  <label><FaBirthdayCake /> Ngày sinh:</label>
                   <span>{formatDate(profile.account?.dateOfBirth || '')}</span>
                 </div>
                 <div className="info-item">
-                  <label>Trạng thái:</label>
+                  <label><FaUserCheck /> Trạng thái:</label>
                   <span className={`status ${profile.account?.status ? 'active' : 'inactive'}`}>
                     {profile.account?.status ? 'Hoạt động' : 'Không hoạt động'}
                   </span>
@@ -330,7 +346,7 @@ const ConsultantProfilePage: React.FC = () => {
             <div className="section-content">
               <div className="info-grid">
                 <div className="info-item">
-                  <label>Chuyên khoa:</label>
+                  <label><FaStethoscope /> Chuyên khoa:</label>
                   {isEditing ? (
                     <input
                       type="text"
@@ -345,7 +361,7 @@ const ConsultantProfilePage: React.FC = () => {
                   )}
                 </div>
                 <div className="info-item">
-                  <label>Kinh nghiệm:</label>
+                  <label><FaAward /> Kinh nghiệm:</label>
                   {isEditing ? (
                     <input
                       type="text"
@@ -360,7 +376,7 @@ const ConsultantProfilePage: React.FC = () => {
                   )}
                 </div>
                 <div className="info-item">
-                  <label>Giá tư vấn:</label>
+                  <label><FaDollarSign /> Giá tư vấn:</label>
                   {isEditing ? (
                     <input
                       type="number"
@@ -406,11 +422,11 @@ const ConsultantProfilePage: React.FC = () => {
                   {profile.account.consultantSlots.map((consultantSlot) => (
                     <div key={consultantSlot.slotID} className="schedule-item">
                       <div className="schedule-time">
-                        {formatTime(consultantSlot.slot.startTime)} - {formatTime(consultantSlot.slot.endTime)}
+                        <FaClock /> {formatTime(consultantSlot.slot.startTime)} - {formatTime(consultantSlot.slot.endTime)}
                       </div>
                       <div className="schedule-details">
-                        <span>Ngày: {formatDate(consultantSlot.assignedDate)}</span>
-                        <span>Tối đa cuộc hẹn: {consultantSlot.maxAppointment}</span>
+                        <span><FaCalendarAlt /> Ngày: {formatDate(consultantSlot.assignedDate)}</span>
+                        <span><FaUserCheck /> Tối đa cuộc hẹn: {consultantSlot.maxAppointment}</span>
                       </div>
                     </div>
                   ))}
