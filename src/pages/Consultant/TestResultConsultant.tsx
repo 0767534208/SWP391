@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FaSearch, FaTimes, FaEye, FaDownload, FaPrint } from 'react-icons/fa';
+import { FaSearch, FaTimes, FaEye, FaDownload, FaPrint, FaPlus } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 import './TestResultConsultant.css';
 import { testResultService } from '../../services';
 import { toast } from 'react-hot-toast';
@@ -341,6 +342,11 @@ const TestResultConsultant: React.FC = () => {
         <div>
           <h1>Kết quả xét nghiệm</h1>
           <p>Quản lý và theo dõi kết quả xét nghiệm của tất cả bệnh nhân</p>
+        </div>
+        <div className="header-actions">
+          <Link to="/consultant/test-results/new" className="create-result-btn">
+            <FaPlus /> Tạo kết quả khám mới
+          </Link>
         </div>
       </div>
 
