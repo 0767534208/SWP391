@@ -5,8 +5,23 @@ import { FaArrowLeft } from 'react-icons/fa';
 import testResultService from '../../services/testResultService';
 import type { UpdateLabTestRequest, LabTestData } from '../../utils/api';
 
-// Sử dụng LabTestData từ swagger thay vì tự định nghĩa
-type TestResult = LabTestData;
+interface TestResult {
+  id?: number | string;
+  labTestID?: number;
+  userId?: string;
+  customerID?: string;
+  customerName?: string;
+  staffID?: string;
+  staffName?: string;
+  treatmentID?: number | null;
+  testName?: string;
+  testType?: string;
+  result?: string;
+  referenceRange?: string;
+  unit?: string;
+  isPositive?: boolean;
+  testDate?: string;
+}
 
 const TestResultEdit: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -32,7 +47,28 @@ const TestResultEdit: React.FC = () => {
         
         const response = await testResultService.getTestResult(testResultId);
         if (response && response.data) {
-          setTestResult(response.data);
+          // The API response should contain the full test result data
+          const result = response.data as any;
+          
+          // Map the API response to our TestResult interface
+          const mappedResult: TestResult = {
+            id: result.id || result.labTestID,
+            labTestID: result.labTestID,
+            customerID: result.customerID,
+            customerName: result.customerName || `BN-${result.customerID || 'Unknown'}`,
+            staffID: result.staffID,
+            staffName: result.staffName || `NV-${result.staffID || 'Unknown'}`,
+            treatmentID: result.treatmentID,
+            testName: result.testName,
+            testType: result.testType,
+            result: result.result,
+            referenceRange: result.referenceRange,
+            unit: result.unit,
+            isPositive: result.isPositive,
+            testDate: result.testDate
+          };
+          
+          setTestResult(mappedResult);
         } else {
           throw new Error('Không tìm thấy kết quả xét nghiệm');
         }
@@ -141,75 +177,70 @@ const TestResultEdit: React.FC = () => {
           <h3 className="form-section-title">Thông tin cơ bản</h3>
           
           <div className="form-group">
-            <label htmlFor="customerID">ID Khách hàng <span className="required">*</span></label>
-                  <input
-                    type="text"
+            <label htmlFor="customerID">Bệnh nhân <span className="required">*</span></label>
+            <div className="patient-info">
+              <div className="patient-name">{testResult.customerName || 'N/A'}</div>
+              <div className="patient-id">ID: {testResult.customerID || testResult.userId || 'N/A'}</div>
+            </div>
+            <input
+              type="hidden"
               id="customerID"
               name="customerID"
               value={testResult.customerID || testResult.userId || ''}
-              onChange={handleInputChange}
-              required
-                  />
-                </div>
+            />
+          </div>
           
           <div className="form-group">
-            <label htmlFor="staffID">ID Nhân viên <span className="required">*</span></label>
-                  <input
-                    type="text"
+            <label htmlFor="staffID">Nhân viên thực hiện <span className="required">*</span></label>
+            <div className="staff-info">
+              <div className="staff-name">{testResult.staffName || 'N/A'}</div>
+              <div className="staff-id">ID: {testResult.staffID || 'N/A'}</div>
+            </div>
+            <input
+              type="hidden"
               id="staffID"
               name="staffID"
               value={testResult.staffID || ''}
-              onChange={handleInputChange}
-              required
-                  />
-                </div>
+            />
+          </div>
 
           <div className="form-group">
             <label htmlFor="testName">Loại xét nghiệm <span className="required">*</span></label>
-            <select
+            <input
+              type="text"
               id="testName"
               name="testName"
               value={testResult.testName || testResult.testType || ''}
               onChange={handleInputChange}
+              placeholder="Nhập loại xét nghiệm"
               required
-            >
-              <option value="">-- Chọn loại xét nghiệm --</option>
-              <option value="Xét nghiệm HIV">Xét nghiệm HIV</option>
-              <option value="Xét nghiệm STI tổng quát">Xét nghiệm STI tổng quát</option>
-              <option value="Xét nghiệm Chlamydia">Xét nghiệm Chlamydia</option>
-              <option value="Xét nghiệm Gonorrhea">Xét nghiệm Gonorrhea</option>
-              <option value="Xét nghiệm Syphilis">Xét nghiệm Syphilis</option>
-              <option value="Xét nghiệm Hepatitis B">Xét nghiệm Hepatitis B</option>
-              <option value="Xét nghiệm Hepatitis C">Xét nghiệm Hepatitis C</option>
-              <option value="Khác">Khác</option>
-            </select>
-                </div>
+            />
+          </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="testDate">Ngày xét nghiệm <span className="required">*</span></label>
-                  <input
-                type="date"
-                id="testDate"
-                name="testDate"
-                value={testResult.testDate || ''}
-                onChange={handleInputChange}
-                required
-                  />
-                </div>
-            
-            <div className="form-group">
-              <label htmlFor="treatmentID">Mã điều trị</label>
-                  <input
-                type="number"
-                id="treatmentID"
-                name="treatmentID"
-                value={testResult.treatmentID || ''}
-                onChange={handleInputChange}
-                placeholder="Mã điều trị (nếu có)"
-                  />
-                </div>
-              </div>
+          <div className="form-group">
+            <label htmlFor="treatmentID">Mã điều trị</label>
+            <div className="treatment-info">
+              <div className="treatment-id">APT-{testResult.treatmentID || 'N/A'}</div>
+            </div>
+            <input
+              type="hidden"
+              id="treatmentID"
+              name="treatmentID"
+              value={testResult.treatmentID || ''}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="testDate">Ngày xét nghiệm <span className="required">*</span></label>
+            <input
+              type="date"
+              id="testDate"
+              name="testDate"
+              value={testResult.testDate || ''}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
             </div>
 
         <div className="form-section">

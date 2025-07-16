@@ -49,6 +49,7 @@ import TestResultManagementStaff from './pages/Staff/TestResultManagementStaff';
 import TestResultEdit from './pages/Staff/TestResultEdit';
 import TestResultForm from './pages/Staff/TestResultForm';
 import StaffTransactions from './pages/Staff/StaffTransactions';
+import NewLabTest from './pages/Staff/NewLabTest';
 
 // Import API Testers
 import ApiTesters from './components/ApiTesters';
@@ -201,7 +202,7 @@ function App() {
           <Route index element={<StaffAppointments />} />
           <Route path="appointments" element={<StaffAppointments />} />
           <Route path="test-results" element={<TestResultManagementStaff />} />
-          <Route path="test-results/new" element={<TestResultForm />} />
+          <Route path="test-results/new" element={<NewLabTest />} />
           <Route path="test-results/:id" element={<TestResultView />} />
           <Route path="test-results/edit/:id" element={<TestResultEdit />} />
           <Route path="transactions" element={<StaffTransactions />} />

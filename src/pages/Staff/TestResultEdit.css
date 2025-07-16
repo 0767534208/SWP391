@@ -171,4 +171,30 @@
 
 .back-button:hover {
   background-color: #e6e6e6;
+}
+
+/* Patient and Staff info display */
+.patient-info, .staff-info, .treatment-info {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 12px;
+  margin-top: 4px;
+}
+
+.patient-name, .staff-name {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.patient-id, .staff-id {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.treatment-id {
+  font-weight: 600;
+  color: #333;
+  font-size: 16px;
 } 
