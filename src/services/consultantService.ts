@@ -3,7 +3,9 @@ import { uploadFile } from '../utils/api';
 import type { 
   ApiResponse, 
   ConsultantProfile,
-  ConsultantProfileRequest, 
+  ConsultantProfileRequest,
+  CreateConsultantProfileRequest,
+  UpdateConsultantProfileRequest,
   PaginatedResponse, 
   PaginationParams, 
   Slot 
@@ -39,7 +41,14 @@ const consultantService = {
       if (params.searchTerm) queryParams.append('searchTerm', params.searchTerm);
     }
     
-    return api.get<PaginatedResponse<ConsultantProfile>>(`/api/consultantSlot/GetAll?${queryParams.toString()}`);
+    return api.get<PaginatedResponse<ConsultantProfile>>(`/api/consultantSlot/GetAllConsultantProfile?${queryParams.toString()}`);
+  },
+  
+  /**
+   * Get all consultant profiles (simple list)
+   */
+  getAllConsultantProfiles: async (): Promise<ApiResponse<ConsultantProfile[]>> => {
+    return api.get<ConsultantProfile[]>('/api/consultantSlot/GetAllConsultantProfile');
   },
   
   /**
@@ -53,23 +62,30 @@ const consultantService = {
    * Get a specific consultant's profile by ID (alternative method name)
    */
   getConsultantById: async (consultantId: string): Promise<ApiResponse<ConsultantProfile>> => {
-    const response = await api.get<ConsultantProfile>(`/api/consultantSlot?consultantId=${consultantId}`);
-    console.log(`Response from getConsultantById(${consultantId}):`, response);
+    console.log(`Getting consultant profile for account ID: ${consultantId}`);
     
-    // Kiểm tra và log dữ liệu chi tiết
-    if (response.data) {
-      console.log("ConsultantProfile data structure:", {
-        id: response.data.id,
-        userId: response.data.userId,
-        specialization: response.data.specialization,
-        experience: response.data.experience,
-        bio: response.data.bio,
-        // Log các trường khác mà API trả về
-        rawData: response.data
-      });
+    try {
+      const response = await api.get<ConsultantProfile>(`/api/consultantSlot/GetConsultantProfileByAccountId/${consultantId}`);
+      console.log(`Response from getConsultantById(${consultantId}):`, response);
+      
+      // Kiểm tra và log dữ liệu chi tiết
+      if (response.data) {
+        console.log("ConsultantProfile data structure:", {
+          consultantProfileID: response.data.consultantProfileID,
+          account: response.data.account,
+          description: response.data.description,
+          specialty: response.data.specialty,
+          experience: response.data.experience,
+          consultantPrice: response.data.consultantPrice,
+          rawData: response.data
+        });
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Error fetching consultant profile:', error);
+      throw error;
     }
-    
-    return response;
   },
   
   /**
@@ -142,67 +158,94 @@ const consultantService = {
   
   /**
    * Create consultant profile (for admin/manager)
+   * POST /api/consultantSlot/CreateConsultantProfile
    */
-  createConsultantProfile: async (profileData: any): Promise<ApiResponse<ConsultantProfile>> => {
+  createConsultantProfile: async (profileData: CreateConsultantProfileRequest): Promise<ApiResponse<ConsultantProfile>> => {
+    console.log('Creating consultant profile with data:', profileData);
+    
+    // Validate required fields
+    if (!profileData.accountID || !profileData.description || !profileData.specialty || !profileData.experience) {
+      throw new Error('Missing required fields: accountID, description, specialty, and experience are required');
+    }
+    
     // Transform data to match the API's expected format based on swagger
     const apiRequestData = {
-      accountID: profileData.accountId,
-      description: profileData.description || profileData.about,
+      accountID: profileData.accountID,
+      description: profileData.description,
       specialty: profileData.specialty,
       experience: profileData.experience,
       consultantPrice: profileData.consultantPrice || 0
     };
     
-    return api.post<ConsultantProfile>('/api/consultantSlot/CreateConsultantProfile', apiRequestData);
+    console.log('Sending create request to API:', apiRequestData);
+    
+    try {
+      const response = await api.post<ConsultantProfile>('/api/consultantSlot/CreateConsultantProfile', apiRequestData);
+      console.log('Create profile response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error creating consultant profile:', error);
+      throw error;
+    }
   },
   
   /**
    * Update consultant profile (for admin/manager)
+   * PUT /api/consultantSlot/UpdateConsultantProfile
    */
-  updateConsultantProfile: async (profileData: ConsultantProfileRequest & { consultantProfileID?: number }): Promise<ApiResponse<ConsultantProfile>> => {
+  updateConsultantProfile: async (
+    consultantProfileID: number,
+    profileData: UpdateConsultantProfileRequest
+  ): Promise<ApiResponse<ConsultantProfile>> => {
+    console.log('Updating consultant profile with ID:', consultantProfileID);
+    console.log('Update data:', profileData);
+    
+    // Validate required fields
+    if (!profileData.description || !profileData.specialty || !profileData.experience) {
+      throw new Error('Missing required fields: description, specialty, and experience are required');
+    }
+    
     // Transform the data to match the API's expected format based on swagger
     const apiRequestData = {
       description: profileData.description,
       specialty: profileData.specialty,
       experience: profileData.experience,
-      consultantPrice: profileData.consultantPrice || 0,
-      consultantProfileID: profileData.consultantProfileID
+      consultantPrice: profileData.consultantPrice || 0
     };
     
-    console.log('Sending transformed data to API:', apiRequestData);
+    console.log('Sending update request to API:', apiRequestData);
     
-    // Lấy consultantProfileID từ tham số profileData hoặc từ localStorage
-    let consultantProfileID = profileData.consultantProfileID;
-    
-    // Nếu không có trong profileData thì lấy từ localStorage
-    if (!consultantProfileID) {
-      const userId = localStorage.getItem('userId') || localStorage.getItem('AccountID');
-      if (userId) {
-        try {
-          // Lấy thông tin profile để lấy consultantProfileID
-          const profileResponse = await api.get<any>(`/api/consultantSlot?consultantId=${userId}`);
-          console.log('Profile response for getting ID:', profileResponse);
-          
-          if (profileResponse.statusCode === 200 && profileResponse.data) {
-            consultantProfileID = profileResponse.data.consultantProfileID || profileResponse.data.id;
-            console.log('Found consultantProfileID:', consultantProfileID);
-            
-            // Cập nhật consultantProfileID trong apiRequestData
-            apiRequestData.consultantProfileID = consultantProfileID;
-          }
-        } catch (error) {
-          console.error('Error getting consultant profile ID:', error);
-        }
-      }
-    }
-    
-    // Gọi API với endpoint cố định và đưa consultantProfileID vào body
-    const endpoint = '/api/consultantSlot/UpdateConsultantProfile';
+    // Use the correct endpoint with consultantProfileID as query parameter
+    const endpoint = `/api/consultantSlot/UpdateConsultantProfile?consultantProfileID=${consultantProfileID}`;
     
     console.log('Calling API endpoint:', endpoint);
-    console.log('With request body:', apiRequestData);
     
-    return api.put<ConsultantProfile>(endpoint, apiRequestData);
+    try {
+      const response = await api.put<ConsultantProfile>(endpoint, apiRequestData);
+      console.log('Update profile response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error updating consultant profile:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Update consultant profile (legacy method for backward compatibility)
+   */
+  updateConsultantProfileLegacy: async (profileData: ConsultantProfileRequest & { consultantProfileID?: number }): Promise<ApiResponse<ConsultantProfile>> => {
+    if (!profileData.consultantProfileID) {
+      throw new Error('consultantProfileID is required');
+    }
+    
+    const updateData: UpdateConsultantProfileRequest = {
+      description: profileData.description || '',
+      specialty: profileData.specialty || '',
+      experience: profileData.experience || '',
+      consultantPrice: profileData.consultantPrice || 0
+    };
+    
+    return consultantService.updateConsultantProfile(profileData.consultantProfileID, updateData);
   },
   
   /**
@@ -279,4 +322,4 @@ const consultantService = {
   }
 };
 
-export default consultantService; 
+export default consultantService;

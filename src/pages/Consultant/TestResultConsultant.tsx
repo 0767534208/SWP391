@@ -3,6 +3,7 @@ import { FaSearch, FaTimes, FaEye, FaDownload, FaPrint } from 'react-icons/fa';
 import './TestResultConsultant.css';
 import { testResultService } from '../../services';
 import { toast } from 'react-hot-toast';
+import type { TestResult as ApiTestResult } from '../../types';
 
 interface TestResult {
   id: string;
@@ -76,27 +77,34 @@ const TestResultConsultant: React.FC = () => {
     const fetchTestResults = async () => {
       setLoading(true);
       try {
-        const consultantId = localStorage.getItem('userId') || localStorage.getItem('AccountID');
+        // Check if user is logged in
+        const userToken = localStorage.getItem('token');
         
-        if (!consultantId) {
-          toast.error('Không tìm thấy thông tin người dùng');
+        if (!userToken) {
+          toast.error('Bạn cần đăng nhập để xem kết quả xét nghiệm');
           setLoading(false);
           return;
         }
         
-        // Fetch lab tests for the consultant's treatments
+        // Fetch all lab tests - all consultants can view all test results
         const response = await testResultService.getAllTestResults();
         
         if (response.statusCode === 200 && response.data) {
           // Transform API data to match our component's expected format
-          const transformedResults = response.data.items.map(item => ({
+          // The API returns the array directly in data, not wrapped in an items object
+          const dataArray = Array.isArray(response.data) ? response.data : [];
+          
+          console.log('API Response:', response);
+          console.log('Data Array:', dataArray);
+          
+          const transformedResults = dataArray.map(item => ({
             id: item.id,
             patientName: item.user?.name || 'Không xác định',
             patientId: item.userId,
             testType: item.testType,
             date: item.testDate,
             status: determineTestStatus(item),
-            viewed: item.viewed || false,
+            viewed: false, // Default to false since API doesn't return viewed status
             notes: item.notes
           }));
           
@@ -112,13 +120,19 @@ const TestResultConsultant: React.FC = () => {
           };
           setSummaryStats(stats);
           
-          console.log('Test results loaded:', transformedResults);
+          console.log('Test results loaded for consultant:', transformedResults.length, 'results');
         } else {
+          console.log('API Response Error:', response);
           toast.error(`Có lỗi khi tải dữ liệu: ${response.message}`);
           setError(`Có lỗi khi tải dữ liệu: ${response.message}`);
         }
       } catch (err) {
         console.error('Error fetching test results:', err);
+        console.error('Error details:', {
+          message: err instanceof Error ? err.message : 'Unknown error',
+          stack: err instanceof Error ? err.stack : undefined,
+          name: err instanceof Error ? err.name : 'UnknownError'
+        });
         toast.error('Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.');
         setError('Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.');
       } finally {
@@ -130,12 +144,12 @@ const TestResultConsultant: React.FC = () => {
   }, []);
 
   // Determine test status
-  const determineTestStatus = (testResult: any): 'normal' | 'abnormal' | 'critical' => {
-    if (!testResult) return 'normal';
+  const determineTestStatus = (apiTestResult: ApiTestResult): 'normal' | 'abnormal' | 'critical' => {
+    if (!apiTestResult) return 'normal';
     
     // Extract result from the test result data
     // This is just an example - adapt based on your actual API response structure
-    const resultValue = testResult.result?.toLowerCase();
+    const resultValue = apiTestResult.result?.toLowerCase();
     
     if (resultValue?.includes('positive') || resultValue?.includes('dương tính')) {
       return 'abnormal';
@@ -177,7 +191,8 @@ const TestResultConsultant: React.FC = () => {
   const markAsViewed = async (id: string) => {
     try {
       // Call API to mark the result as viewed
-      await testResultService.markTestResultAsViewed(id);
+      // await testResultService.markTestResultAsViewed(id);
+      // TODO: Implement markTestResultAsViewed method in service
       
       // Update local state
       setTestResults(prev => 
@@ -216,7 +231,7 @@ const TestResultConsultant: React.FC = () => {
             id: testResult.userId,
             name: testResult.user?.name || 'Không xác định',
             dob: testResult.user?.dateOfBirth || '',
-            gender: testResult.user?.gender || 'Không xác định',
+            gender: 'Không xác định', // Gender not available in UserData type
             email: testResult.user?.email,
             phone: testResult.user?.phone
           },
@@ -325,7 +340,7 @@ const TestResultConsultant: React.FC = () => {
       <div className="results-header">
         <div>
           <h1>Kết quả xét nghiệm</h1>
-          <p>Quản lý và theo dõi kết quả xét nghiệm của bệnh nhân</p>
+          <p>Quản lý và theo dõi kết quả xét nghiệm của tất cả bệnh nhân</p>
         </div>
       </div>
 

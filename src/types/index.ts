@@ -213,17 +213,19 @@ export interface Consultant {
  * Thông tin profile của tư vấn viên
  */
 export interface ConsultantProfile {
-  id: string;
-  userId: string;
-  specialization: string;
-  experience: number;
-  bio: string;
-  rating?: number;
-  isAvailable: boolean;
-  createdAt: string;
-  updatedAt: string;
-  user?: UserData;
-  availability?: {date: string, slots: Slot[]}[];
+  consultantProfileID: number;
+  account: {
+    name: string;
+    address: string;
+    phone: string;
+    status: boolean;
+    dateOfBirth: string;
+    consultantSlots: ConsultantSlot[];
+  };
+  description: string;
+  specialty: string;
+  experience: string;
+  consultantPrice: number;
 }
 
 /**
@@ -241,10 +243,47 @@ export interface CreateConsultantRequest {
  * Yêu cầu cập nhật profile tư vấn viên
  */
 export interface ConsultantProfileRequest {
+  consultantProfileID?: number;
   description?: string;
   specialty?: string;
   experience?: string;
   consultantPrice?: number;
+}
+
+/**
+ * Yêu cầu tạo profile tư vấn viên mới
+ */
+export interface CreateConsultantProfileRequest {
+  accountID: string;
+  description: string;
+  specialty: string;
+  experience: string;
+  consultantPrice: number;
+}
+
+/**
+ * Yêu cầu cập nhật profile tư vấn viên
+ */
+export interface UpdateConsultantProfileRequest {
+  description: string;
+  specialty: string;
+  experience: string;
+  consultantPrice: number;
+}
+
+/**
+ * Thông tin slot của tư vấn viên
+ */
+export interface ConsultantSlot {
+  slotID: number;
+  slot: {
+    slotID: number;
+    maxConsultant: number;
+    startTime: string;
+    endTime: string;
+  };
+  maxAppointment: number;
+  assignedDate: string;
 }
 
 // ========== Slot Types ==========
@@ -644,4 +683,4 @@ export interface UpdateQuestionStatusRequest {
  */
 export interface VoteRequest {
   direction: 'up' | 'down';
-} 
+}
