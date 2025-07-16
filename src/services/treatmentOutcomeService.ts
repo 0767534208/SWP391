@@ -12,18 +12,18 @@ export interface CreateTreatmentOutcomeRequest {
 }
 
 export interface UpdateTreatmentOutcomeRequest {
-  id: number;
-  customerID: string;
-  consultantID: string;
+  treatmentID: number;
+  customerID?: string;
+  consultantID?: string;
   appointmentID?: number;
-  diagnosis: string;
-  treatmentPlan: string;
+  diagnosis?: string;
+  treatmentPlan?: string;
   prescription?: string;
   recommendation?: string;
 }
 
 export interface TreatmentOutcome {
-  id: number;
+  treatmentID: number;
   customerID: string;
   consultantID: string;
   appointmentID?: number;
@@ -31,8 +31,8 @@ export interface TreatmentOutcome {
   treatmentPlan: string;
   prescription?: string;
   recommendation?: string;
-  createdAt: string;
-  updatedAt: string;
+  createAt: string;
+  updateAt: string;
 }
 
 export interface GetAllAppointment {
