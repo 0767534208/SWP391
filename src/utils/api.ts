@@ -1032,15 +1032,17 @@ export const slotAPI = {
   
   /**
    * Cập nhật slot
+   * Endpoint: PUT /api/slot?slotId={slotId}
    * @param slotId - ID của slot
    * @param slotData - Thông tin slot cần cập nhật
    */
   updateSlot: async (slotId: string, slotData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/slot/${slotId}`, 'PUT', slotData);
+    return apiRequest<any>(`/api/slot?slotId=${slotId}`, 'PUT', slotData);
   },
 
   /**
    * Xóa slot
+   * Endpoint: DELETE /api/slot/{slotId}
    * @param slotId - ID của slot
    */
   deleteSlot: async (slotId: string): Promise<ApiResponse<any>> => {
@@ -1067,10 +1069,11 @@ export const workingHourAPI = {
 
   /**
    * Cập nhật giờ làm việc
+   * @param workingHourID - ID của working hour cần cập nhật
    * @param workingHourData - Thông tin giờ làm việc cần cập nhật
    */
-  updateWorkingHour: async (workingHourData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/api/WorkingHour/UpdateWorkingHour', 'PUT', workingHourData);
+  updateWorkingHour: async (workingHourID: number, workingHourData: any): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/WorkingHour/UpdateWorkingHour?workingHourID=${workingHourID}`, 'PUT', workingHourData);
   }
 };
 
@@ -1194,39 +1197,107 @@ export const categoryAPI = {
   }
 };
 
-// Consultant Slot API endpoints (Quản lý đăng ký slot của consultant)
+// Consultant Slot API endpoints (Dựa theo các endpoint trong ảnh)
 export const consultantSlotAPI = {
   /**
-   * Lấy tất cả consultant và thông tin slot đã đăng ký
+   * Lấy tất cả consultant slot
+   * Endpoint: GET /api/consultantSlot/GetAllConsultantSlot
    */
   getAllConsultants: async (): Promise<ApiResponse<any[]>> => {
     return apiRequest<any[]>('/api/consultantSlot/GetAllConsultantSlot', 'GET');
   },
 
   /**
-   * Lấy thông tin đăng ký slot của một consultant
+   * Lấy tất cả consultant profile  
+   * Endpoint: GET /api/consultantSlot/GetAllConsultantProfile
+   */
+  getAllConsultantProfiles: async (): Promise<ApiResponse<any[]>> => {
+    return apiRequest<any[]>('/api/consultantSlot/GetAllConsultantProfile', 'GET');
+  },
+
+  /**
+   * Lấy consultant profile theo Account ID
+   * Endpoint: GET /api/consultantSlot/GetConsultantProfileByAccountId/{accountId}
+   * @param accountId - ID của account
+   */
+  getConsultantProfileByAccountId: async (accountId: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/consultantSlot/GetConsultantProfileByAccountId/${accountId}`, 'GET');
+  },
+
+  /**
+   * Lấy consultant profile theo Profile ID
+   * Endpoint: GET /api/consultantSlot/GetConsultantProfileById/{consultantProfileID}
+   * @param consultantProfileID - ID của consultant profile
+   */
+  getConsultantProfileById: async (consultantProfileID: number): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/consultantSlot/GetConsultantProfileById/${consultantProfileID}`, 'GET');
+  },
+
+  /**
+   * Lấy thông tin slot của một consultant
+   * Endpoint: GET /api/consultantSlot?consultantId={consultantId}
    * @param consultantId - ID của consultant
    */
   getConsultantSlots: async (consultantId: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>(`/api/consultant/${consultantId}/slots`, 'GET');
+    return apiRequest<any[]>(`/api/consultantSlot?consultantId=${consultantId}`, 'GET');
+  },
+
+  /**
+   * Tìm kiếm consultant slot
+   * Endpoint: GET /api/consultantSlot/search
+   * @param searchParams - Các tham số tìm kiếm
+   */
+  searchConsultantSlots: async (searchParams?: { [key: string]: any }): Promise<ApiResponse<any[]>> => {
+    const queryString = searchParams ? 
+      '?' + Object.entries(searchParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&') 
+      : '';
+    return apiRequest<any[]>(`/api/consultantSlot/search${queryString}`, 'GET');
   },
 
   /**
    * Đăng ký slot cho consultant
-   * @param consultantId - ID của consultant
+   * Endpoint: POST /api/consultantSlot/register?slotId={slotId}&maxAppointment={maxAppointment}
    * @param slotId - ID của slot
+   * @param maxAppointment - Số lượng appointment tối đa
    */
-  registerSlot: async (consultantId: string, slotId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/consultant/${consultantId}/slots/${slotId}`, 'POST');
+  registerSlot: async (slotId: number, maxAppointment: number): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/consultantSlot/register?slotId=${slotId}&maxAppointment=${maxAppointment}`, 'POST');
   },
 
   /**
-   * Hủy đăng ký slot của consultant
-   * @param consultantId - ID của consultant
-   * @param slotId - ID của slot
+   * Tạo profile consultant
+   * Endpoint: POST /api/consultantSlot/CreateConsultantProfile
+   * @param profileData - Dữ liệu profile consultant
    */
-  unregisterSlot: async (consultantId: string, slotId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/consultant/${consultantId}/slots/${slotId}`, 'DELETE');
+  createConsultantProfile: async (profileData: any): Promise<ApiResponse<any>> => {
+    return apiRequest<any>('/api/consultantSlot/CreateConsultantProfile', 'POST', profileData);
+  },
+
+  /**
+   * Cập nhật profile consultant
+   * Endpoint: PUT /api/consultantSlot/UpdateConsultantProfile?consultantProfileID={consultantProfileID}
+   * @param consultantProfileID - ID profile consultant
+   * @param profileData - Dữ liệu profile consultant cần cập nhật
+   */
+  updateConsultantProfile: async (consultantProfileID: number, profileData: any): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/consultantSlot/UpdateConsultantProfile?consultantProfileID=${consultantProfileID}`, 'PUT', profileData);
+  },
+
+  /**
+   * Hoán đổi slot giữa 2 consultant
+   * Endpoint: PUT /api/consultantSlot/swap?consultantA={consultantA}&slotA={slotA}&consultantB={consultantB}&slotB={slotB}
+   * @param consultantA - ID consultant A
+   * @param slotA - ID slot A
+   * @param consultantB - ID consultant B 
+   * @param slotB - ID slot B
+   */
+  swapSlots: async (consultantA: string, slotA: number, consultantB: string, slotB: number): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/consultantSlot/swap?consultantA=${consultantA}&slotA=${slotA}&consultantB=${consultantB}&slotB=${slotB}`, 'PUT');
+  },
+
+  // Alias methods cho backward compatibility
+  getAllConsultants: async (): Promise<ApiResponse<any[]>> => {
+    return consultantSlotAPI.getAllConsultantSlots();
   }
 };
 

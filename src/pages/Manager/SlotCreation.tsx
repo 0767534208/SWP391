@@ -97,9 +97,9 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({ value, onChange, is
     }
   }, [value]);
 
-  // Generate available hours (8-20)
-  const hours = Array.from({ length: 13 }, (_, i) => {
-    const hour = i + 8;
+  // Generate available hours (7-17)
+  const hours = Array.from({ length: 11 }, (_, i) => {
+    const hour = i + 7;
     return hour < 10 ? `0${hour}` : `${hour}`;
   });
 
@@ -109,7 +109,7 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({ value, onChange, is
   });
 
   // Get available minutes based on selected hour
-  const availableMinutes = selectedHour === '20' ? ['00'] : minutes;
+  const availableMinutes = selectedHour === '17' ? ['00'] : minutes;
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -136,8 +136,8 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({ value, onChange, is
 
   // Handle hour selection
   const handleHourSelection = (hour: string) => {
-    // If selecting hour 20, force minute to 00
-    if (hour === '20') {
+    // If selecting hour 17, force minute to 00
+    if (hour === '17') {
       handleTimeSelection(hour, '00');
     } else {
       setSelectedHour(hour);
@@ -283,7 +283,7 @@ const SlotCreation = () => {
   // Get selected working hour object
   const selectedWorkingHour = workingHours.find(wh => wh.workingHourID === workingHourId);
   const minWorkingHour = selectedWorkingHour ? selectedWorkingHour.openingTime.slice(0,5) : '07:00';
-  const maxWorkingHour = selectedWorkingHour ? selectedWorkingHour.closingTime.slice(0,5) : '19:00';
+  const maxWorkingHour = selectedWorkingHour ? selectedWorkingHour.closingTime.slice(0,5) : '17:00';
 
   // Format date and time for API
   const formatDateTimeForApi = (date: string, time: string): string => {
@@ -318,17 +318,16 @@ const SlotCreation = () => {
       showNotification('error', `Thời gian phải trong khung giờ làm việc (${minWorkingHour} - ${maxWorkingHour})`);
       return;
     }
-    if (!workingHourId) {
-      showNotification('error', 'Vui lòng chọn giờ làm việc');
-      return;
-    }
+    
+    // Tự động chọn working hour đầu tiên nếu có
+    const selectedWorkingHourId = workingHours.length > 0 ? workingHours[0].workingHourID : 1;
     setIsLoading(true);
     try {
       const startDateTime = formatDateTimeForApi(selectedDate, startTime);
       const endDateTime = formatDateTimeForApi(selectedDate, endTime);
       const response = await api.post('/api/slot', {
         clinicID: clinicId,
-        workingHourID: workingHourId,
+        workingHourID: selectedWorkingHourId,
         maxConsultant: maxConsultant,
         maxTestAppointment: maxTestAppointment,
         startTime: startDateTime,
@@ -406,40 +405,28 @@ const SlotCreation = () => {
           <div className="flex flex-wrap gap-4">
             <div className="form-group flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">Thời gian bắt đầu:</label>
-              {selectedWorkingHour ? (
-                <>
-                  <CustomTimePicker
-                    value={startTime}
-                    onChange={setStartTime}
-                    minTime={minWorkingHour}
-                    maxTime={maxWorkingHour}
-                  />
-                  <div className="text-xs text-gray-500 mt-1">
-                    Từ {minWorkingHour} đến {maxWorkingHour}
-                  </div>
-                </>
-              ) : (
-                <div className="text-red-500">Vui lòng chọn giờ làm việc trước</div>
-              )}
+              <CustomTimePicker
+                value={startTime}
+                onChange={setStartTime}
+                minTime={minWorkingHour}
+                maxTime={maxWorkingHour}
+              />
+              <div className="text-xs text-gray-500 mt-1">
+                Từ {minWorkingHour} đến {maxWorkingHour}
+              </div>
             </div>
             <div className="form-group flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">Thời gian kết thúc:</label>
-              {selectedWorkingHour ? (
-                <>
-                  <CustomTimePicker
-                    value={endTime}
-                    onChange={setEndTime}
-                    isEndTime={true}
-                    minTime={minWorkingHour}
-                    maxTime={maxWorkingHour}
-                  />
-                  <div className="text-xs text-gray-500 mt-1">
-                    Từ {minWorkingHour} đến {maxWorkingHour}
-                  </div>
-                </>
-              ) : (
-                <div className="text-red-500">Vui lòng chọn giờ làm việc trước</div>
-              )}
+              <CustomTimePicker
+                value={endTime}
+                onChange={setEndTime}
+                isEndTime={true}
+                minTime={minWorkingHour}
+                maxTime={maxWorkingHour}
+              />
+              <div className="text-xs text-gray-500 mt-1">
+                Từ {minWorkingHour} đến {maxWorkingHour}
+              </div>
             </div>
           </div>
         </div>
@@ -456,26 +443,7 @@ const SlotCreation = () => {
             required
           />
         </div>
-        <div className="form-group mb-4">
-          <label htmlFor="workingHourId" className="block text-sm font-medium text-gray-700 mb-1">Giờ làm việc:</label>
-          {workingHours.length > 0 ? (
-            <select
-              id="workingHourId"
-              className="form-input w-full p-2 border border-gray-300 rounded-md"
-              value={workingHourId ?? ''}
-              onChange={e => setWorkingHourId(Number(e.target.value))}
-              required
-            >
-              {workingHours.map(wh => (
-                <option key={wh.workingHourID} value={wh.workingHourID}>
-                  {wh.name ? wh.name + ' - ' : ''}{wh.openingTime.slice(0,5)} - {wh.closingTime.slice(0,5)}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <div className="text-red-500">Không có giờ làm việc nào, vui lòng tạo trước!</div>
-          )}
-        </div>
+
         <div className="form-group mb-4">
           <label htmlFor="maxConsultant" className="block text-sm font-medium text-gray-700 mb-1">Số lượng tư vấn viên tối đa:</label>
           <input

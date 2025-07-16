@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './WeeklyCalendar.css';
-import slotService from '../../services/slotService';
-import { consultantSlotAPI } from '../../utils/api';
-import api from '../../utils/api';
+import { slotAPI, workingHourAPI, consultantSlotAPI } from '../../utils/api';
 
 // Custom Date Display component
 interface CustomDateDisplayProps {
@@ -68,12 +66,12 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({ value, onChange, is
     }
   }, [value]);
 
-  const hours = Array.from({ length: 13 }, (_, i) => {
-    const hour = i + 8;
+  const hours = Array.from({ length: 11 }, (_, i) => {
+    const hour = i + 7;
     return hour < 10 ? `0${hour}` : `${hour}`;
   });
   const minutes = Array.from({ length: 60 }, (_, i) => (i < 10 ? `0${i}` : `${i}`));
-  const availableMinutes = selectedHour === '20' ? ['00'] : minutes;
+  const availableMinutes = selectedHour === '17' ? ['00'] : minutes;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -94,7 +92,7 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({ value, onChange, is
     setIsOpen(false);
   };
   const handleHourSelection = (hour: string) => {
-    if (hour === '20') {
+    if (hour === '17') {
       handleTimeSelection(hour, '00');
     } else {
       setSelectedHour(hour);
@@ -166,12 +164,34 @@ const WeeklyCalendar: React.FC = () => {
   const [workingHours, setWorkingHours] = useState<any[]>([]);
   const [editMaxConsultant, setEditMaxConsultant] = useState<number>(0);
   const [editMaxTestAppointment, setEditMaxTestAppointment] = useState<number>(0);
+  
+  // Working Hour management states
+  const [isWorkingHourModalOpen, setIsWorkingHourModalOpen] = useState<boolean>(false);
+  const [isCreateWorkingHour, setIsCreateWorkingHour] = useState<boolean>(true);
+  const [selectedWorkingHour, setSelectedWorkingHour] = useState<any>(null);
+  const [workingHourForm, setWorkingHourForm] = useState({
+    clinicID: 1,
+    dayInWeek: 0, // 0 = Sunday, 1 = Monday, etc.
+    shift: 0, // 0 = Morning, 1 = Afternoon
+    openingTime: '',
+    closingTime: '',
+    status: true
+  });
 
   useEffect(() => {
-    // Fetch working hours 1 lần khi mount
-    api.get('/api/WorkingHour/GetWorkingHour').then(res => {
-      if (Array.isArray(res.data)) setWorkingHours(res.data);
-    });
+    // Fetch working hours using workingHourAPI
+    const fetchWorkingHours = async () => {
+      try {
+        const response = await workingHourAPI.getAllWorkingHours();
+        if (response.statusCode === 200 && Array.isArray(response.data)) {
+          setWorkingHours(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching working hours:', error);
+      }
+    };
+    
+    fetchWorkingHours();
   }, []);
 
   // Check if we're coming from slot creation with new slots
@@ -210,10 +230,10 @@ const WeeklyCalendar: React.FC = () => {
       const startDate = formatDateForComparison(weekDates[0]);
       const endDate = formatDateForComparison(weekDates[6]);
 
-      // Fetch slots from API
-      const response = await slotService.getAllSlots();
+      // Fetch slots using slotAPI
+      const response = await slotAPI.getAllSlots();
 
-      if (response.data) {
+      if (response.statusCode === 200 && response.data) {
         // Process the API response into our SlotDay format
         const processedSlots: SlotDay[] = [];
 
@@ -626,7 +646,7 @@ const WeeklyCalendar: React.FC = () => {
     ? workingHours.find(wh => wh.workingHourID === Number(selectedSlot.slot.workingHourID))
     : null;
   const minTime = editingWorkingHour ? editingWorkingHour.openingTime.slice(0,5) : '07:00';
-  const maxTime = editingWorkingHour ? editingWorkingHour.closingTime.slice(0,5) : '19:00';
+  const maxTime = editingWorkingHour ? editingWorkingHour.closingTime.slice(0,5) : '17:00';
 
   // Lưu thay đổi thời gian slot
   const handleSaveSlot = async () => {
@@ -672,8 +692,8 @@ const WeeklyCalendar: React.FC = () => {
       const formattedEndTime = formatLocalDateTime(selectedSlot.date, editEnd);
 
       if (selectedSlot.slot.slotID) {
-        // Update slot via API, giữ nguyên workingHourID, gửi maxConsultant, maxTestAppointment mới
-        await slotService.updateSlot(selectedSlot.slot.slotID, {
+        // Update slot using slotAPI
+        await slotAPI.updateSlot(selectedSlot.slot.slotID, {
           workingHourID: selectedSlot.slot.workingHourID,
           maxConsultant: editMaxConsultant,
           maxTestAppointment: editMaxTestAppointment,
@@ -716,6 +736,95 @@ const WeeklyCalendar: React.FC = () => {
     // Format as local time without timezone offset
     const pad = (n: number) => n.toString().padStart(2, '0');
     return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}T${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:00`;
+  };
+
+  // Working Hour management functions
+  const openCreateWorkingHourModal = () => {
+    setIsCreateWorkingHour(true);
+    setSelectedWorkingHour(null);
+    setWorkingHourForm({
+      clinicID: 1,
+      dayInWeek: 0,
+      shift: 0,
+      openingTime: '',
+      closingTime: '',
+      status: true
+    });
+    setIsWorkingHourModalOpen(true);
+  };
+
+  const openEditWorkingHourModal = (workingHour: any) => {
+    setIsCreateWorkingHour(false);
+    setSelectedWorkingHour(workingHour);
+    setWorkingHourForm({
+      clinicID: workingHour.clinicID || 1,
+      dayInWeek: workingHour.dayInWeek || 0,
+      shift: workingHour.shift || 0,
+      openingTime: workingHour.openingTime ? workingHour.openingTime.slice(0, 5) : '',
+      closingTime: workingHour.closingTime ? workingHour.closingTime.slice(0, 5) : '',
+      status: workingHour.status !== undefined ? workingHour.status : true
+    });
+    setIsWorkingHourModalOpen(true);
+  };
+
+  const handleSaveWorkingHour = async () => {
+    try {
+      setIsLoading(true);
+
+      if (isCreateWorkingHour) {
+        // Cho CREATE - gửi tất cả fields
+        const createData = {
+          clinicID: workingHourForm.clinicID,
+          dayInWeek: workingHourForm.dayInWeek,
+          shift: workingHourForm.shift,
+          openingTime: workingHourForm.openingTime,
+          closingTime: workingHourForm.closingTime,
+          status: workingHourForm.status
+        };
+        await workingHourAPI.createWorkingHour(createData);
+        setNotification({
+          show: true,
+          message: 'Giờ làm việc đã được tạo thành công!'
+        });
+      } else {
+        // Cho UPDATE - chỉ gửi các fields theo UpdateWorkingHourRequest schema
+        const updateData = {
+          shift: workingHourForm.shift,
+          openingTime: workingHourForm.openingTime,
+          closingTime: workingHourForm.closingTime,
+          status: workingHourForm.status
+        };
+        await workingHourAPI.updateWorkingHour(selectedWorkingHour.workingHourID, updateData);
+        setNotification({
+          show: true,
+          message: 'Giờ làm việc đã được cập nhật thành công!'
+        });
+      }
+
+      // Refresh working hours
+      const response = await workingHourAPI.getAllWorkingHours();
+      if (response.statusCode === 200 && Array.isArray(response.data)) {
+        setWorkingHours(response.data);
+      }
+
+      setIsWorkingHourModalOpen(false);
+      
+      setTimeout(() => {
+        setNotification({ show: false, message: '' });
+      }, 3000);
+
+    } catch (error) {
+      console.error('Error saving working hour:', error);
+      setNotification({
+        show: true,
+        message: 'Có lỗi xảy ra khi lưu giờ làm việc!'
+      });
+      setTimeout(() => {
+        setNotification({ show: false, message: '' });
+      }, 3000);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -949,6 +1058,266 @@ const WeeklyCalendar: React.FC = () => {
           })}
         </div>
       </div>
+
+      {/* Working Hours Management Section */}
+      <div style={{ marginTop: '2rem', backgroundColor: 'white', padding: '1.5rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#374151' }}>
+            Giờ Làm Việc Hiện Tại
+          </h2>
+          <button
+            onClick={openCreateWorkingHourModal}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.375rem',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            Tạo Giờ Làm Việc
+          </button>
+        </div>
+        {workingHours.length > 0 ? (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Ngày</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Ca</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Giờ mở cửa</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Giờ đóng cửa</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Trạng thái</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {workingHours.map((wh, index) => (
+                  <tr key={index} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '0.75rem' }}>
+                      {['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'][wh.dayInWeek]}
+                    </td>
+                    <td style={{ padding: '0.75rem' }}>
+                      {wh.shift === 0 ? 'Sáng' : 'Chiều'}
+                    </td>
+                    <td style={{ padding: '0.75rem' }}>
+                      {wh.openingTime ? wh.openingTime.slice(0, 5) : ''}
+                    </td>
+                    <td style={{ padding: '0.75rem' }}>
+                      {wh.closingTime ? wh.closingTime.slice(0, 5) : ''}
+                    </td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <span style={{
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '0.25rem',
+                        fontSize: '0.75rem',
+                        fontWeight: '500',
+                        backgroundColor: wh.status ? '#dcfce7' : '#fef2f2',
+                        color: wh.status ? '#16a34a' : '#dc2626'
+                      }}>
+                        {wh.status ? 'Hoạt động' : 'Không hoạt động'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <button
+                        onClick={() => openEditWorkingHourModal(wh)}
+                        style={{
+                          padding: '0.25rem 0.5rem',
+                          backgroundColor: '#3b82f6',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '0.25rem',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Sửa
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p style={{ color: '#6b7280', fontStyle: 'italic' }}>Chưa có giờ làm việc nào được thiết lập.</p>
+        )}
+      </div>
+
+      {/* Working Hour Modal */}
+      {isWorkingHourModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '2rem',
+            borderRadius: '0.5rem',
+            width: '90%',
+            maxWidth: '500px',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#374151' }}>
+                {isCreateWorkingHour ? 'Tạo Giờ Làm Việc Mới' : 'Cập Nhật Giờ Làm Việc'}
+              </h2>
+              <button
+                onClick={() => setIsWorkingHourModalOpen(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: '#6b7280'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#374151' }}>
+                  Ngày trong tuần:
+                </label>
+                <select
+                  value={workingHourForm.dayInWeek}
+                  onChange={(e) => setWorkingHourForm({ ...workingHourForm, dayInWeek: parseInt(e.target.value) })}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.25rem'
+                  }}
+                >
+                  <option value={0}>Chủ nhật</option>
+                  <option value={1}>Thứ 2</option>
+                  <option value={2}>Thứ 3</option>
+                  <option value={3}>Thứ 4</option>
+                  <option value={4}>Thứ 5</option>
+                  <option value={5}>Thứ 6</option>
+                  <option value={6}>Thứ 7</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#374151' }}>
+                  Ca làm việc:
+                </label>
+                <select
+                  value={workingHourForm.shift}
+                  onChange={(e) => setWorkingHourForm({ ...workingHourForm, shift: parseInt(e.target.value) })}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.25rem'
+                  }}
+                >
+                  <option value={0}>Ca sáng</option>
+                  <option value={1}>Ca chiều</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#374151' }}>
+                  Giờ mở cửa:
+                </label>
+                <input
+                  type="time"
+                  value={workingHourForm.openingTime}
+                  onChange={(e) => setWorkingHourForm({ ...workingHourForm, openingTime: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.25rem'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#374151' }}>
+                  Giờ đóng cửa:
+                </label>
+                <input
+                  type="time"
+                  value={workingHourForm.closingTime}
+                  onChange={(e) => setWorkingHourForm({ ...workingHourForm, closingTime: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.25rem'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={workingHourForm.status}
+                    onChange={(e) => setWorkingHourForm({ ...workingHourForm, status: e.target.checked })}
+                  />
+                  <span style={{ fontWeight: '500', color: '#374151' }}>Kích hoạt</span>
+                </label>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                <button
+                  onClick={() => setIsWorkingHourModalOpen(false)}
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem',
+                    backgroundColor: '#6b7280',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.25rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleSaveWorkingHour}
+                  disabled={isLoading}
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem',
+                    backgroundColor: isLoading ? '#9ca3af' : '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.25rem',
+                    cursor: isLoading ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {isLoading ? 'Đang lưu...' : (isCreateWorkingHour ? 'Tạo' : 'Cập nhật')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

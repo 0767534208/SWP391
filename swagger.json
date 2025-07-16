@@ -3271,6 +3271,42 @@
         }
       }
     },
+    "/api/LabTest/multiple": {
+      "post": {
+        "tags": [
+          "LabTest"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMultipleLabTestsRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMultipleLabTestsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMultipleLabTestsRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMultipleLabTestsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
     "/api/MenstrualCycle": {
       "get": {
         "tags": [
@@ -6073,6 +6109,19 @@
             "minimum": 15,
             "type": "integer",
             "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateMultipleLabTestsRequest": {
+        "type": "object",
+        "properties": {
+          "labTests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateLabTestRequest"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
