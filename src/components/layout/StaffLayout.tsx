@@ -61,6 +61,13 @@ const StaffLayout = () => {
               </svg>
               <span className="staff-nav-text text-xs font-medium">Quản lý kết quả xét nghiệm</span>
             </Link>
+            
+            <Link to="/staff/transactions" className={`staff-nav-link flex items-center px-2 py-1.5 rounded-lg transition-colors ${isActive('/staff/transactions') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800'}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="staff-sidebar-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+              </svg>
+              <span className="staff-nav-text text-xs font-medium">Quản lý giao dịch</span>
+            </Link>
           </div>
         </nav>
 

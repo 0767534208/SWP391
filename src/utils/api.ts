@@ -39,14 +39,12 @@ export interface AppointmentData {
   consultantID: string | null;
   appointmentDate: string;
   status: number;
-  appointmentType: number;
   totalAmount: number;
   paymentStatus: number;
   treatmentID?: string | null;
   treatmentOutcome?: any | null;
   slot: {
     slotID: number;
-    startConsultant: string;
     startTime: string;
     endTime: string;
   };
@@ -57,9 +55,24 @@ export interface AppointmentData {
     name: string;
     address: string;
     phone: string;
+    email?: string;
     status: boolean;
     dateOfBirth: string;
   };
+  appointmentDetails?: {
+    appointmentDetailID: number;
+    servicesID: number;
+    service: {
+      servicesID: number;
+      servicesName: string;
+      servicesPrice: number;
+      description: string;
+    };
+    consultantProfileID: number;
+    quantity: number;
+    servicePrice: number;
+    totalPrice: number;
+  }[];
   appointmentCode?: string;
   expiredTime?: string;
   createAt?: string;
@@ -815,122 +828,288 @@ export const feedbackAPI = {
   }
 };
 
-// LabTest API endpoints (Xét nghiệm)
+/**
+ * Thông tin xét nghiệm từ API (theo swagger LabTest schema)
+ */
+export interface LabTestData {
+  labTestID: number;
+  customerID: string | null;
+  customer?: any; // Account schema
+  staffID: string | null;
+  staff?: any; // Account schema
+  treatmentID: number | null;
+  treatmentOutcome?: any; // TreatmentOutcome schema
+  testName: string | null;
+  result: string | null;
+  referenceRange: string | null;
+  unit: string | null;
+  isPositive: boolean | null;
+  testDate: string; // ISO date format
+}
+
+/**
+ * Request để tạo xét nghiệm mới (theo swagger CreateLabTestRequest schema)
+ */
+export interface CreateLabTestRequest {
+  customerID: string; // required
+  staffID: string; // required
+  treatmentID?: number | null;
+  testName: string; // required, max 200 chars
+  result: string; // required, max 500 chars
+  referenceRange?: string | null; // max 200 chars
+  unit?: string | null; // max 50 chars
+  isPositive?: boolean | null;
+  testDate: string; // required, ISO date format
+}
+
+/**
+ * Request để cập nhật xét nghiệm (theo swagger UpdateLabTestRequest schema)
+ */
+export interface UpdateLabTestRequest {
+  labTestID: number; // required
+  customerID?: string | null;
+  staffID?: string | null;
+  treatmentID?: number | null;
+  testName?: string | null; // max 200 chars
+  result?: string | null; // max 500 chars
+  referenceRange?: string | null; // max 200 chars
+  unit?: string | null; // max 50 chars
+  isPositive?: boolean | null;
+  testDate?: string | null; // ISO date format
+}
+
+// LabTest API endpoints (Xét nghiệm) - Theo đúng swagger specification
 export const labTestAPI = {
   /**
    * Lấy tất cả xét nghiệm
+   * Endpoint: GET /api/LabTest
    */
-  getAllLabTests: async (): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>('/api/LabTest', 'GET');
+  getAllLabTests: async (): Promise<ApiResponse<LabTestData[]>> => {
+    return apiRequest<LabTestData[]>('/api/LabTest', 'GET');
   },
 
   /**
    * Tạo xét nghiệm mới
-   * @param labTestData - Thông tin xét nghiệm
+   * Endpoint: POST /api/LabTest
+   * @param labTestData - Thông tin xét nghiệm theo CreateLabTestRequest schema
    */
-  createLabTest: async (labTestData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/api/LabTest', 'POST', labTestData);
-  },
-
-  /**
-   * Lấy xét nghiệm theo ID
-   * @param id - ID của xét nghiệm
-   */
-  getLabTestById: async (id: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/LabTest/${id}`, 'GET');
+  createLabTest: async (labTestData: CreateLabTestRequest): Promise<ApiResponse<LabTestData>> => {
+    return apiRequest<LabTestData>('/api/LabTest', 'POST', labTestData);
   },
 
   /**
    * Cập nhật xét nghiệm
-   * @param id - ID của xét nghiệm
-   * @param labTestData - Thông tin xét nghiệm cần cập nhật
+   * Endpoint: PUT /api/LabTest
+   * @param labTestData - Thông tin xét nghiệm cần cập nhật theo UpdateLabTestRequest schema
    */
-  updateLabTest: async (id: string, labTestData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/LabTest/${id}`, 'PUT', labTestData);
+  updateLabTest: async (labTestData: UpdateLabTestRequest): Promise<ApiResponse<LabTestData>> => {
+    return apiRequest<LabTestData>('/api/LabTest', 'PUT', labTestData);
+  },
+
+  /**
+   * Lấy xét nghiệm theo ID
+   * Endpoint: GET /api/LabTest/{id}
+   * @param id - ID của xét nghiệm (integer)
+   */
+  getLabTestById: async (id: number): Promise<ApiResponse<LabTestData>> => {
+    return apiRequest<LabTestData>(`/api/LabTest/${id}`, 'GET');
   },
 
   /**
    * Xóa xét nghiệm
-   * @param id - ID của xét nghiệm
+   * Endpoint: DELETE /api/LabTest/{id}
+   * @param id - ID của xét nghiệm (integer)
    */
-  deleteLabTest: async (id: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/LabTest/${id}`, 'DELETE');
+  deleteLabTest: async (id: number): Promise<ApiResponse<void>> => {
+    return apiRequest<void>(`/api/LabTest/${id}`, 'DELETE');
   },
 
   /**
    * Lấy xét nghiệm theo ID khách hàng
-   * @param customerId - ID của khách hàng
+   * Endpoint: GET /api/LabTest/customer/{customerId}
+   * @param customerId - ID của khách hàng (string)
    */
-  getLabTestByCustomer: async (customerId: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>(`/api/LabTest/customer/${customerId}`, 'GET');
+  getLabTestByCustomer: async (customerId: string): Promise<ApiResponse<LabTestData[]>> => {
+    return apiRequest<LabTestData[]>(`/api/LabTest/customer/${customerId}`, 'GET');
   },
 
   /**
    * Lấy xét nghiệm theo ID nhân viên
-   * @param staffId - ID của nhân viên
+   * Endpoint: GET /api/LabTest/staff/{staffId}
+   * @param staffId - ID của nhân viên (string)
    */
-  getLabTestByStaff: async (staffId: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>(`/api/LabTest/staff/${staffId}`, 'GET');
+  getLabTestByStaff: async (staffId: string): Promise<ApiResponse<LabTestData[]>> => {
+    return apiRequest<LabTestData[]>(`/api/LabTest/staff/${staffId}`, 'GET');
   },
 
   /**
    * Lấy xét nghiệm theo ID điều trị
-   * @param treatmentId - ID của điều trị
+   * Endpoint: GET /api/LabTest/treatment/{treatmentId}
+   * @param treatmentId - ID của điều trị (integer)
    */
-  getLabTestByTreatment: async (treatmentId: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>(`/api/LabTest/treatment/${treatmentId}`, 'GET');
+  getLabTestByTreatment: async (treatmentId: number): Promise<ApiResponse<LabTestData[]>> => {
+    return apiRequest<LabTestData[]>(`/api/LabTest/treatment/${treatmentId}`, 'GET');
   },
 
   /**
    * Lấy xét nghiệm theo khoảng thời gian
-   * @param startDate - Ngày bắt đầu
-   * @param endDate - Ngày kết thúc
+   * Endpoint: GET /api/LabTest/date-range
+   * @param fromDate - Ngày bắt đầu (ISO format: 2025-05-10T00:00:00)
+   * @param toDate - Ngày kết thúc (ISO format: 2025-05-10T00:00:00)
    */
-  getLabTestByDateRange: async (startDate: string, endDate: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>(`/api/LabTest/date-range?startDate=${startDate}&endDate=${endDate}`, 'GET');
+  getLabTestByDateRange: async (fromDate: string, toDate: string): Promise<ApiResponse<LabTestData[]>> => {
+    return apiRequest<LabTestData[]>(`/api/LabTest/date-range?fromDate=${fromDate}&toDate=${toDate}`, 'GET');
   },
 
   /**
    * Tìm kiếm xét nghiệm
-   * @param searchParams - Tham số tìm kiếm
+   * Endpoint: GET /api/LabTest/search
+   * @param search - Từ khóa tìm kiếm
+   * @param pageIndex - Trang hiện tại (mặc định: 1)
+   * @param pageSize - Số bản ghi trên mỗi trang (mặc định: 10)
    */
-  searchLabTests: async (searchParams: any): Promise<ApiResponse<any[]>> => {
-    const queryParams = new URLSearchParams(searchParams);
-    return apiRequest<any[]>(`/api/LabTest/search?${queryParams.toString()}`, 'GET');
+  searchLabTests: async (search?: string, pageIndex: number = 1, pageSize: number = 10): Promise<ApiResponse<LabTestData[]>> => {
+    const queryParams = new URLSearchParams();
+    if (search) queryParams.append('search', search);
+    queryParams.append('pageIndex', pageIndex.toString());
+    queryParams.append('pageSize', pageSize.toString());
+    return apiRequest<LabTestData[]>(`/api/LabTest/search?${queryParams.toString()}`, 'GET');
   }
 };
+
+// Transaction data interface
+export interface TransactionData {
+  responseId: string;
+  appointment: {
+    appointmentID: number;
+    customerID: string;
+    customer: {
+      name: string;
+      address: string;
+      phone: string;
+      status: boolean;
+      dateOfBirth: {
+        year: number;
+        month: number;
+        day: number;
+        dayOfWeek: number;
+        dayOfYear: number;
+        dayNumber: number;
+      };
+    };
+    consultantID: string;
+    consultant: {
+      name: string;
+      address: string;
+      phone: string;
+      status: boolean;
+      dateOfBirth: {
+        year: number;
+        month: number;
+        day: number;
+        dayOfWeek: number;
+        dayOfYear: number;
+        dayNumber: number;
+      };
+    };
+    clinicID: number;
+    clinic: {
+      clinicID: number;
+      name: string;
+      description: string;
+      email: string;
+      address: string;
+      phone: string;
+      createAt: string;
+      updateAt: string;
+      status: number;
+    };
+    appointmentCode: string;
+    expiredTime: string;
+    createAt: string;
+    appointmentDate: string;
+    updateAt: string;
+    totalAmount: number;
+    remainingBalance: number;
+    consultationFee: number;
+    stIsTestFee: number;
+    status: number;
+    paymentStatus: number;
+  };
+  account: {
+    userID: string;
+    userName: string;
+    email: string;
+    name: string;
+    address: string;
+    phone: string;
+    dateOfBirth: {
+      year: number;
+      month: number;
+      day: number;
+      dayOfWeek: number;
+      dayOfYear: number;
+      dayNumber: number;
+    };
+  };
+  tmnCode: string;
+  txnRef: string;
+  amount: number;
+  orderInfo: string;
+  responseCode: string;
+  message: string;
+  bankTranNo: string;
+  payDate: string;
+  finishDate: string;
+  bankCode: string;
+  transactionNo: string;
+  transactionType: string;
+  transactionStatus: string;
+  secureHash: string;
+  transactionKind: number;
+  statusTransaction: number;
+}
 
 // Transaction API endpoints (Giao dịch thanh toán)
 export const transactionAPI = {
   /**
    * Lấy tất cả giao dịch
    */
-  getAllTransactions: async (): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>('/api/Transaction/GetAllTransactions', 'GET');
+  getAllTransactions: async (): Promise<ApiResponse<TransactionData[]>> => {
+    return apiRequest<TransactionData[]>('/api/Transaction/GetAllTransactions', 'GET');
   },
 
   /**
    * Lấy giao dịch theo ID
    * @param transactionId - ID của giao dịch
    */
-  getTransactionById: async (transactionId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/Transaction/GetTransactionByID/${transactionId}`, 'GET');
+  getTransactionById: async (transactionId: string): Promise<ApiResponse<TransactionData>> => {
+    return apiRequest<TransactionData>(`/api/Transaction/GetTransactionByID/${transactionId}`, 'GET');
   },
 
   /**
    * Lấy giao dịch theo ID lịch hẹn
    * @param appointmentId - ID của lịch hẹn
    */
-  getTransactionByAppointment: async (appointmentId: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>(`/api/Transaction/GetTransactionByAppointmentId/${appointmentId}`, 'GET');
+  getTransactionByAppointment: async (appointmentId: string): Promise<ApiResponse<TransactionData[]>> => {
+    return apiRequest<TransactionData[]>(`/api/Transaction/GetTransactionByAppointmentId/${appointmentId}`, 'GET');
   },
 
   /**
    * Lấy giao dịch theo ID tài khoản
    * @param accountId - ID của tài khoản
    */
-  getTransactionByAccount: async (accountId: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>(`/api/Transaction/GetTransactionByAccountID/${accountId}`, 'GET');
+  getTransactionByAccount: async (accountId: string): Promise<ApiResponse<TransactionData[]>> => {
+    return apiRequest<TransactionData[]>(`/api/Transaction/GetTransactionByAccountID/${accountId}`, 'GET');
+  },
+  
+  /**
+   * Cập nhật trạng thái giao dịch
+   * @param transactionId - ID giao dịch
+   * @param status - Trạng thái mới
+   */
+  updateTransactionStatus: async (transactionId: string, status: number): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/Transaction/UpdateTransactionStatus?transactionID=${transactionId}&status=${status}`, 'PUT');
   }
 };
 
@@ -1120,17 +1299,19 @@ export const categoryAPI = {
   }
 };
 
-// Consultant Slot API endpoints (Dựa theo các endpoint trong ảnh)
+
+// Consultant Slot API endpoints (Quản lý đăng ký slot của consultant)
 export const consultantSlotAPI = {
   /**
-   * Lấy tất cả consultant slot
-   * Endpoint: GET /api/consultantSlot/GetAllConsultantSlot
+   * Lấy tất cả consultant và thông tin slot đã đăng ký
    */
   getAllConsultants: async (): Promise<ApiResponse<any[]>> => {
     return apiRequest<any[]>('/api/consultantSlot/GetAllConsultantSlot', 'GET');
   },
 
   /**
+   * Lấy thông tin đăng ký slot của một consultant
+/**
    * Lấy tất cả consultant profile  
    * Endpoint: GET /api/consultantSlot/GetAllConsultantProfile
    */
@@ -1159,27 +1340,14 @@ export const consultantSlotAPI = {
   /**
    * Lấy thông tin slot của một consultant
    * Endpoint: GET /api/consultantSlot?consultantId={consultantId}
-   * @param consultantId - ID của consultant
+  * @param consultantId - ID của consultant
    */
   getConsultantSlots: async (consultantId: string): Promise<ApiResponse<any[]>> => {
     return apiRequest<any[]>(`/api/consultantSlot?consultantId=${consultantId}`, 'GET');
   },
 
   /**
-   * Tìm kiếm consultant slot
-   * Endpoint: GET /api/consultantSlot/search
-   * @param searchParams - Các tham số tìm kiếm
-   */
-  searchConsultantSlots: async (searchParams?: { [key: string]: any }): Promise<ApiResponse<any[]>> => {
-    const queryString = searchParams ? 
-      '?' + Object.entries(searchParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&') 
-      : '';
-    return apiRequest<any[]>(`/api/consultantSlot/search${queryString}`, 'GET');
-  },
-
-  /**
    * Đăng ký slot cho consultant
-   * Endpoint: POST /api/consultantSlot/register?slotId={slotId}&maxAppointment={maxAppointment}
    * @param slotId - ID của slot
    * @param maxAppointment - Số lượng appointment tối đa
    */
@@ -1188,41 +1356,22 @@ export const consultantSlotAPI = {
   },
 
   /**
-   * Tạo profile consultant
-   * Endpoint: POST /api/consultantSlot/CreateConsultantProfile
-   * @param profileData - Dữ liệu profile consultant
+   * Hủy đăng ký slot của consultant
+   * @param slotId - ID của slot đã đăng ký
    */
-  createConsultantProfile: async (profileData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/api/consultantSlot/CreateConsultantProfile', 'POST', profileData);
+  unregisterSlot: async (slotId: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/consultantSlot/unregister?id=${slotId}`, 'DELETE');
   },
-
+  
   /**
-   * Cập nhật profile consultant
-   * Endpoint: PUT /api/consultantSlot/UpdateConsultantProfile?consultantProfileID={consultantProfileID}
-   * @param consultantProfileID - ID profile consultant
-   * @param profileData - Dữ liệu profile consultant cần cập nhật
+   * Lấy tất cả slot có sẵn cho consultant đăng ký
    */
-  updateConsultantProfile: async (consultantProfileID: number, profileData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/consultantSlot/UpdateConsultantProfile?consultantProfileID=${consultantProfileID}`, 'PUT', profileData);
-  },
-
-  /**
-   * Hoán đổi slot giữa 2 consultant
-   * Endpoint: PUT /api/consultantSlot/swap?consultantA={consultantA}&slotA={slotA}&consultantB={consultantB}&slotB={slotB}
-   * @param consultantA - ID consultant A
-   * @param slotA - ID slot A
-   * @param consultantB - ID consultant B 
-   * @param slotB - ID slot B
-   */
-  swapSlots: async (consultantA: string, slotA: number, consultantB: string, slotB: number): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/consultantSlot/swap?consultantA=${consultantA}&slotA=${slotA}&consultantB=${consultantB}&slotB=${slotB}`, 'PUT');
-  },
-
-  // Alias methods cho backward compatibility
-  getAllConsultants: async (): Promise<ApiResponse<any[]>> => {
-    return consultantSlotAPI.getAllConsultantSlots();
+  getAvailableSlots: async (): Promise<ApiResponse<any[]>> => {
+    return apiRequest<any[]>('/api/slot/GetSlot', 'GET');
+  
   }
 };
+
 
 // Blog API endpoints  
 export const blogAPI = {

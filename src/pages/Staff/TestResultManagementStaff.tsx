@@ -3,27 +3,10 @@ import './TestResultManagementStaff.css';
 import { Link } from 'react-router-dom';
 import { FaSearch, FaSync } from 'react-icons/fa';
 import testResultService from '../../services/testResultService';
+import type { LabTestData } from '../../utils/api';
 
-// Types
-interface TestResult {
-  labTestID?: number;
-  id?: number | string;
-  customerID?: string;
-  patientId?: string;
-  patientName?: string;
-  testName?: string;
-  testType?: string;
-  result?: string;
-  referenceRange?: string;
-  unit?: string;
-  isPositive?: boolean;
-  testDate?: string;
-  resultDate?: string | null;
-  staffID?: string;
-  treatmentID?: number | null;
-  status?: 'completed' | 'pending' | 'cancelled';
-  notes?: string;
-}
+// Types - Sử dụng LabTestData từ swagger thay vì tự định nghĩa
+type TestResult = LabTestData;
 
 const TestResultManagementStaff: React.FC = () => {
   // States
@@ -50,8 +33,8 @@ const TestResultManagementStaff: React.FC = () => {
       });
       
       if (response.data) {
-        // Convert API test results to our local type if needed
-        setTestResults(response.data as unknown as TestResult[]);
+        // Dữ liệu đã đúng định dạng LabTestData từ swagger
+        setTestResults(response.data);
       } else {
         setTestResults([]);
       }
@@ -97,12 +80,9 @@ const TestResultManagementStaff: React.FC = () => {
   };
 
   const getPatientName = (test: TestResult) => {
-    // Return patient name if it exists
-    if (test.patientName) return test.patientName;
-    
-    // Otherwise, we'll need to get it from another source
-    // This is just a placeholder - in a real app, you might want to fetch the customer name
-    return `BN-${test.customerID || 'Unknown'}`;
+    // Sử dụng customer.name từ API nếu có, ngược lại dùng customerID
+    return test.customer?.name || 
+           `BN-${test.customerID || 'Unknown'}`;
   };
 
   return (
@@ -167,10 +147,10 @@ const TestResultManagementStaff: React.FC = () => {
                     <td>
                       <div className="patient-info">
                         <span className="patient-name">{getPatientName(test)}</span>
-                        <span className="patient-id">{test.customerID || test.patientId}</span>
+                        <span className="patient-id">{test.customerID}</span>
                       </div>
                     </td>
-                    <td>{test.testName || test.testType || 'N/A'}</td>
+                    <td>{test.testName || 'N/A'}</td>
                     <td>{formatDate(test.testDate)}</td>
                     <td>
                       {test.isPositive !== undefined ? (
@@ -182,13 +162,13 @@ const TestResultManagementStaff: React.FC = () => {
                       )}
                     </td>
                     <td className="actions-cell">
-                      <Link to={`/staff/test-results/${test.labTestID || test.id}`} className="action-button action-button-view" title="Xem kết quả">
+                      <Link to={`/staff/test-results/${test.labTestID}`} className="action-button action-button-view" title="Xem kết quả">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
                       </Link>
-                      <Link to={`/staff/test-results/edit/${test.labTestID || test.id}`} className="action-button action-button-edit" title="Chỉnh sửa kết quả">
+                      <Link to={`/staff/test-results/edit/${test.labTestID}`} className="action-button action-button-edit" title="Chỉnh sửa kết quả">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
