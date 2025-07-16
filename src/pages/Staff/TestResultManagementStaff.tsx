@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './TestResultManagementStaff.css';
 import { Link } from 'react-router-dom';
-import { FaSearch, FaSync } from 'react-icons/fa';
+import { FaSearch, FaSync, FaTimes } from 'react-icons/fa';
 import testResultService from '../../services/testResultService';
 
 // Types
@@ -9,8 +9,10 @@ interface TestResult {
   labTestID?: number;
   id?: number | string;
   customerID?: string;
+  customerName?: string;
   patientId?: string;
   patientName?: string;
+  staffName?: string;
   testName?: string;
   testType?: string;
   result?: string;
@@ -33,6 +35,9 @@ const TestResultManagementStaff: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<TestResult[]>([]);
+  const [selectedTest, setSelectedTest] = useState<TestResult | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
   const resultsPerPage = 10;
 
   // Fetch test results
@@ -97,19 +102,52 @@ const TestResultManagementStaff: React.FC = () => {
   };
 
   const getPatientName = (test: TestResult) => {
-    // Return patient name if it exists
-    if (test.patientName) return test.patientName;
-    
-    // Otherwise, we'll need to get it from another source
-    // This is just a placeholder - in a real app, you might want to fetch the customer name
-    return `BN-${test.customerID || 'Unknown'}`;
+    // Return patient name if it exists, otherwise return a placeholder
+    return test.customerName || test.patientName || `Bệnh nhân ${test.customerID || 'N/A'}`;
+  };
+
+  const getStaffName = (test: TestResult) => {
+    // Return staff name if it exists, otherwise return a placeholder
+    return test.staffName || `Nhân viên ${test.staffID || 'N/A'}`;
+  };
+
+  // Modal functions
+  const handleViewDetails = async (testId: number | string) => {
+    setModalLoading(true);
+    try {
+      const response = await testResultService.getTestResult(testId.toString());
+      if (response && response.data) {
+        setSelectedTest(response.data);
+        setShowModal(true);
+      }
+    } catch (err) {
+      console.error('Error fetching test details:', err);
+      setError('Không thể tải thông tin chi tiết');
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedTest(null);
   };
 
   return (
     <div className="test-result-management-staff">
       <div className="page-header">
-        <h1 className="page-title">Quản Lý Kết Quả Xét Nghiệm</h1>
-        <p className="page-subtitle">Quản lý và cập nhật kết quả xét nghiệm của bệnh nhân</p>
+        <div className="page-title-section">
+          <h1 className="page-title">Quản Lý Kết Quả Xét Nghiệm</h1>
+          <p className="page-subtitle">Quản lý và cập nhật kết quả xét nghiệm của bệnh nhân</p>
+        </div>
+        <div className="page-actions">
+          <Link to="/staff/test-results/new" className="btn btn-primary btn-add-new">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            Thêm kết quả xét nghiệm mới
+          </Link>
+        </div>
       </div>
 
       {/* Search Section with Refresh Button */}
@@ -152,6 +190,7 @@ const TestResultManagementStaff: React.FC = () => {
                 <th>ID</th>
                 <th>Mã điều trị</th>
                 <th>Bệnh nhân</th>
+                <th>Nhân viên xét nghiệm</th>
                 <th>Loại xét nghiệm</th>
                 <th>Ngày xét nghiệm</th>
                 <th>Kết quả</th>
@@ -164,12 +203,8 @@ const TestResultManagementStaff: React.FC = () => {
                   <tr key={test.labTestID || test.id}>
                     <td>{test.labTestID || test.id}</td>
                     <td>{test.treatmentID ? `APT-${test.treatmentID}` : 'N/A'}</td>
-                    <td>
-                      <div className="patient-info">
-                        <span className="patient-name">{getPatientName(test)}</span>
-                        <span className="patient-id">{test.customerID || test.patientId}</span>
-                      </div>
-                    </td>
+                    <td>{getPatientName(test)}</td>
+                    <td>{getStaffName(test)}</td>
                     <td>{test.testName || test.testType || 'N/A'}</td>
                     <td>{formatDate(test.testDate)}</td>
                     <td>
@@ -182,12 +217,17 @@ const TestResultManagementStaff: React.FC = () => {
                       )}
                     </td>
                     <td className="actions-cell">
-                      <Link to={`/staff/test-results/${test.labTestID || test.id}`} className="action-button action-button-view" title="Xem kết quả">
+                      <button 
+                        onClick={() => handleViewDetails(test.labTestID || test.id!)}
+                        className="action-button action-button-view" 
+                        title="Xem kết quả"
+                        disabled={modalLoading}
+                      >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
-                      </Link>
+                      </button>
                       <Link to={`/staff/test-results/edit/${test.labTestID || test.id}`} className="action-button action-button-edit" title="Chỉnh sửa kết quả">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -195,26 +235,74 @@ const TestResultManagementStaff: React.FC = () => {
                       </Link>
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={7} className="no-results">Không tìm thấy kết quả xét nghiệm nào.</td>
-                </tr>
-              )}
+                ))            ) : (
+              <tr>
+                <td colSpan={8} className="no-results">Không tìm thấy kết quả xét nghiệm nào.</td>
+              </tr>
+            )}
             </tbody>
           </table>
         )}
       </div>
 
-      {/* Add Test Result Button */}
-      <div className="action-buttons">
-        <Link to="/staff/test-results/new" className="btn btn-primary">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-          </svg>
-          Thêm kết quả xét nghiệm mới
-        </Link>
-      </div>
+      {/* Modal for viewing test result details */}
+      {showModal && selectedTest && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Chi Tiết Kết Quả Xét Nghiệm</h2>
+              <button className="modal-close" onClick={closeModal}>
+                <FaTimes />
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="modal-grid">
+                <div className="modal-field">
+                  <strong>ID:</strong> {selectedTest.labTestID || selectedTest.id}
+                </div>
+                <div className="modal-field">
+                  <strong>Mã điều trị:</strong> {selectedTest.treatmentID ? `APT-${selectedTest.treatmentID}` : 'N/A'}
+                </div>
+                <div className="modal-field">
+                  <strong>Bệnh nhân:</strong> {getPatientName(selectedTest)}
+                </div>
+                <div className="modal-field">
+                  <strong>Nhân viên xét nghiệm:</strong> {getStaffName(selectedTest)}
+                </div>
+                <div className="modal-field">
+                  <strong>Loại xét nghiệm:</strong> {selectedTest.testName || selectedTest.testType || 'N/A'}
+                </div>
+                <div className="modal-field">
+                  <strong>Ngày xét nghiệm:</strong> {formatDate(selectedTest.testDate)}
+                </div>
+                <div className="modal-field">
+                  <strong>Kết quả:</strong> {selectedTest.result || 'N/A'}
+                </div>
+                <div className="modal-field">
+                  <strong>Phạm vi tham chiếu:</strong> {selectedTest.referenceRange || 'N/A'}
+                </div>
+                <div className="modal-field">
+                  <strong>Đơn vị đo:</strong> {selectedTest.unit || 'N/A'}
+                </div>
+                <div className="modal-field">
+                  <strong>Tính chất:</strong> {selectedTest.isPositive !== undefined ? (selectedTest.isPositive ? 'Dương tính' : 'Âm tính') : 'N/A'}
+                </div>
+                <div className="modal-field">
+                  <strong>ID khách hàng:</strong> {selectedTest.customerID || 'N/A'}
+                </div>
+                <div className="modal-field">
+                  <strong>ID nhân viên:</strong> {selectedTest.staffID || 'N/A'}
+                </div>
+                {selectedTest.notes && (
+                  <div className="modal-field full-width">
+                    <strong>Ghi chú:</strong> {selectedTest.notes}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pagination */}
       {!loading && filteredTestResults.length > 0 && (
