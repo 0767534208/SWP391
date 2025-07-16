@@ -55,6 +55,9 @@ const Payment: React.FC<PaymentProps> = () => {
   const handlePayment = () => {
     setIsLoading(true);
     
+    // Lưu phương thức thanh toán vào localStorage
+    localStorage.setItem('lastPaymentMethod', paymentMethod);
+    
     // Different handling based on payment method
     setTimeout(() => {
       if (paymentMethod === 'vnpay') {
@@ -63,7 +66,7 @@ const Payment: React.FC<PaymentProps> = () => {
         redirectToVNPayPaymentPage(bookingData.appointmentId);
       } else if (paymentMethod === 'banking') {
         // For bank transfer, show banking information and redirect to success page
-        navigate('/payment-success', { 
+        navigate(`/payment-success/${bookingData.appointmentId}`, { 
           state: { 
             ...bookingData,
             paymentMethod,
@@ -74,7 +77,7 @@ const Payment: React.FC<PaymentProps> = () => {
         });
       } else if (paymentMethod === 'cash') {
         // For cash payment, mark as unpaid and redirect to success page
-        navigate('/payment-success', { 
+        navigate(`/payment-success/${bookingData.appointmentId}`, { 
           state: { 
             ...bookingData,
             paymentMethod,
@@ -93,8 +96,8 @@ const Payment: React.FC<PaymentProps> = () => {
     // Include the appointmentId in the payment process if available
     const paymentUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?vnp_Amount=1000000&vnp_Command=pay&vnp_CreateDate=20210801153333&vnp_CurrCode=VND&vnp_IpAddr=127.0.0.1&vnp_Locale=vn&vnp_OrderInfo=Thanh+toan+dich+vu";
     const urlWithAppointment = appointmentId ? 
-      `${paymentUrl}&vnp_OrderType=250000&vnp_ReturnUrl=http%3A%2F%2Flocalhost%3A3000%2Fpayment-success&vnp_TmnCode=DEMO&vnp_TxnRef=${appointmentId}&vnp_Version=2.1.0&vnp_SecureHash=18ee1aedaad3d07d9a19fe1187752a3adb8700bf5019b9bc1aacfaf7d1ae8d0a` :
-      `${paymentUrl}&vnp_OrderType=250000&vnp_ReturnUrl=http%3A%2F%2Flocalhost%3A3000%2Fpayment-success&vnp_TmnCode=DEMO&vnp_TxnRef=1234567890&vnp_Version=2.1.0&vnp_SecureHash=18ee1aedaad3d07d9a19fe1187752a3adb8700bf5019b9bc1aacfaf7d1ae8d0a`;
+      `${paymentUrl}&vnp_OrderType=250000&vnp_ReturnUrl=http%3A%2F%2Flocalhost%3A5173%2Fpayment-success%2F${appointmentId}&vnp_TmnCode=DEMO&vnp_TxnRef=${appointmentId}&vnp_Version=2.1.0&vnp_SecureHash=18ee1aedaad3d07d9a19fe1187752a3adb8700bf5019b9bc1aacfaf7d1ae8d0a` :
+      `${paymentUrl}&vnp_OrderType=250000&vnp_ReturnUrl=http%3A%2F%2Flocalhost%3A5173%2Fpayment-success%2F8&vnp_TmnCode=DEMO&vnp_TxnRef=1234567890&vnp_Version=2.1.0&vnp_SecureHash=18ee1aedaad3d07d9a19fe1187752a3adb8700bf5019b9bc1aacfaf7d1ae8d0a`;
     
     window.location.href = urlWithAppointment;
   };

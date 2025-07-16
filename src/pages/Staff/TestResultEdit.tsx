@@ -3,23 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import './TestResultEdit.css';
 import { FaArrowLeft } from 'react-icons/fa';
 import testResultService from '../../services/testResultService';
-import type { UpdateLabTestRequest } from '../../types';
+import type { UpdateLabTestRequest, LabTestData } from '../../utils/api';
 
-interface TestResult {
-  id?: number | string;
-  labTestID?: number;
-  userId?: string;
-  customerID?: string;
-  staffID?: string;
-  treatmentID?: number | null;
-  testName?: string;
-  testType?: string;
-  result?: string;
-  referenceRange?: string;
-  unit?: string;
-  isPositive?: boolean;
-  testDate?: string;
-}
+// Sử dụng LabTestData từ swagger thay vì tự định nghĩa
+type TestResult = LabTestData;
 
 const TestResultEdit: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -38,7 +25,12 @@ const TestResultEdit: React.FC = () => {
           throw new Error('ID không hợp lệ');
         }
         
-        const response = await testResultService.getTestResult(id);
+        const testResultId = parseInt(id);
+        if (isNaN(testResultId)) {
+          throw new Error('ID phải là số nguyên');
+        }
+        
+        const response = await testResultService.getTestResult(testResultId);
         if (response && response.data) {
           setTestResult(response.data);
         } else {

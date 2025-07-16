@@ -2,7 +2,7 @@ import React, { useState, type ChangeEvent } from 'react';
 import './TestResultForm.css';
 import testResultService from '../../services/testResultService';
 import { useNavigate } from 'react-router-dom';
-import type { CreateLabTestRequest } from '../../types';
+import type { CreateLabTestRequest } from '../../utils/api';
 
 interface TestResultFormProps {
   appointmentId?: number;
