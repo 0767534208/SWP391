@@ -12,11 +12,12 @@ const getStatusText = (status: number): string => {
     case 0: return 'Chờ xác nhận';
     case 1: return 'Đã xác nhận';
     case 2: return 'Đang thực hiện';
-    case 3: return 'Đợi kết quả';
-    case 4: return 'Hoàn thành';
-    case 5: return 'Đã hủy';
-    case 6: return 'Yêu cầu hoàn tiền';
-    case 7: return 'Yêu cầu hủy';
+    case 3: return 'Chờ xét nghiệm';
+    case 4: return 'Đợi kết quả';
+    case 5: return 'Hoàn thành';
+    case 6: return 'Đã hủy';
+    case 7: return 'Yêu cầu hoàn tiền';
+    case 8: return 'Yêu cầu hủy';
     default: return 'Không xác định';
   }
 };
@@ -28,6 +29,7 @@ const getPaymentStatusText = (status: number): string => {
     case 1: return 'Đã đặt cọc';
     case 2: return 'Đã thanh toán';
     case 3: return 'Đã hoàn tiền';
+    case 4: return 'Hoàn tiền một phần';
     default: return 'Không xác định';
   }
 };
@@ -64,15 +66,16 @@ const formatTime = (timeString: string): string => {
 const statusColor = (status: number) => {
   switch (status) {
     case 1: // Đã xác nhận
-    case 3: // Hoàn thành
-    case 5: // Đã thanh toán
+    case 5: // Hoàn thành
       return '#16a34a'; // Green
-    case 4: // Đã hủy
-    case 6: // Yêu cầu hoàn tiền
-    case 7: // Yêu cầu hủy
+    case 6: // Đã hủy
+    case 7: // Yêu cầu hoàn tiền
+    case 8: // Yêu cầu hủy
       return '#e53e3e'; // Red
     case 0: // Chờ xác nhận
-    case 2: // Đang xử lý
+    case 2: // Đang thực hiện
+    case 3: // Chờ xét nghiệm
+    case 4: // Đợi kết quả
       return '#f59e42'; // Orange
     default:
       return '#6b7280'; // Gray
@@ -82,15 +85,16 @@ const statusColor = (status: number) => {
 const statusIcon = (status: number) => {
   switch (status) {
     case 1: // Đã xác nhận
-    case 3: // Hoàn thành
-    case 5: // Đã thanh toán
+    case 5: // Hoàn thành
       return <FaCheckCircle color="#16a34a" style={{marginRight: 4}} />;
-    case 4: // Đã hủy
-    case 6: // Yêu cầu hoàn tiền
-    case 7: // Yêu cầu hủy
+    case 6: // Đã hủy
+    case 7: // Yêu cầu hoàn tiền
+    case 8: // Yêu cầu hủy
       return <FaTimesCircle color="#e53e3e" style={{marginRight: 4}} />;
     case 0: // Chờ xác nhận
-    case 2: // Đang xử lý
+    case 2: // Đang thực hiện
+    case 3: // Chờ xét nghiệm
+    case 4: // Đợi kết quả
       return <FaClock color="#f59e42" style={{marginRight: 4}} />;
     default:
       return <FaClock color="#6b7280" style={{marginRight: 4}} />;
@@ -123,6 +127,8 @@ const paymentStatusColor = (status: number) => {
       return '#16a34a'; // Green
     case 3: // Đã hoàn tiền
       return '#2563eb'; // Blue
+    case 4: // Hoàn tiền một phần
+      return '#8b5cf6'; // Purple
     case 1: // Đã đặt cọc
       return '#f59e42'; // Orange
     case 0: // Chờ thanh toán

@@ -48,6 +48,7 @@ import TestResultView from './pages/Staff/TestResultView';
 import TestResultManagementStaff from './pages/Staff/TestResultManagementStaff';
 import TestResultEdit from './pages/Staff/TestResultEdit';
 import TestResultForm from './pages/Staff/TestResultForm';
+import StaffTransactions from './pages/Staff/StaffTransactions';
 
 // Import API Testers
 import ApiTesters from './components/ApiTesters';
@@ -171,6 +172,7 @@ function App() {
           <Route path="profile" element={<ConsultantProfile />} />
           <Route path="appointments" element={<ConsultantAppointments />} />
           <Route path="test-results" element={<TestResultConsultant />} />
+          <Route path="test-results/new" element={<NewTestResult />} />
           <Route path="test-results/:id" element={<TestResultConsultantDetail />} />
           <Route path="slot-registration" element={<ConsultantSlotRegistration />} />
         </Route>
@@ -202,6 +204,7 @@ function App() {
           <Route path="test-results/new" element={<TestResultForm />} />
           <Route path="test-results/:id" element={<TestResultView />} />
           <Route path="test-results/edit/:id" element={<TestResultEdit />} />
+          <Route path="transactions" element={<StaffTransactions />} />
         </Route>
 
         {/* Route dành cho admin */}

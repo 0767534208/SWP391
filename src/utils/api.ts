@@ -977,37 +977,139 @@ export const labTestAPI = {
   }
 };
 
+// Transaction data interface
+export interface TransactionData {
+  responseId: string;
+  appointment: {
+    appointmentID: number;
+    customerID: string;
+    customer: {
+      name: string;
+      address: string;
+      phone: string;
+      status: boolean;
+      dateOfBirth: {
+        year: number;
+        month: number;
+        day: number;
+        dayOfWeek: number;
+        dayOfYear: number;
+        dayNumber: number;
+      };
+    };
+    consultantID: string;
+    consultant: {
+      name: string;
+      address: string;
+      phone: string;
+      status: boolean;
+      dateOfBirth: {
+        year: number;
+        month: number;
+        day: number;
+        dayOfWeek: number;
+        dayOfYear: number;
+        dayNumber: number;
+      };
+    };
+    clinicID: number;
+    clinic: {
+      clinicID: number;
+      name: string;
+      description: string;
+      email: string;
+      address: string;
+      phone: string;
+      createAt: string;
+      updateAt: string;
+      status: number;
+    };
+    appointmentCode: string;
+    expiredTime: string;
+    createAt: string;
+    appointmentDate: string;
+    updateAt: string;
+    totalAmount: number;
+    remainingBalance: number;
+    consultationFee: number;
+    stIsTestFee: number;
+    status: number;
+    paymentStatus: number;
+  };
+  account: {
+    userID: string;
+    userName: string;
+    email: string;
+    name: string;
+    address: string;
+    phone: string;
+    dateOfBirth: {
+      year: number;
+      month: number;
+      day: number;
+      dayOfWeek: number;
+      dayOfYear: number;
+      dayNumber: number;
+    };
+  };
+  tmnCode: string;
+  txnRef: string;
+  amount: number;
+  orderInfo: string;
+  responseCode: string;
+  message: string;
+  bankTranNo: string;
+  payDate: string;
+  finishDate: string;
+  bankCode: string;
+  transactionNo: string;
+  transactionType: string;
+  transactionStatus: string;
+  secureHash: string;
+  transactionKind: number;
+  statusTransaction: number;
+}
+
 // Transaction API endpoints (Giao dịch thanh toán)
 export const transactionAPI = {
   /**
    * Lấy tất cả giao dịch
    */
-  getAllTransactions: async (): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>('/api/Transaction/GetAllTransactions', 'GET');
+  getAllTransactions: async (): Promise<ApiResponse<TransactionData[]>> => {
+    return apiRequest<TransactionData[]>('/api/Transaction/GetAllTransactions', 'GET');
   },
 
   /**
    * Lấy giao dịch theo ID
    * @param transactionId - ID của giao dịch
    */
-  getTransactionById: async (transactionId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/Transaction/GetTransactionByID/${transactionId}`, 'GET');
+  getTransactionById: async (transactionId: string): Promise<ApiResponse<TransactionData>> => {
+    return apiRequest<TransactionData>(`/api/Transaction/GetTransactionByID/${transactionId}`, 'GET');
   },
 
   /**
    * Lấy giao dịch theo ID lịch hẹn
    * @param appointmentId - ID của lịch hẹn
    */
-  getTransactionByAppointment: async (appointmentId: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>(`/api/Transaction/GetTransactionByAppointmentId/${appointmentId}`, 'GET');
+  getTransactionByAppointment: async (appointmentId: string): Promise<ApiResponse<TransactionData[]>> => {
+    return apiRequest<TransactionData[]>(`/api/Transaction/GetTransactionByAppointmentId/${appointmentId}`, 'GET');
   },
 
   /**
    * Lấy giao dịch theo ID tài khoản
    * @param accountId - ID của tài khoản
    */
-  getTransactionByAccount: async (accountId: string): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>(`/api/Transaction/GetTransactionByAccountID/${accountId}`, 'GET');
+  getTransactionByAccount: async (accountId: string): Promise<ApiResponse<TransactionData[]>> => {
+    return apiRequest<TransactionData[]>(`/api/Transaction/GetTransactionByAccountID/${accountId}`, 'GET');
+  },
+  
+  /**
+   * Cập nhật trạng thái giao dịch
+   * @param transactionId - ID giao dịch
+   * @param status - Trạng thái mới
+   */
+  updateTransactionStatus: async (transactionId: string, status: number): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/Transaction/UpdateTransactionStatus?transactionID=${transactionId}&status=${status}`, 'PUT');
   }
 };
 

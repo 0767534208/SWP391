@@ -37,10 +37,18 @@ const getStatusBadgeClass = (status: string): string => {
       return 'status-badge status-badge-confirmed';
     case 'in_progress':
       return 'status-badge status-badge-in-progress';
+    case 'require_stis_test':
+      return 'status-badge status-badge-require-test';
     case 'awaiting_results':
       return 'status-badge status-badge-awaiting-results';
     case 'completed':
       return 'status-badge status-badge-completed';
+    case 'cancelled':
+      return 'status-badge status-badge-cancelled';
+    case 'request_refund':
+      return 'status-badge status-badge-request-refund';
+    case 'request_cancel':
+      return 'status-badge status-badge-request-cancel';
     default:
       return 'status-badge status-badge-pending';
   }
@@ -54,10 +62,18 @@ const getStatusDisplayText = (status: string): string => {
       return 'Đã Xác Nhận';
     case 'in_progress':
       return 'Đang Thực Hiện';
+    case 'require_stis_test':
+      return 'Chờ Xét Nghiệm';
     case 'awaiting_results':
       return 'Đợi Kết Quả';
     case 'completed':
       return 'Hoàn Thành';
+    case 'cancelled':
+      return 'Đã Hủy';
+    case 'request_refund':
+      return 'Yêu Cầu Hoàn Tiền';
+    case 'request_cancel':
+      return 'Yêu Cầu Hủy';
     default:
       return 'Đang Chờ';
   }
@@ -73,9 +89,17 @@ const mapStatusNumberToString = (statusNumber: number): string => {
     case 2:
       return 'in_progress';
     case 3:
-      return 'awaiting_results';
+      return 'require_stis_test';
     case 4:
+      return 'awaiting_results';
+    case 5:
       return 'completed';
+    case 6:
+      return 'cancelled';
+    case 7:
+      return 'request_refund';
+    case 8:
+      return 'request_cancel';
     default:
       return 'pending';
   }
@@ -90,10 +114,18 @@ const mapStatusStringToNumber = (statusString: string): number => {
       return 1;
     case 'in_progress':
       return 2;
-    case 'awaiting_results':
+    case 'require_stis_test':
       return 3;
-    case 'completed':
+    case 'awaiting_results':
       return 4;
+    case 'completed':
+      return 5;
+    case 'cancelled':
+      return 6;
+    case 'request_refund':
+      return 7;
+    case 'request_cancel':
+      return 8;
     default:
       return 0;
   }
@@ -431,8 +463,12 @@ const StaffAppointments = () => {
               <option value="pending">Đang Chờ</option>
               <option value="confirmed">Đã Xác Nhận</option>
               <option value="in_progress">Đang Thực Hiện</option>
+              <option value="require_stis_test">Chờ Xét Nghiệm</option>
               <option value="awaiting_results">Đợi Kết Quả</option>
               <option value="completed">Hoàn Thành</option>
+              <option value="cancelled">Đã Hủy</option>
+              <option value="request_refund">Yêu Cầu Hoàn Tiền</option>
+              <option value="request_cancel">Yêu Cầu Hủy</option>
             </select>
             
             <button
@@ -701,6 +737,18 @@ const StaffAppointments = () => {
                       )}
                       
                       {currentAppointment.status === 'in_progress' && (
+                        <div className="status-option">
+                          <button 
+                            className="status-button status-button-require-test"
+                            onClick={() => updateAppointmentStatus('require_stis_test')}
+                            disabled={isSubmitting}
+                          >
+                            {isSubmitting ? 'Đang cập nhật...' : 'Chờ Xét Nghiệm'}
+                          </button>
+                        </div>
+                      )}
+                      
+                      {currentAppointment.status === 'require_stis_test' && (
                         <div className="status-option">
                           <button 
                             className="status-button status-button-awaiting-results"
