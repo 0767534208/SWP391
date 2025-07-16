@@ -1197,17 +1197,19 @@ export const categoryAPI = {
   }
 };
 
-// Consultant Slot API endpoints (Dựa theo các endpoint trong ảnh)
+
+// Consultant Slot API endpoints (Quản lý đăng ký slot của consultant)
 export const consultantSlotAPI = {
   /**
-   * Lấy tất cả consultant slot
-   * Endpoint: GET /api/consultantSlot/GetAllConsultantSlot
+   * Lấy tất cả consultant và thông tin slot đã đăng ký
    */
   getAllConsultants: async (): Promise<ApiResponse<any[]>> => {
     return apiRequest<any[]>('/api/consultantSlot/GetAllConsultantSlot', 'GET');
   },
 
   /**
+   * Lấy thông tin đăng ký slot của một consultant
+/**
    * Lấy tất cả consultant profile  
    * Endpoint: GET /api/consultantSlot/GetAllConsultantProfile
    */
@@ -1236,27 +1238,14 @@ export const consultantSlotAPI = {
   /**
    * Lấy thông tin slot của một consultant
    * Endpoint: GET /api/consultantSlot?consultantId={consultantId}
-   * @param consultantId - ID của consultant
+  * @param consultantId - ID của consultant
    */
   getConsultantSlots: async (consultantId: string): Promise<ApiResponse<any[]>> => {
     return apiRequest<any[]>(`/api/consultantSlot?consultantId=${consultantId}`, 'GET');
   },
 
   /**
-   * Tìm kiếm consultant slot
-   * Endpoint: GET /api/consultantSlot/search
-   * @param searchParams - Các tham số tìm kiếm
-   */
-  searchConsultantSlots: async (searchParams?: { [key: string]: any }): Promise<ApiResponse<any[]>> => {
-    const queryString = searchParams ? 
-      '?' + Object.entries(searchParams).map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&') 
-      : '';
-    return apiRequest<any[]>(`/api/consultantSlot/search${queryString}`, 'GET');
-  },
-
-  /**
    * Đăng ký slot cho consultant
-   * Endpoint: POST /api/consultantSlot/register?slotId={slotId}&maxAppointment={maxAppointment}
    * @param slotId - ID của slot
    * @param maxAppointment - Số lượng appointment tối đa
    */
@@ -1265,41 +1254,22 @@ export const consultantSlotAPI = {
   },
 
   /**
-   * Tạo profile consultant
-   * Endpoint: POST /api/consultantSlot/CreateConsultantProfile
-   * @param profileData - Dữ liệu profile consultant
+   * Hủy đăng ký slot của consultant
+   * @param slotId - ID của slot đã đăng ký
    */
-  createConsultantProfile: async (profileData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/api/consultantSlot/CreateConsultantProfile', 'POST', profileData);
+  unregisterSlot: async (slotId: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/consultantSlot/unregister?id=${slotId}`, 'DELETE');
   },
-
+  
   /**
-   * Cập nhật profile consultant
-   * Endpoint: PUT /api/consultantSlot/UpdateConsultantProfile?consultantProfileID={consultantProfileID}
-   * @param consultantProfileID - ID profile consultant
-   * @param profileData - Dữ liệu profile consultant cần cập nhật
+   * Lấy tất cả slot có sẵn cho consultant đăng ký
    */
-  updateConsultantProfile: async (consultantProfileID: number, profileData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/consultantSlot/UpdateConsultantProfile?consultantProfileID=${consultantProfileID}`, 'PUT', profileData);
-  },
-
-  /**
-   * Hoán đổi slot giữa 2 consultant
-   * Endpoint: PUT /api/consultantSlot/swap?consultantA={consultantA}&slotA={slotA}&consultantB={consultantB}&slotB={slotB}
-   * @param consultantA - ID consultant A
-   * @param slotA - ID slot A
-   * @param consultantB - ID consultant B 
-   * @param slotB - ID slot B
-   */
-  swapSlots: async (consultantA: string, slotA: number, consultantB: string, slotB: number): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/consultantSlot/swap?consultantA=${consultantA}&slotA=${slotA}&consultantB=${consultantB}&slotB=${slotB}`, 'PUT');
-  },
-
-  // Alias methods cho backward compatibility
-  getAllConsultants: async (): Promise<ApiResponse<any[]>> => {
-    return consultantSlotAPI.getAllConsultantSlots();
+  getAvailableSlots: async (): Promise<ApiResponse<any[]>> => {
+    return apiRequest<any[]>('/api/slot/GetSlot', 'GET');
+  
   }
 };
+
 
 // Blog API endpoints  
 export const blogAPI = {

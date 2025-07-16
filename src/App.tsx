@@ -26,6 +26,7 @@ import TestResultConsultant from './pages/Consultant/TestResultConsultant';
 import TestResultConsultantDetail from './pages/Consultant/TestResultConsultantDetail';
 import NewTestResult from './pages/Consultant/NewTestResult';
 import ConsultantAppointments from './pages/Appointments/ConsultantAppointments';
+import ConsultantSlotRegistration from './pages/Consultant/ConsultantSlotRegistration';
 import Services from './pages/Services/Services';
 import QnA from './pages/QnA/QnA';
 import Payment from './pages/Payment/Payment';
@@ -170,9 +171,8 @@ function App() {
           <Route path="profile" element={<ConsultantProfile />} />
           <Route path="appointments" element={<ConsultantAppointments />} />
           <Route path="test-results" element={<TestResultConsultant />} />
-          <Route path="test-results/new" element={<NewTestResult />} />
           <Route path="test-results/:id" element={<TestResultConsultantDetail />} />
-          <Route path="test-results/new" element={<NewTestResult />} />
+          <Route path="slot-registration" element={<ConsultantSlotRegistration />} />
         </Route>
 
         {/* Route dành cho manager */}
