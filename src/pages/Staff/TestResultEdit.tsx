@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import './TestResultEdit.css';
 import { FaArrowLeft } from 'react-icons/fa';
 import testResultService from '../../services/testResultService';
-import type { UpdateLabTestRequest } from '../../types';
+import type { UpdateLabTestRequest, LabTestData } from '../../utils/api';
 
 interface TestResult {
   id?: number | string;
@@ -40,7 +40,12 @@ const TestResultEdit: React.FC = () => {
           throw new Error('ID không hợp lệ');
         }
         
-        const response = await testResultService.getTestResult(id);
+        const testResultId = parseInt(id);
+        if (isNaN(testResultId)) {
+          throw new Error('ID phải là số nguyên');
+        }
+        
+        const response = await testResultService.getTestResult(testResultId);
         if (response && response.data) {
           // The API response should contain the full test result data
           const result = response.data as any;

@@ -376,6 +376,14 @@ export interface BlogCreationRequest {
 /**
  * Thông tin kết quả xét nghiệm
  */
+// ========== Test Result Types - Moved to api.ts ==========
+// TestResult, CreateLabTestRequest và UpdateLabTestRequest đã được moved sang api.ts
+// để tránh duplicate và theo đúng cấu trúc từ swagger
+
+/**
+ * Legacy TestResult interface - deprecated, sử dụng LabTestData từ api.ts thay thế
+ * @deprecated Use LabTestData from api.ts instead
+ */
 export interface TestResult {
   id: string;
   userId: string;
@@ -390,7 +398,8 @@ export interface TestResult {
 }
 
 /**
- * Yêu cầu tạo kết quả xét nghiệm mới
+ * Legacy CreateTestResultRequest - deprecated
+ * @deprecated Use CreateLabTestRequest from api.ts instead
  */
 export interface CreateTestResultRequest {
   userId: string;
@@ -399,37 +408,6 @@ export interface CreateTestResultRequest {
   result: string;
   notes?: string;
   attachments?: string[];
-}
-
-/**
- * Yêu cầu tạo kết quả xét nghiệm theo swagger API
- */
-export interface CreateLabTestRequest {
-  customerID: string;
-  staffID: string;
-  treatmentID?: number | null;
-  testName: string;
-  result: string;
-  referenceRange?: string;
-  unit?: string;
-  isPositive?: boolean;
-  testDate: string;
-}
-
-/**
- * Yêu cầu cập nhật kết quả xét nghiệm theo swagger API
- */
-export interface UpdateLabTestRequest {
-  labTestID: number;
-  customerID?: string;
-  staffID?: string;
-  treatmentID?: number | null;
-  testName?: string;
-  result?: string;
-  referenceRange?: string;
-  unit?: string;
-  isPositive?: boolean;
-  testDate?: string;
 }
 
 // ========== Cycle Tracking Types ==========

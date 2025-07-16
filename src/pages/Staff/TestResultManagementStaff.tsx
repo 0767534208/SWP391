@@ -3,6 +3,7 @@ import './TestResultManagementStaff.css';
 import { Link } from 'react-router-dom';
 import { FaSearch, FaTimes, FaEye, FaEdit, FaPlus } from 'react-icons/fa';
 import testResultService from '../../services/testResultService';
+import type { LabTestData } from '../../utils/api';
 
 // Types
 interface TestResult {
