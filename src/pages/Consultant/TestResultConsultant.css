@@ -998,15 +998,14 @@
   padding: 1rem;
 }
 
-.result-detail-modal {
+.modal-content {
   background-color: white;
   border-radius: 0.5rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.1);
   width: 100%;
-  max-width: 900px;
+  max-width: 800px;
   max-height: 90vh;
-  display: flex;
-  flex-direction: column;
+  overflow-y: auto;
 }
 
 .modal-header {
@@ -1017,66 +1016,237 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
-.modal-header h2 {
+.modal-header h3 {
   font-size: 1.25rem;
   font-weight: 600;
   color: #1f2937;
+  margin: 0;
 }
 
-.modal-actions {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.modal-actions button {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
+.modal-close {
+  background: none;
   border: none;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
+  font-size: 1.5rem;
+  color: #9ca3af;
   cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.modal-actions .print-button {
-  background-color: #ecfdf5;
-  color: #10b981;
-}
-
-.modal-actions .print-button:hover {
-  background-color: #d1fae5;
-}
-
-.modal-actions .download-button {
-  background-color: #eff6ff;
-  color: #3b82f6;
-}
-
-.modal-actions .download-button:hover {
-  background-color: #dbeafe;
-}
-
-.modal-actions .close-button {
-  background-color: #f3f4f6;
-  color: #4b5563;
+  padding: 0;
   width: 2rem;
   height: 2rem;
-  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.modal-actions .close-button:hover {
+.modal-close:hover {
+  color: #6b7280;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary {
+  background-color: #10b981;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #059669;
+}
+
+.btn-secondary {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+.btn-secondary:hover {
   background-color: #e5e7eb;
 }
 
-.modal-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1.5rem;
+.detail-section {
+  margin-bottom: 1.5rem;
+}
+
+.detail-section h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.detail-item {
+  padding: 0.75rem 0;
+}
+
+.detail-item strong {
+  color: #374151;
+  font-weight: 500;
+}
+
+.detail-content {
+  background-color: #f9fafb;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid #e5e7eb;
+  white-space: pre-wrap;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  color: #1f2937;
+  background-color: white;
+  resize: vertical;
+}
+
+.form-group textarea:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.view-btn {
+  background-color: #eff6ff;
+  color: #3b82f6;
+}
+
+.view-btn:hover {
+  background-color: #dbeafe;
+}
+
+.edit-btn {
+  background-color: #ecfdf5;
+  color: #10b981;
+}
+
+.edit-btn:hover {
+  background-color: #d1fae5;
+}
+
+.no-data {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  color: #6b7280;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid #f3f4f6;
+  border-radius: 50%;
+  border-top-color: #4f46e5;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error-state {
+  text-align: center;
+  padding: 2rem;
+  color: #ef4444;
+}
+
+.retry-btn {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
+.retry-btn:hover {
+  background-color: #2563eb;
+}
+
+.clear-search {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.clear-search:hover {
+  color: #6b7280;
 }
 
 .test-info-section {
@@ -1231,44 +1401,391 @@
   background-color: #e5e7eb;
 }
 
+/* Treatment Outcomes Table Styles */
+.treatment-outcomes-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+}
+
+.treatment-outcomes-table th,
+.treatment-outcomes-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.875rem;
+  vertical-align: middle;
+}
+
+.treatment-outcomes-table th {
+  font-weight: 600;
+  color: #6b7280;
+  background-color: #f9fafb;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.treatment-outcomes-table tr:last-child td {
+  border-bottom: none;
+}
+
+.treatment-outcomes-table tr:hover {
+  background-color: #f9fafb;
+}
+
+/* Treatment Outcome Modal Styles */
+.treatment-outcome-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.treatment-outcome-modal {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.treatment-outcome-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.treatment-outcome-modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.treatment-outcome-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.treatment-outcome-modal-close:hover {
+  color: #6b7280;
+}
+
+.treatment-outcome-modal-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+/* Treatment Outcome Details */
+.treatment-outcome-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.treatment-outcome-section {
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.treatment-outcome-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+}
+
+.treatment-outcome-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.treatment-outcome-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.treatment-outcome-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.treatment-outcome-value {
+  font-size: 0.875rem;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.treatment-outcome-full-width {
+  grid-column: 1 / -1;
+}
+
+.treatment-outcome-text {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  color: #1f2937;
+  margin-top: 0.25rem;
+  white-space: pre-wrap;
+}
+
+/* Edit Treatment Outcome Form */
+.edit-treatment-outcome-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.edit-form-section {
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.edit-form-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+}
+
+.edit-form-group {
+  margin-bottom: 1rem;
+}
+
+.edit-form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.edit-form-input,
+.edit-form-textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  color: #1f2937;
+  background-color: white;
+}
+
+.edit-form-input:focus,
+.edit-form-textarea:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+}
+
+.edit-form-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.edit-form-full-width {
+  grid-column: 1 / -1;
+}
+
+.edit-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.edit-form-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.edit-form-button.save {
+  background-color: #10b981;
+  color: white;
+}
+
+.edit-form-button.save:hover {
+  background-color: #059669;
+}
+
+.edit-form-button.cancel {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+.edit-form-button.cancel:hover {
+  background-color: #e5e7eb;
+}
+
+/* Action Buttons */
+.action-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.action-button.view {
+  background-color: #eff6ff;
+  color: #3b82f6;
+}
+
+.action-button.view:hover {
+  background-color: #dbeafe;
+}
+
+.action-button.edit {
+  background-color: #ecfdf5;
+  color: #10b981;
+}
+
+.action-button.edit:hover {
+  background-color: #d1fae5;
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
-  .test-info-section {
+  .treatment-outcomes-table {
+    font-size: 0.75rem;
+  }
+  
+  .treatment-outcomes-table th,
+  .treatment-outcomes-table td {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .treatment-outcome-details,
+  .edit-treatment-outcome-form {
     grid-template-columns: 1fr;
   }
   
-  .filter-controls {
-    flex-direction: column;
-    align-items: stretch;
+  .treatment-outcome-modal {
+    max-width: 95%;
   }
   
-  .filter-group {
-    min-width: 100%;
+  .edit-form-actions {
+    flex-direction: column;
   }
 }
 
+/* Loading states */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  color: #6b7280;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid #f3f4f6;
+  border-radius: 50%;
+  border-top-color: #4f46e5;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6b7280;
+}
+
+.empty-state h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.empty-state .create-result-btn {
+  margin-top: 1rem;
+}
+
+/* Print styles for treatment outcomes */
 @media print {
-  .test-results-consultant {
-    padding: 0;
-  }
-  
-  .results-header,
-  .test-results-summary,
-  .results-filters,
-  .modal-header,
-  .modal-footer,
-  .modal-overlay {
-    display: none;
-  }
-  
-  .result-detail-modal {
-    position: static;
+  .treatment-outcome-modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
     box-shadow: none;
     max-height: none;
-    width: 100%;
-    max-width: none;
   }
   
-  .modal-content {
-    padding: 0;
+  .treatment-outcome-modal-header {
+    border-bottom: 2px solid #000;
+  }
+  
+  .treatment-outcome-modal-close,
+  .edit-form-actions {
+    display: none !important;
+  }
+  
+  .treatment-outcome-details {
+    grid-template-columns: 1fr;
+  }
+  
+  .treatment-outcome-section {
+    border: 1px solid #000;
+    break-inside: avoid;
   }
 }
