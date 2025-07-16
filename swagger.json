@@ -1869,7 +1869,210 @@
         }
       }
     },
-    "/api/consultantSlot/GetAll": {
+    "/api/Chat/messages/{conversationId}": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "parameters": [
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Chat/conversations/by-customer/{customerId}": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Chat/messages/by-customer-receiver": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "receiverId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Chat/mark-as-read": {
+      "put": {
+        "tags": [
+          "Chat"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkAsReadRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkAsReadRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkAsReadRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkAsReadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Chat/send-message": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "ReceiverID",
+                  "SenderID"
+                ],
+                "type": "object",
+                "properties": {
+                  "ReceiverID": {
+                    "type": "string"
+                  },
+                  "SenderID": {
+                    "type": "string"
+                  },
+                  "Content": {
+                    "pattern": "^(?!\\\\s*$).+",
+                    "type": "string"
+                  },
+                  "Images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                }
+              },
+              "encoding": {
+                "ReceiverID": {
+                  "style": "form"
+                },
+                "SenderID": {
+                  "style": "form"
+                },
+                "Content": {
+                  "style": "form"
+                },
+                "Images": {
+                  "style": "form"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Chat/create-conversation": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConversationRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConversationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConversationRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConversationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/consultantSlot/GetAllConsultantSlot": {
       "get": {
         "tags": [
           "ConsultantSlot"
@@ -1877,6 +2080,114 @@
         "responses": {
           "200": {
             "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/consultantSlot/GetAllConsultantProfile": {
+      "get": {
+        "tags": [
+          "ConsultantSlot"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetAllConsultantProfileIEnumerableBaseResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetAllConsultantProfileIEnumerableBaseResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetAllConsultantProfileIEnumerableBaseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/consultantSlot/GetConsultantProfileByAccountId/{accountId}": {
+      "get": {
+        "tags": [
+          "ConsultantSlot"
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetConsultantProfileResponseBaseResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetConsultantProfileResponseBaseResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetConsultantProfileResponseBaseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/consultantSlot/GetConsultantProfileById/{consultantProfileID}": {
+      "get": {
+        "tags": [
+          "ConsultantSlot"
+        ],
+        "parameters": [
+          {
+            "name": "consultantProfileID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetConsultantProfileResponseBaseResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetConsultantProfileResponseBaseResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetConsultantProfileResponseBaseResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1892,6 +2203,36 @@
             "in": "query",
             "schema": {
               "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/consultantSlot/search": {
+      "get": {
+        "tags": [
+          "ConsultantSlot"
+        ],
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2025-05-10T00:00:00"
             }
           }
         ],
@@ -3147,72 +3488,6 @@
         }
       }
     },
-    "/api/Message": {
-      "post": {
-        "tags": [
-          "Message"
-        ],
-        "parameters": [
-          {
-            "name": "questionId",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateMessageRequest"
-              }
-            },
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateMessageRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateMessageRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateMessageRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Success"
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "Message"
-        ],
-        "parameters": [
-          {
-            "name": "questionId",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          }
-        }
-      }
-    },
     "/api/Question": {
       "post": {
         "tags": [
@@ -3260,6 +3535,76 @@
       }
     },
     "/api/Question/{questionId}": {
+      "get": {
+        "tags": [
+          "Question"
+        ],
+        "parameters": [
+          {
+            "name": "questionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Question/{questionId}/message": {
+      "post": {
+        "tags": [
+          "Question"
+        ],
+        "parameters": [
+          {
+            "name": "questionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateQnAMessageRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateQnAMessageRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateQnAMessageRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateQnAMessageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Question/{questionId}/messages": {
       "get": {
         "tags": [
           "Question"
@@ -3526,6 +3871,27 @@
       "get": {
         "tags": [
           "Slot"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/slot/search": {
+      "get": {
+        "tags": [
+          "Slot"
+        ],
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -4389,6 +4755,48 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/MenstrualCycle"
+            },
+            "nullable": true
+          },
+          "qnACustomerMessages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QnAMessage"
+            },
+            "nullable": true
+          },
+          "qnAConsultantMessages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QnAMessage"
+            },
+            "nullable": true
+          },
+          "sentChatMessages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            },
+            "nullable": true
+          },
+          "receivedChatMessages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            },
+            "nullable": true
+          },
+          "conversationsAsUser1": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Conversation"
+            },
+            "nullable": true
+          },
+          "conversationsAsUser2": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Conversation"
             },
             "nullable": true
           }
@@ -5282,6 +5690,51 @@
         },
         "additionalProperties": false
       },
+      "Conversation": {
+        "required": [
+          "user1ID",
+          "user2ID"
+        ],
+        "type": "object",
+        "properties": {
+          "conversationID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "user1ID": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "user2ID": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2025-05-10T00:00:00"
+          },
+          "lastMessageAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2025-05-10T00:00:00"
+          },
+          "user1": {
+            "$ref": "#/components/schemas/Account"
+          },
+          "user2": {
+            "$ref": "#/components/schemas/Account"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "CreateAppointmentRequest": {
         "required": [
           "appointmentDate",
@@ -5434,6 +5887,29 @@
           },
           "data": {
             "$ref": "#/components/schemas/CreateConsultantProfile"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateConversationRequest": {
+        "required": [
+          "receiverID",
+          "senderID"
+        ],
+        "type": "object",
+        "properties": {
+          "receiverID": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "senderID": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2025-05-10T00:00:00"
           }
         },
         "additionalProperties": false
@@ -5601,7 +6077,7 @@
         },
         "additionalProperties": false
       },
-      "CreateMessageRequest": {
+      "CreateQnAMessageRequest": {
         "type": "object",
         "properties": {
           "content": {
@@ -6003,6 +6479,13 @@
           },
           "paymentStatus": {
             "$ref": "#/components/schemas/PaymentStatus"
+          },
+          "appointmentDetails": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetAppointmentDetailResponse"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -6086,6 +6569,93 @@
               "$ref": "#/components/schemas/GetAllCategoryResponse"
             },
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetAllConsultantProfile": {
+        "type": "object",
+        "properties": {
+          "consultantProfileID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "account": {
+            "$ref": "#/components/schemas/GetConsultantUserForProfile"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "specialty": {
+            "type": "string",
+            "nullable": true
+          },
+          "experience": {
+            "type": "string",
+            "nullable": true
+          },
+          "consultantPrice": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetAllConsultantProfileIEnumerableBaseResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "statusCode": {
+            "$ref": "#/components/schemas/StatusCodeEnum"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetAllConsultantProfile"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetAppointmentDetailResponse": {
+        "type": "object",
+        "properties": {
+          "appointmentDetailID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "servicesID": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "service": {
+            "$ref": "#/components/schemas/GetServiceResponse"
+          },
+          "consultantProfileID": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "consultantProfile": {
+            "$ref": "#/components/schemas/GetConsultantProfileResponse"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "servicePrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalPrice": {
+            "type": "number",
+            "format": "double"
           }
         },
         "additionalProperties": false
@@ -6198,6 +6768,73 @@
         },
         "additionalProperties": false
       },
+      "GetConsultantProfileResponse": {
+        "type": "object",
+        "properties": {
+          "consultantProfileID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "account": {
+            "$ref": "#/components/schemas/GetConsultantUserForProfile"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "specialty": {
+            "type": "string",
+            "nullable": true
+          },
+          "experience": {
+            "type": "string",
+            "nullable": true
+          },
+          "consultantPrice": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetConsultantProfileResponseBaseResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "statusCode": {
+            "$ref": "#/components/schemas/StatusCodeEnum"
+          },
+          "data": {
+            "$ref": "#/components/schemas/GetConsultantProfileResponse"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetConsultantSlotForProfile": {
+        "type": "object",
+        "properties": {
+          "slotID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "slot": {
+            "$ref": "#/components/schemas/GetSlotResponseForProfile"
+          },
+          "maxAppointment": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "assignedDate": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2025-05-10T00:00:00"
+          }
+        },
+        "additionalProperties": false
+      },
       "GetConsultantUser": {
         "type": "object",
         "properties": {
@@ -6218,6 +6855,37 @@
           },
           "dateOfBirth": {
             "$ref": "#/components/schemas/DateOnly"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetConsultantUserForProfile": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "boolean"
+          },
+          "dateOfBirth": {
+            "$ref": "#/components/schemas/DateOnly"
+          },
+          "consultantSlots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetConsultantSlotForProfile"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -6280,6 +6948,34 @@
         },
         "additionalProperties": false
       },
+      "GetServiceResponse": {
+        "type": "object",
+        "properties": {
+          "servicesID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "servicesName": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "servicesPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "status": {
+            "type": "boolean"
+          },
+          "serviceType": {
+            "$ref": "#/components/schemas/ServiceType"
+          }
+        },
+        "additionalProperties": false
+      },
       "GetServiceStats": {
         "type": "object",
         "properties": {
@@ -6315,6 +7011,30 @@
         "additionalProperties": false
       },
       "GetSlotResponse": {
+        "type": "object",
+        "properties": {
+          "slotID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxConsultant": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2025-05-10T00:00:00"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2025-05-10T00:00:00"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetSlotResponseForProfile": {
         "type": "object",
         "properties": {
           "slotID": {
@@ -6712,6 +7432,24 @@
         },
         "additionalProperties": false
       },
+      "MarkAsReadRequest": {
+        "required": [
+          "conversationId",
+          "senderId"
+        ],
+        "type": "object",
+        "properties": {
+          "conversationId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "senderId": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "MenstrualCycle": {
         "type": "object",
         "properties": {
@@ -6745,6 +7483,61 @@
         },
         "additionalProperties": false
       },
+      "Message": {
+        "required": [
+          "receiverID",
+          "senderID"
+        ],
+        "type": "object",
+        "properties": {
+          "messageID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "conversationID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "senderID": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "receiverID": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "content": {
+            "type": "string",
+            "nullable": true
+          },
+          "senderName": {
+            "type": "string",
+            "nullable": true
+          },
+          "receiverName": {
+            "type": "string",
+            "nullable": true
+          },
+          "sentAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2025-05-10T00:00:00"
+          },
+          "isRead": {
+            "type": "boolean"
+          },
+          "conversation": {
+            "$ref": "#/components/schemas/Conversation"
+          },
+          "sender": {
+            "$ref": "#/components/schemas/Account"
+          },
+          "receiver": {
+            "$ref": "#/components/schemas/Account"
+          }
+        },
+        "additionalProperties": false
+      },
       "PaymentStatus": {
         "enum": [
           0,
@@ -6755,6 +7548,94 @@
         ],
         "type": "integer",
         "format": "int32"
+      },
+      "QnAMessage": {
+        "type": "object",
+        "properties": {
+          "messageID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "questionID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "customerID": {
+            "type": "string",
+            "nullable": true
+          },
+          "consultantID": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2025-05-10T00:00:00"
+          },
+          "parentMessageId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "customer": {
+            "$ref": "#/components/schemas/Account"
+          },
+          "consultant": {
+            "$ref": "#/components/schemas/Account"
+          },
+          "question": {
+            "$ref": "#/components/schemas/Question"
+          },
+          "parentMessage": {
+            "$ref": "#/components/schemas/QnAMessage"
+          },
+          "replies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QnAMessage"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Question": {
+        "type": "object",
+        "properties": {
+          "questionID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "customerID": {
+            "type": "string",
+            "nullable": true
+          },
+          "customer": {
+            "$ref": "#/components/schemas/Account"
+          },
+          "content": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2025-05-10T00:00:00"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QnAMessage"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
       },
       "RegisterCustomerRequest": {
         "required": [

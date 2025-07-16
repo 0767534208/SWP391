@@ -110,6 +110,8 @@ export const STORAGE_KEYS = {
   IS_LOGGED_IN: 'isLoggedIn',
   USER_ROLE: 'userRole',
   USER: 'user',
+  USER_ID: 'userID',
+  ACCOUNT_ID: 'AccountID',
   PENDING_REGISTRATION: 'pendingRegistration'
 };
 
