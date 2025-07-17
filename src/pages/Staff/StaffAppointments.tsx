@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { ChangeEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import './StaffAppointments.css';
 import { FaSync, FaCheckCircle, FaTimesCircle, FaEye, FaPencilAlt } from 'react-icons/fa';
 import { appointmentAPI } from '../../utils/api';
-import type { ApiResponse } from '../../utils/api';
 
 interface AppointmentType {
   id: string;
@@ -200,7 +198,6 @@ const getPaymentStatusStyle = (status: number): React.CSSProperties => {
 };
 
 const StaffAppointments = () => {
-  const navigate = useNavigate();
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [dateRange, setDateRange] = useState({
@@ -409,13 +406,8 @@ const StaffAppointments = () => {
       
       console.log(`Updating status from ${currentAppointment.status} to ${newStatus}`);
       
-      // If changing from awaiting_results to completed, redirect to test results input page
-      if (currentAppointment.status === 'awaiting_results' && newStatus === 'completed') {
-        navigate(`/staff/test-result-input/${currentAppointment.id}`);
-        setIsStatusModalOpen(false);
-        setIsSubmitting(false);
-        return;
-      }
+      // Directly update status to completed without opening result modal
+      // Skip the result input step and update status directly
       
       try {
         // Convert string status to number for API
