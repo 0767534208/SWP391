@@ -135,6 +135,11 @@
   color: #1d4ed8;
 }
 
+.status-badge-require-test {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
 .status-badge-awaiting-results {
   background-color: #fae8ff;
   color: #a21caf;
@@ -143,6 +148,56 @@
 .status-badge-completed {
   background-color: #d1fae5;
   color: #047857;
+}
+
+.status-badge-cancelled {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.status-badge-request-refund {
+  background-color: #ede9fe;
+  color: #6d28d9;
+}
+
+.status-badge-request-cancel {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+/* Payment status badge styles */
+.payment-badge-unpaid {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.payment-badge-deposit {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.payment-badge-paid {
+  background-color: #d1fae5;
+  color: #047857;
+}
+
+/* Service item styles */
+.service-item {
+  padding: 2px 0;
+  position: relative;
+}
+
+.service-item:not(:last-child) {
+  margin-bottom: 4px;
+}
+
+.service-item:not(:last-child):after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  border-bottom: 1px dashed #e5e7eb;
 }
 
 /* Staff Appointments specific styles */
@@ -258,10 +313,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 2rem;
+  height: 2rem;
   border-radius: 0.375rem;
   transition: all 0.2s;
+  cursor: pointer;
+  border: none;
 }
 
 .action-button-edit {

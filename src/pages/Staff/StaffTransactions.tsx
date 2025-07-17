@@ -87,6 +87,22 @@ const getPaymentStatusText = (status: number): string => {
   }
 };
 
+// Helper function for appointment status text
+const getAppointmentStatusText = (status: number): string => {
+  switch (status) {
+    case 0: return 'Đang chờ';
+    case 1: return 'Đã xác nhận';
+    case 2: return 'Đang thực hiện';
+    case 3: return 'Yêu cầu xét nghiệm STIs';
+    case 4: return 'Đợi kết quả';
+    case 5: return 'Hoàn thành';
+    case 6: return 'Đã hủy';
+    case 7: return 'Yêu cầu hoàn tiền';
+    case 8: return 'Yêu cầu hủy';
+    default: return 'Không xác định';
+  }
+};
+
 // Helper function to get transaction status text
 const getTransactionStatusText = (status: number): string => {
   switch (status) {
@@ -162,6 +178,7 @@ const StaffTransactions = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [isStatusUpdateModalOpen, setIsStatusUpdateModalOpen] = useState(false);
   const [filterType, setFilterType] = useState('all');
   const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
   const [currentPage, setCurrentPage] = useState(1);
@@ -303,6 +320,12 @@ const StaffTransactions = () => {
     setCurrentTransaction(transaction);
     setIsDetailModalOpen(true);
   };
+  
+  // Handle status update
+  const handleStatusUpdate = (transaction: TransactionData) => {
+    setCurrentTransaction(transaction);
+    setIsStatusUpdateModalOpen(true);
+  };
 
   // Date range handlers
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -353,11 +376,7 @@ const StaffTransactions = () => {
         <div className="flex flex-col space-y-4">
           {/* Search Input */}
           <div className="relative w-full border border-gray-300 rounded-sm shadow-sm">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
+            
             <input
               type="text"
               placeholder="Tìm kiếm bệnh nhân, bác sĩ, dịch vụ..."
@@ -495,17 +514,17 @@ const StaffTransactions = () => {
                           text={getTransactionStatusText(transaction.statusTransaction)}
                         />
                       </td>
-                      <td>
-                        <button
-                          className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-full transition-colors"
-                          onClick={() => handleViewDetails(transaction)}
-                          title="Xem chi tiết"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                        </button>
+                      <td className="text-center">
+                        <div className="flex justify-center space-x-2">
+                          <button
+                            className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-md transition-colors flex items-center justify-center"
+                            style={{ border: '1px solid #3b82f6', minWidth: '32px', minHeight: '32px' }}
+                            onClick={() => handleViewDetails(transaction)}
+                            title="Xem chi tiết"
+                          >
+                            <FaEye className="h-4 w-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -594,7 +613,7 @@ const StaffTransactions = () => {
         <div className="fixed inset-0 z-50 overflow-auto bg-gray-800 bg-opacity-75 flex items-center justify-center modal-overlay">
           <div className="bg-white rounded-lg w-full max-w-2xl mx-3 overflow-hidden modal-container">
             <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900">Chi tiết giao dịch</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Chi tiết giao dịch #{currentTransaction.txnRef || 'N/A'}</h3>
               <button 
                 className="text-gray-400 hover:text-gray-600"
                 onClick={() => setIsDetailModalOpen(false)}
@@ -605,160 +624,231 @@ const StaffTransactions = () => {
               </button>
             </div>
 
-            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Transaction Information */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-blue-600 border-b pb-2">Thông tin giao dịch</h4>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-sm text-gray-500">Mã giao dịch:</div>
-                  <div className="col-span-2 text-sm font-medium">{currentTransaction.txnRef || 'N/A'}</div>
+            <div className="p-4">
+              {/* Transaction overview card */}
+              <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100 flex justify-between">
+                <div>
+                  <div className="text-sm text-gray-500">Mã giao dịch</div>
+                  <div className="text-lg font-bold text-gray-900">{currentTransaction.txnRef || 'N/A'}</div>
                 </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-sm text-gray-500">Loại giao dịch:</div>
-                  <div className="col-span-2 text-sm font-medium">
-                    {getTransactionKindText(currentTransaction.transactionKind)}
+                <div>
+                  <div className="text-sm text-gray-500">Số tiền</div>
+                  <div className="text-lg font-bold text-indigo-600">{formatCurrency(currentTransaction.amount || 0)}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Trạng thái</div>
+                  <StatusBadge 
+                    status={currentTransaction.statusTransaction} 
+                    text={getTransactionStatusText(currentTransaction.statusTransaction)}
+                  />
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Ngày thanh toán</div>
+                  <div className="text-md font-medium">{currentTransaction.payDate ? formatDate(currentTransaction.payDate) : 'N/A'}</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Transaction Information */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-blue-600 border-b pb-2">Thông tin giao dịch</h4>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Loại giao dịch:</div>
+                    <div className="col-span-2 text-sm font-medium">
+                      {getTransactionKindText(currentTransaction.transactionKind)}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Nội dung:</div>
+                    <div className="col-span-2 text-sm">{currentTransaction.orderInfo || 'N/A'}</div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Response ID:</div>
+                    <div className="col-span-2 text-sm">{currentTransaction.responseId || 'N/A'}</div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Response Code:</div>
+                    <div className="col-span-2 text-sm">{currentTransaction.responseCode || 'N/A'}</div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Thông báo:</div>
+                    <div className="col-span-2 text-sm">{currentTransaction.message || 'N/A'}</div>
+                  </div>
+                  
+                  <h4 className="font-semibold text-blue-600 border-b pb-2 mt-6">Thông tin ngân hàng</h4>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Ngân hàng:</div>
+                    <div className="col-span-2 text-sm font-medium">{currentTransaction.bankCode || 'N/A'}</div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Mã GD ngân hàng:</div>
+                    <div className="col-span-2 text-sm">{currentTransaction.bankTranNo || 'N/A'}</div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">TMN Code:</div>
+                    <div className="col-span-2 text-sm">{currentTransaction.tmnCode || 'N/A'}</div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Ngày hoàn thành:</div>
+                    <div className="col-span-2 text-sm">
+                      {currentTransaction.finishDate ? formatDate(currentTransaction.finishDate) : 'N/A'}
+                    </div>
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-sm text-gray-500">Số tiền:</div>
-                  <div className="col-span-2 text-sm font-medium text-indigo-600">
-                    {formatCurrency(currentTransaction.amount || 0)}
+                {/* Appointment Information */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-blue-600 border-b pb-2">Thông tin đặt lịch</h4>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Mã đặt lịch:</div>
+                    <div className="col-span-2 text-sm font-medium">
+                      {currentTransaction.appointment?.appointmentCode || 'N/A'}
+                    </div>
                   </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-sm text-gray-500">Nội dung:</div>
-                  <div className="col-span-2 text-sm">{currentTransaction.orderInfo || 'N/A'}</div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-sm text-gray-500">Trạng thái:</div>
-                  <div className="col-span-2">
-                    <StatusBadge 
-                      status={currentTransaction.statusTransaction} 
-                      text={getTransactionStatusText(currentTransaction.statusTransaction)}
-                    />
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Appointment ID:</div>
+                    <div className="col-span-2 text-sm">
+                      {currentTransaction.appointment?.appointmentID || 'N/A'}
+                    </div>
                   </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-sm text-gray-500">Thông báo:</div>
-                  <div className="col-span-2 text-sm">{currentTransaction.message || 'N/A'}</div>
-                </div>
-                
-                <h4 className="font-semibold text-blue-600 border-b pb-2 mt-6">Thông tin ngân hàng</h4>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-sm text-gray-500">Ngân hàng:</div>
-                  <div className="col-span-2 text-sm font-medium">{currentTransaction.bankCode || 'N/A'}</div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-sm text-gray-500">Mã GD ngân hàng:</div>
-                  <div className="col-span-2 text-sm">{currentTransaction.bankTranNo || 'N/A'}</div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-sm text-gray-500">Ngày thanh toán:</div>
-                  <div className="col-span-2 text-sm">
-                    {currentTransaction.payDate ? formatDate(currentTransaction.payDate) : 'N/A'}
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Trạng thái cuộc hẹn:</div>
+                    <div className="col-span-2">
+                      <StatusBadge 
+                        status={currentTransaction.appointment?.status || 0} 
+                        text={getAppointmentStatusText(currentTransaction.appointment?.status || 0)}
+                      />
+                    </div>
                   </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-sm text-gray-500">Ngày hoàn thành:</div>
-                  <div className="col-span-2 text-sm">
-                    {currentTransaction.finishDate ? formatDate(currentTransaction.finishDate) : 'N/A'}
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Trạng thái thanh toán:</div>
+                    <div className="col-span-2">
+                      <StatusBadge 
+                        status={currentTransaction.appointment?.paymentStatus || 0} 
+                        text={getPaymentStatusText(currentTransaction.appointment?.paymentStatus || 0)}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Ngày hẹn:</div>
+                    <div className="col-span-2 text-sm">
+                      {currentTransaction.appointment?.appointmentDate 
+                        ? formatDate(currentTransaction.appointment.appointmentDate) 
+                        : 'N/A'}
+                    </div>
+                  </div>
+                  
+                  <h4 className="font-semibold text-blue-600 border-b pb-2 mt-6">Thông tin khách hàng</h4>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Tên khách hàng:</div>
+                    <div className="col-span-2 text-sm font-medium">
+                      {currentTransaction.appointment?.customer?.name || 'N/A'}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Số điện thoại:</div>
+                    <div className="col-span-2 text-sm">
+                      {currentTransaction.appointment?.customer?.phone || 'N/A'}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Địa chỉ:</div>
+                    <div className="col-span-2 text-sm">
+                      {currentTransaction.appointment?.customer?.address || 'N/A'}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Ngày sinh:</div>
+                    <div className="col-span-2 text-sm">
+                      {currentTransaction.appointment?.customer?.dateOfBirth ? 
+                        `${currentTransaction.appointment.customer.dateOfBirth.day}/${currentTransaction.appointment.customer.dateOfBirth.month}/${currentTransaction.appointment.customer.dateOfBirth.year}` : 
+                        'N/A'}
+                    </div>
+                  </div>
+                  
+                  <h4 className="font-semibold text-blue-600 border-b pb-2 mt-6">Chi tiết thanh toán</h4>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Tổng tiền:</div>
+                    <div className="col-span-2 text-sm font-medium text-indigo-600">
+                      {formatCurrency(currentTransaction.appointment?.totalAmount || 0)}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Phí tư vấn:</div>
+                    <div className="col-span-2 text-sm">
+                      {formatCurrency(currentTransaction.appointment?.consultationFee || 0)}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Phí xét nghiệm:</div>
+                    <div className="col-span-2 text-sm">
+                      {formatCurrency(currentTransaction.appointment?.stIsTestFee || 0)}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm text-gray-500">Số dư còn lại:</div>
+                    <div className="col-span-2 text-sm font-medium">
+                      {formatCurrency(currentTransaction.appointment?.remainingBalance || 0)}
+                    </div>
                   </div>
                 </div>
               </div>
-              
-              {/* Appointment Information */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-blue-600 border-b pb-2">Thông tin đặt lịch</h4>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-sm text-gray-500">Mã đặt lịch:</div>
-                  <div className="col-span-2 text-sm font-medium">
-                    {currentTransaction.appointment?.appointmentCode || 'N/A'}
+
+              {/* Account information (User who processed the transaction) */}
+              {currentTransaction.account && (
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-100">
+                  <h4 className="font-semibold text-blue-600 border-b pb-2 mb-4">Thông tin tài khoản xử lý</h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="text-sm text-gray-500">User ID:</div>
+                      <div className="col-span-2 text-sm">{currentTransaction.account.userID || 'N/A'}</div>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="text-sm text-gray-500">Tên người dùng:</div>
+                      <div className="col-span-2 text-sm">{currentTransaction.account.name || 'N/A'}</div>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="text-sm text-gray-500">Username:</div>
+                      <div className="col-span-2 text-sm">{currentTransaction.account.userName || 'N/A'}</div>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="text-sm text-gray-500">Email:</div>
+                      <div className="col-span-2 text-sm">{currentTransaction.account.email || 'N/A'}</div>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="text-sm text-gray-500">Số điện thoại:</div>
+                      <div className="col-span-2 text-sm">{currentTransaction.account.phone || 'N/A'}</div>
+                    </div>
                   </div>
                 </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-sm text-gray-500">Trạng thái:</div>
-                  <div className="col-span-2">
-                    <StatusBadge 
-                      status={currentTransaction.appointment?.status || 0} 
-                      text={getPaymentStatusText(currentTransaction.appointment?.paymentStatus || 0)}
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-sm text-gray-500">Ngày hẹn:</div>
-                  <div className="col-span-2 text-sm">
-                    {currentTransaction.appointment?.appointmentDate 
-                      ? formatDate(currentTransaction.appointment.appointmentDate) 
-                      : 'N/A'}
-                  </div>
-                </div>
-                
-                <h4 className="font-semibold text-blue-600 border-b pb-2 mt-6">Thông tin khách hàng</h4>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-sm text-gray-500">Tên khách hàng:</div>
-                  <div className="col-span-2 text-sm font-medium">
-                    {currentTransaction.appointment?.customer?.name || 'N/A'}
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-sm text-gray-500">Số điện thoại:</div>
-                  <div className="col-span-2 text-sm">
-                    {currentTransaction.appointment?.customer?.phone || 'N/A'}
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-sm text-gray-500">Địa chỉ:</div>
-                  <div className="col-span-2 text-sm">
-                    {currentTransaction.appointment?.customer?.address || 'N/A'}
-                  </div>
-                </div>
-                
-                <h4 className="font-semibold text-blue-600 border-b pb-2 mt-6">Chi tiết thanh toán</h4>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-sm text-gray-500">Tổng tiền:</div>
-                  <div className="col-span-2 text-sm font-medium text-indigo-600">
-                    {formatCurrency(currentTransaction.appointment?.totalAmount || 0)}
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-sm text-gray-500">Phí tư vấn:</div>
-                  <div className="col-span-2 text-sm">
-                    {formatCurrency(currentTransaction.appointment?.consultationFee || 0)}
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-sm text-gray-500">Phí xét nghiệm:</div>
-                  <div className="col-span-2 text-sm">
-                    {formatCurrency(currentTransaction.appointment?.stIsTestFee || 0)}
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-sm text-gray-500">Số dư còn lại:</div>
-                  <div className="col-span-2 text-sm font-medium">
-                    {formatCurrency(currentTransaction.appointment?.remainingBalance || 0)}
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
             
             <div className="px-4 py-3 bg-gray-50 text-right">
@@ -769,6 +859,103 @@ const StaffTransactions = () => {
               >
                 Đóng
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Status Update Modal (Simplified version with essential information) */}
+      {isStatusUpdateModalOpen && currentTransaction && (
+        <div className="fixed inset-0 z-50 overflow-auto bg-gray-800 bg-opacity-75 flex items-center justify-center modal-overlay">
+          <div className="bg-white rounded-lg w-full max-w-md mx-3 overflow-hidden modal-container">
+            <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900">Cập nhật trạng thái giao dịch</h3>
+              <button 
+                className="text-gray-400 hover:text-gray-600"
+                onClick={() => setIsStatusUpdateModalOpen(false)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4">
+              {/* Transaction Summary Card */}
+              <div className="mb-4 border border-gray-200 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-500">Mã giao dịch:</span>
+                  <span className="text-sm font-medium">{currentTransaction.txnRef || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-500">Khách hàng:</span>
+                  <span className="text-sm font-medium">{currentTransaction.appointment?.customer?.name || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-500">Số tiền:</span>
+                  <span className="text-sm font-medium text-indigo-600">{formatCurrency(currentTransaction.amount || 0)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Trạng thái hiện tại:</span>
+                  <StatusBadge 
+                    status={currentTransaction.statusTransaction} 
+                    text={getTransactionStatusText(currentTransaction.statusTransaction)}
+                  />
+                </div>
+              </div>
+              
+              {/* Status Update Options */}
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Cập nhật trạng thái:</h4>
+                <div className="space-y-2">
+                  {currentTransaction.statusTransaction === 0 && (
+                    <>
+                      <button 
+                        className="w-full py-2 px-3 text-left border border-green-200 rounded-md bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+                        onClick={() => {
+                          // Handle confirming transaction
+                          setIsStatusUpdateModalOpen(false);
+                          showToast("Trạng thái giao dịch đã được cập nhật", "success");
+                        }}
+                      >
+                        <div className="flex items-center">
+                          <FaCheckCircle className="mr-2" />
+                          <span>Xác nhận giao dịch</span>
+                        </div>
+                      </button>
+                      
+                      <button 
+                        className="w-full py-2 px-3 text-left border border-red-200 rounded-md bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                        onClick={() => {
+                          // Handle cancelling transaction
+                          setIsStatusUpdateModalOpen(false);
+                          showToast("Giao dịch đã bị hủy", "success");
+                        }}
+                      >
+                        <div className="flex items-center">
+                          <FaTimesCircle className="mr-2" />
+                          <span>Hủy giao dịch</span>
+                        </div>
+                      </button>
+                    </>
+                  )}
+                  
+                  {currentTransaction.statusTransaction !== 0 && (
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-500 text-sm">
+                      Không thể cập nhật trạng thái của giao dịch này
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none"
+                  onClick={() => setIsStatusUpdateModalOpen(false)}
+                >
+                  Đóng
+                </button>
+              </div>
             </div>
           </div>
         </div>
