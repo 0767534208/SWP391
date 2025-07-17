@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaSearch, FaTimes, FaCheck, FaSpinner, FaVideo, FaCalendarAlt, FaListUl, FaEllipsisV } from 'react-icons/fa';
+import { FaSearch, FaTimes, FaCheck, FaCalendarAlt, FaListUl, FaEllipsisV } from 'react-icons/fa';
 import './ConsultantAppointments.css';
 import { consultantService } from '../../services';
 import { toast } from 'react-hot-toast';
@@ -136,18 +136,6 @@ const ConsultantAppointments: React.FC = () => {
                     
                   {appointment.status === 1 && ( // Confirmed
                     <>
-                      <button 
-                        className="dropdown-item complete-item"
-                        onClick={() => handleAction(() => updateAppointmentStatus(appointment.appointmentID, 4))}
-                      >
-                        <FaCheck /> Hoàn thành
-                      </button>
-                      <button 
-                        className="dropdown-item waiting-item"
-                        onClick={() => handleAction(() => updateAppointmentStatus(appointment.appointmentID, 2))}
-                      >
-                        <FaSpinner /> Chờ kết quả
-                      </button>
                       {canRequestSTITest(appointment) && (
                         <button 
                           className="dropdown-item testing-item"
@@ -157,15 +145,6 @@ const ConsultantAppointments: React.FC = () => {
                         </button>
                       )}
                     </>
-                  )}
-                  
-                  {appointment.status === 2 && ( // Awaiting results
-                    <button 
-                      className="dropdown-item complete-item"
-                      onClick={() => handleAction(() => updateAppointmentStatus(appointment.appointmentID, 4))}
-                    >
-                      <FaCheck /> Hoàn thành
-                    </button>
                   )}
                   
                   {appointment.status === 3 && ( // STI Test requested
@@ -692,24 +671,6 @@ const ConsultantAppointments: React.FC = () => {
                 
                 {selectedAppointment.status === 1 && canUpdateAppointment(selectedAppointment) && (
                   <>
-                    <button 
-                      className="complete-button"
-                      onClick={() => {
-                        updateAppointmentStatus(selectedAppointment.appointmentID, 4);
-                        closeDetailModal();
-                      }}
-                    >
-                      <FaCheck /> Đánh dấu hoàn thành
-                    </button>
-                    <button 
-                      className="check-in-button"
-                      onClick={() => {
-                        updateAppointmentStatus(selectedAppointment.appointmentID, 2);
-                        closeDetailModal();
-                      }}
-                    >
-                      <FaSpinner /> Đánh dấu chờ kết quả
-                    </button>
                     {canRequestSTITest(selectedAppointment) && (
                       <button 
                         className="testing-button"
@@ -722,18 +683,6 @@ const ConsultantAppointments: React.FC = () => {
                       </button>
                     )}
                   </>
-                )}
-                
-                {selectedAppointment.status === 2 && canUpdateAppointment(selectedAppointment) && (
-                  <button 
-                    className="complete-button"
-                    onClick={() => {
-                      updateAppointmentStatus(selectedAppointment.appointmentID, 4);
-                      closeDetailModal();
-                    }}
-                  >
-                    <FaCheck /> Đánh dấu hoàn thành
-                  </button>
                 )}
                 
                 {selectedAppointment.status === 3 && (
