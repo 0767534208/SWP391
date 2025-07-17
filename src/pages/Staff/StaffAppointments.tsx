@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { ChangeEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import './StaffAppointments.css';
-import { FaSync, FaEllipsisH, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { FaSync, FaCheckCircle, FaTimesCircle, FaEye, FaPencilAlt } from 'react-icons/fa';
 import { appointmentAPI } from '../../utils/api';
-import type { ApiResponse } from '../../utils/api';
 
 interface AppointmentType {
   id: string;
@@ -37,12 +35,46 @@ const getStatusBadgeClass = (status: string): string => {
       return 'status-badge status-badge-confirmed';
     case 'in_progress':
       return 'status-badge status-badge-in-progress';
+    case 'require_stis_test':
+      return 'status-badge status-badge-require-test';
     case 'awaiting_results':
       return 'status-badge status-badge-awaiting-results';
     case 'completed':
       return 'status-badge status-badge-completed';
+    case 'cancelled':
+      return 'status-badge status-badge-cancelled';
+    case 'request_refund':
+      return 'status-badge status-badge-request-refund';
+    case 'request_cancel':
+      return 'status-badge status-badge-request-cancel';
     default:
       return 'status-badge status-badge-pending';
+  }
+};
+
+// Inline styles for status badges to ensure they always have colors
+const getStatusStyle = (status: string): React.CSSProperties => {
+  switch (status) {
+    case 'pending':
+      return { backgroundColor: '#fef3c7', color: '#92400e' };
+    case 'confirmed':
+      return { backgroundColor: '#e0f2fe', color: '#0369a1' };
+    case 'in_progress':
+      return { backgroundColor: '#dbeafe', color: '#1d4ed8' };
+    case 'require_stis_test':
+      return { backgroundColor: '#fef3c7', color: '#92400e' };
+    case 'awaiting_results':
+      return { backgroundColor: '#fae8ff', color: '#a21caf' };
+    case 'completed':
+      return { backgroundColor: '#d1fae5', color: '#047857' };
+    case 'cancelled':
+      return { backgroundColor: '#fee2e2', color: '#b91c1c' };
+    case 'request_refund':
+      return { backgroundColor: '#ede9fe', color: '#6d28d9' };
+    case 'request_cancel':
+      return { backgroundColor: '#fee2e2', color: '#b91c1c' };
+    default:
+      return { backgroundColor: '#fef3c7', color: '#92400e' };
   }
 };
 
@@ -54,10 +86,18 @@ const getStatusDisplayText = (status: string): string => {
       return 'Đã Xác Nhận';
     case 'in_progress':
       return 'Đang Thực Hiện';
+    case 'require_stis_test':
+      return 'Yêu cầu xét nghiệm STIs';
     case 'awaiting_results':
       return 'Đợi Kết Quả';
     case 'completed':
       return 'Hoàn Thành';
+    case 'cancelled':
+      return 'Đã Hủy';
+    case 'request_refund':
+      return 'Yêu Cầu Hoàn Tiền';
+    case 'request_cancel':
+      return 'Yêu Cầu Hủy';
     default:
       return 'Đang Chờ';
   }
@@ -73,9 +113,17 @@ const mapStatusNumberToString = (statusNumber: number): string => {
     case 2:
       return 'in_progress';
     case 3:
-      return 'awaiting_results';
+      return 'require_stis_test';
     case 4:
+      return 'awaiting_results';
+    case 5:
       return 'completed';
+    case 6:
+      return 'cancelled';
+    case 7:
+      return 'request_refund';
+    case 8:
+      return 'request_cancel';
     default:
       return 'pending';
   }
@@ -90,17 +138,66 @@ const mapStatusStringToNumber = (statusString: string): number => {
       return 1;
     case 'in_progress':
       return 2;
-    case 'awaiting_results':
+    case 'require_stis_test':
       return 3;
-    case 'completed':
+    case 'awaiting_results':
       return 4;
+    case 'completed':
+      return 5;
+    case 'cancelled':
+      return 6;
+    case 'request_refund':
+      return 7;
+    case 'request_cancel':
+      return 8;
     default:
       return 0;
   }
 };
 
+// Helper function for payment status display
+const getPaymentStatusText = (status: number): string => {
+  switch (status) {
+    case 0:
+      return 'Chưa thanh toán';
+    case 1:
+      return 'Đã đặt cọc';
+    case 2:
+      return 'Đã thanh toán';
+    default:
+      return 'Chưa thanh toán';
+  }
+};
+
+// Helper function for payment status badge class
+const getPaymentStatusBadgeClass = (status: number): string => {
+  switch (status) {
+    case 0:
+      return 'status-badge payment-badge-unpaid';
+    case 1:
+      return 'status-badge payment-badge-deposit';
+    case 2:
+      return 'status-badge payment-badge-paid';
+    default:
+      return 'status-badge payment-badge-unpaid';
+  }
+};
+
+// Helper function for payment status style
+const getPaymentStatusStyle = (status: number): React.CSSProperties => {
+  switch (status) {
+    case 0:
+      return { backgroundColor: '#fee2e2', color: '#b91c1c' };
+    case 1:
+      return { backgroundColor: '#fef3c7', color: '#92400e' };
+    case 2:
+      return { backgroundColor: '#d1fae5', color: '#047857' };
+    default:
+      return { backgroundColor: '#fee2e2', color: '#b91c1c' };
+  }
+};
+
 const StaffAppointments = () => {
-  const navigate = useNavigate();
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [dateRange, setDateRange] = useState({
@@ -110,6 +207,7 @@ const StaffAppointments = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [currentAppointment, setCurrentAppointment] = useState<AppointmentType | null>(null);
   const [resultText, setResultText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -139,7 +237,6 @@ const StaffAppointments = () => {
   // Real data from API
   const [appointments, setAppointments] = useState<AppointmentType[]>([]);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
 
   // Fetch appointments from API
   const fetchAppointments = async () => {
@@ -147,33 +244,74 @@ const StaffAppointments = () => {
     try {
       const response = await appointmentAPI.getAllAppointments();
       console.log('Appointment API response:', response.data?.[0]); // Log first appointment to see structure
+      // Check all the available fields in the response
+      if (response.data && response.data[0]) {
+        console.log('Available fields:', Object.keys(response.data[0]));
+      }
 
       if (response.data) {
         // Map API data to our AppointmentType interface
         const mappedAppointments: AppointmentType[] = response.data.map(appointment => {
-          // Extract date and time from appointmentDate
+          // Extract date from appointmentDate
           const appointmentDate = new Date(appointment.appointmentDate || '');
           const formattedDate = appointmentDate.toLocaleDateString('vi-VN');
-          const formattedTime = appointmentDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
           
-          // Determine service type based on appointmentType
-          const serviceType = appointment.appointmentType === 1 ? 'test' : 'consultation';
+          // Get start and end time from slot data
+          let formattedTime = '';
+          if (appointment.slot && appointment.slot.startTime && appointment.slot.endTime) {
+            const startTime = new Date(appointment.slot.startTime);
+            const endTime = new Date(appointment.slot.endTime);
+            const startHours = startTime.getHours();
+            const startMinutes = startTime.getMinutes();
+            const endHours = endTime.getHours();
+            const endMinutes = endTime.getMinutes();
+            
+            const formattedStartTime = `${startHours.toString().padStart(2, '0')}:${startMinutes.toString().padStart(2, '0')}`;
+            const formattedEndTime = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+            formattedTime = `${formattedStartTime} - ${formattedEndTime}`;
+          } else {
+            // Fallback if slot data is not available
+            const startHours = appointmentDate.getHours();
+            const startMinutes = appointmentDate.getMinutes();
+            const endHours = startHours + 1;
+            const formattedStartTime = `${startHours.toString().padStart(2, '0')}:${startMinutes.toString().padStart(2, '0')}`;
+            const formattedEndTime = `${endHours.toString().padStart(2, '0')}:${startMinutes.toString().padStart(2, '0')}`;
+            formattedTime = `${formattedStartTime} - ${formattedEndTime}`;
+          }
+          
+          // Get service information
+          let serviceType = 'consultation';
           
           // Get consultant name from the consultant object if available
           const consultantName = appointment.consultant?.name || 'Không có tư vấn viên';
           
           // Get customer name from customer object if available
-          // Based on the API response screenshot, customer object has a name property
           const customerName = appointment.customer?.name || 'Không có tên';
           
           // Get phone number from customer object if available
           const phoneNumber = appointment.customer?.phone || 'Không có SĐT';
           
+          // Get all service names from appointment details
+          let serviceNames: string[] = [];
+          
+          if (appointment.appointmentDetails && appointment.appointmentDetails.length > 0) {
+            // Collect all service names from the details
+            for (const detail of appointment.appointmentDetails) {
+              if (detail.service && detail.service.servicesName) {
+                serviceNames.push(detail.service.servicesName);
+                // If any service is a test, we could set serviceType to 'test' here if needed
+              }
+            }
+          }
+          
+          // Join all service names with comma or use default value if no services found
+          const serviceName = serviceNames.length > 0 ? serviceNames.join(', ') : "Tư Vấn";
+          
           return {
             id: appointment.appointmentID.toString(),
             patientName: customerName,
             patientPhone: phoneNumber,
-            service: "Dịch vụ tư vấn", // This information might not be directly available in the API
+            service: serviceName,
             serviceType: serviceType as 'test' | 'consultation',
             date: formattedDate,
             time: formattedTime,
@@ -186,7 +324,6 @@ const StaffAppointments = () => {
         });
 
         setAppointments(mappedAppointments);
-        setTotalItems(mappedAppointments.length);
         setTotalPages(Math.ceil(mappedAppointments.length / appointmentsPerPage));
       }
     } catch (error) {
@@ -235,15 +372,31 @@ const StaffAppointments = () => {
     setCurrentPage(pageNumber);
   };
 
-  // Handle status change
+      // Handle status change
   const handleStatusChange = (appointment: AppointmentType) => {
-    setCurrentAppointment(appointment);
+    // Log the current status for debugging
+    console.log(`Opening status modal for appointment ${appointment.id} with status: ${appointment.status}`);
+    
+    // Normalize the status if needed
+    let normalizedAppointment = {...appointment};
+    
+    // For appointments where the status isn't properly converted
+    if (appointment.status === 'in_progress' && 
+        document.querySelectorAll('.status-options .status-option').length === 0) {
+      // Force re-render with normalized status
+      console.log('Status options missing, forcing normalization');
+      normalizedAppointment = {
+        ...normalizedAppointment,
+        status: 'in_progress'
+      };
+    }
+    
+    setCurrentAppointment(normalizedAppointment);
     setIsStatusModalOpen(true);
-  };
-
-  // Handle view test results
-  const handleViewTestResults = (appointmentId: string) => {
-    navigate(`/staff/test-results/${appointmentId}`);
+  };  // Handle view appointment details
+  const handleViewDetails = (appointment: AppointmentType) => {
+    setCurrentAppointment(appointment);
+    setIsDetailsModalOpen(true);
   };
 
   // Update appointment status
@@ -251,13 +404,10 @@ const StaffAppointments = () => {
     if (currentAppointment) {
       setIsSubmitting(true);
       
-      // If changing from awaiting_results to completed, redirect to test results input page
-      if (currentAppointment.status === 'awaiting_results' && newStatus === 'completed') {
-        navigate(`/staff/test-result-input/${currentAppointment.id}`);
-        setIsStatusModalOpen(false);
-        setIsSubmitting(false);
-        return;
-      }
+      console.log(`Updating status from ${currentAppointment.status} to ${newStatus}`);
+      
+      // Directly update status to completed without opening result modal
+      // Skip the result input step and update status directly
       
       try {
         // Convert string status to number for API
@@ -431,8 +581,12 @@ const StaffAppointments = () => {
               <option value="pending">Đang Chờ</option>
               <option value="confirmed">Đã Xác Nhận</option>
               <option value="in_progress">Đang Thực Hiện</option>
+              <option value="require_stis_test">Yêu cầu xét nghiệm STIs</option>
               <option value="awaiting_results">Đợi Kết Quả</option>
               <option value="completed">Hoàn Thành</option>
+              <option value="cancelled">Đã Hủy</option>
+              <option value="request_refund">Yêu Cầu Hoàn Tiền</option>
+              <option value="request_cancel">Yêu Cầu Hủy</option>
             </select>
             
             <button
@@ -496,6 +650,7 @@ const StaffAppointments = () => {
                 <th>Ngày & Giờ</th>
                 <th>Chuyên Gia</th>
                 <th>Trạng Thái</th>
+                <th>Thanh Toán</th>
                 <th className="w-24">Thao Tác</th>
               </tr>
             </thead>
@@ -508,45 +663,59 @@ const StaffAppointments = () => {
                       <div>{appointment.patientName}</div>
                       <div className="text-xs text-gray-500">{appointment.patientPhone}</div>
                     </td>
-                    <td>{appointment.service}</td>
+                    <td>
+                      <div className="service-list">
+                        {appointment.service.split(', ').map((service, index) => (
+                          <div key={index} className="service-item-table">{service}</div>
+                        ))}
+                      </div>
+                    </td>
                     <td>
                       <div>{appointment.date}</div>
                       <div className="text-xs text-gray-500">{appointment.time}</div>
                     </td>
                     <td>{appointment.consultant}</td>
                     <td>
-                      <span className={getStatusBadgeClass(appointment.status)}>
+                      <span 
+                        className={getStatusBadgeClass(appointment.status)}
+                        style={getStatusStyle(appointment.status)}
+                      >
                         {getStatusDisplayText(appointment.status)}
+                      </span>
+                    </td>
+                    <td>
+                      <span 
+                        className={getPaymentStatusBadgeClass(appointment.paymentStatus)}
+                        style={getPaymentStatusStyle(appointment.paymentStatus)}
+                      >
+                        {getPaymentStatusText(appointment.paymentStatus)}
                       </span>
                     </td>
                     <td>
                       <div className="flex space-x-1">
                         <button 
+                          className="action-button action-button-view"
+                          onClick={() => handleViewDetails(appointment)}
+                          title="Xem chi tiết"
+                          style={{ backgroundColor: '#dbeafe', color: '#1d4ed8' }}
+                        >
+                          <FaEye className="h-4 w-4" />
+                        </button>
+                        <button 
                           className="action-button action-button-edit"
                           onClick={() => handleStatusChange(appointment)}
-                          title="Cập nhật trạng thái"
+                          title="Đổi trạng thái"
+                          style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}
                         >
-                          <FaEllipsisH className="h-4 w-4" />
+                          <FaPencilAlt className="h-4 w-4" />
                         </button>
-                        {appointment.status === 'completed' && (
-                          <button 
-                            className="action-button action-button-view"
-                            onClick={() => handleViewTestResults(appointment.id)}
-                            title="Xem kết quả"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                          </button>
-                        )}
                       </div>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="text-center py-4 text-gray-500">Không tìm thấy lịch hẹn nào</td>
+                  <td colSpan={8} className="text-center py-4 text-gray-500">Không tìm thấy lịch hẹn nào</td>
                 </tr>
               )}
             </tbody>
@@ -650,8 +819,12 @@ const StaffAppointments = () => {
                 <h4 className="text-base font-medium text-blue-600 mb-3">Chi tiết dịch vụ</h4>
                 <div className="space-y-2">
                   <div className="flex">
-                    <span className="w-32 text-sm text-gray-500">Loại dịch vụ:</span>
-                    <span className="text-sm font-medium">{currentAppointment.service}</span>
+                    <span className="w-32 text-sm text-gray-500">Dịch vụ:</span>
+                    <div className="text-sm font-medium">
+                      {currentAppointment.service.split(', ').map((service, index) => (
+                        <div key={index} className="service-item">{service}</div>
+                      ))}
+                    </div>
                   </div>
                   <div className="flex">
                     <span className="w-32 text-sm text-gray-500">Chuyên gia:</span>
@@ -671,6 +844,12 @@ const StaffAppointments = () => {
                     <span className="w-32 text-sm text-gray-500">Trạng thái hiện tại:</span>
                     <span className={getStatusBadgeClass(currentAppointment.status)}>
                       {getStatusDisplayText(currentAppointment.status)}
+                    </span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-32 text-sm text-gray-500">Trạng thái thanh toán:</span>
+                    <span className={getPaymentStatusBadgeClass(currentAppointment.paymentStatus)}>
+                      {getPaymentStatusText(currentAppointment.paymentStatus)}
                     </span>
                   </div>
                   <div>
@@ -701,6 +880,12 @@ const StaffAppointments = () => {
                       )}
                       
                       {currentAppointment.status === 'in_progress' && (
+                        <div className="status-option">
+                          <p className="text-sm text-gray-500 italic">Không có trạng thái tiếp theo khả dụng. Chờ bác sĩ/chuyên gia cập nhật.</p>
+                        </div>
+                      )}
+                      
+                      {currentAppointment.status === 'require_stis_test' && (
                         <div className="status-option">
                           <button 
                             className="status-button status-button-awaiting-results"
@@ -817,6 +1002,117 @@ const StaffAppointments = () => {
                   disabled={isSubmitting || resultText.trim() === ''}
                 >
                   {isSubmitting ? 'Đang lưu...' : 'Lưu và hoàn thành'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Appointment Details Modal */}
+      {isDetailsModalOpen && currentAppointment && (
+        <div className="fixed inset-0 z-50 overflow-auto bg-gray-800 bg-opacity-75 flex items-center justify-center modal-overlay">
+          <div className="bg-white rounded-lg w-full max-w-md mx-3 overflow-hidden modal-container">
+            <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900">Chi tiết cuộc hẹn #{currentAppointment.id}</h3>
+              <button 
+                className="text-gray-400 hover:text-gray-600"
+                onClick={() => setIsDetailsModalOpen(false)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4">
+              <div className="mb-5 border border-gray-100 rounded-lg p-4 bg-gray-50">
+                <h4 className="text-base font-medium text-blue-600 mb-3">Thông tin cuộc hẹn</h4>
+                <div className="space-y-2">
+                  <div className="flex">
+                    <span className="w-32 text-sm text-gray-500">Mã cuộc hẹn:</span>
+                    <span className="text-sm font-medium">#{currentAppointment.id}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-32 text-sm text-gray-500">Ngày hẹn:</span>
+                    <span className="text-sm font-medium">{currentAppointment.date}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-32 text-sm text-gray-500">Giờ hẹn:</span>
+                    <span className="text-sm font-medium">{currentAppointment.time}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-32 text-sm text-gray-500">Trạng thái:</span>
+                    <span 
+                      className={getStatusBadgeClass(currentAppointment.status)}
+                      style={getStatusStyle(currentAppointment.status)}
+                    >
+                      {getStatusDisplayText(currentAppointment.status)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-5 border border-gray-100 rounded-lg p-4 bg-gray-50">
+                <h4 className="text-base font-medium text-blue-600 mb-3">Thông tin bệnh nhân</h4>
+                <div className="space-y-2">
+                  <div className="flex">
+                    <span className="w-32 text-sm text-gray-500">Họ tên:</span>
+                    <span className="text-sm font-medium">{currentAppointment.patientName}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-32 text-sm text-gray-500">Số điện thoại:</span>
+                    <span className="text-sm font-medium">{currentAppointment.patientPhone}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-5 border border-gray-100 rounded-lg p-4 bg-gray-50">
+                <h4 className="text-base font-medium text-blue-600 mb-3">Chi tiết dịch vụ</h4>
+                <div className="space-y-2">
+                  <div className="flex">
+                    <span className="w-32 text-sm text-gray-500">Dịch vụ:</span>
+                    <div className="text-sm font-medium">
+                      {currentAppointment.service.split(', ').map((service, index) => (
+                        <div key={index} className="service-item">{service}</div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex">
+                    <span className="w-32 text-sm text-gray-500">Chuyên gia:</span>
+                    <span className="text-sm font-medium">{currentAppointment.consultant}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {currentAppointment.status === 'completed' && (
+                <div className="mb-5 border border-gray-100 rounded-lg p-4 bg-gray-50">
+                  <h4 className="text-base font-medium text-blue-600 mb-3">Kết quả / Ghi chú</h4>
+                  <div className="p-3 bg-white border border-gray-200 rounded-md">
+                    <p className="text-sm whitespace-pre-line">
+                      {currentAppointment.serviceType === 'test' 
+                        ? (currentAppointment.testResults || 'Không có kết quả xét nghiệm')
+                        : (currentAppointment.consultationNotes || 'Không có ghi chú tư vấn')}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-2 mt-4">
+                <button 
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 font-medium transition-all"
+                  onClick={() => setIsDetailsModalOpen(false)}
+                >
+                  Đóng
+                </button>
+                <button 
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium transition-all"
+                  style={{ backgroundColor: '#2563eb', color: 'white' }}
+                  onClick={() => {
+                    setIsDetailsModalOpen(false);
+                    handleStatusChange(currentAppointment);
+                  }}
+                >
+                  Cập nhật trạng thái
                 </button>
               </div>
             </div>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { FaUserCircle, FaCheckCircle, FaTimesCircle, FaClock, FaEnvelope, FaPhone, FaBirthdayCake, FaMapMarkerAlt, FaUser, FaFileAlt, FaSync } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
-import { userAPI, appointmentAPI } from '../../utils/api';
+import { FaUserCircle, FaCheckCircle, FaTimesCircle, FaClock, FaEnvelope, FaPhone, FaBirthdayCake, FaMapMarkerAlt, FaUser, FaVial, FaMoneyBillWave } from 'react-icons/fa';
+
+import { userAPI, appointmentAPI, serviceAPI, getAppointmentPaymentUrl } from '../../utils/api';
 import type { UserData } from '../../types';
 import type { AppointmentData } from '../../utils/api';
 import { format } from 'date-fns';
@@ -9,14 +9,15 @@ import { format } from 'date-fns';
 // Helper function to get status text based on status code
 const getStatusText = (status: number): string => {
   switch (status) {
-    case 0: return 'Chờ xác nhận';
-    case 1: return 'Đã xác nhận';
-    case 2: return 'Đang thực hiện';
-    case 3: return 'Đợi kết quả';
-    case 4: return 'Hoàn thành';
-    case 5: return 'Đã hủy';
-    case 6: return 'Yêu cầu hoàn tiền';
-    case 7: return 'Yêu cầu hủy';
+    case 0: return 'Chờ xác nhận';          // Pending
+    case 1: return 'Đã xác nhận';           // Confirmed
+    case 2: return 'Đang thực hiện';        // InProgress
+    case 3: return 'Yêu cầu xét nghiệm STIs'; // RequireSTIsTest
+    case 4: return 'Đợi kết quả';           // WaitingForResult
+    case 5: return 'Hoàn thành';            // Completed
+    case 6: return 'Đã hủy';                // Cancelled
+    case 7: return 'Yêu cầu hoàn tiền';     // RequestRefund
+    case 8: return 'Yêu cầu hủy';           // RequestCancel
     default: return 'Không xác định';
   }
 };
@@ -28,6 +29,7 @@ const getPaymentStatusText = (status: number): string => {
     case 1: return 'Đã đặt cọc';
     case 2: return 'Đã thanh toán';
     case 3: return 'Đã hoàn tiền';
+    case 4: return 'Hoàn tiền một phần';
     default: return 'Không xác định';
   }
 };
@@ -64,15 +66,17 @@ const formatTime = (timeString: string): string => {
 const statusColor = (status: number) => {
   switch (status) {
     case 1: // Đã xác nhận
-    case 3: // Hoàn thành
-    case 5: // Đã thanh toán
+    case 5: // Hoàn thành
       return '#16a34a'; // Green
-    case 4: // Đã hủy
-    case 6: // Yêu cầu hoàn tiền
-    case 7: // Yêu cầu hủy
+    case 6: // Đã hủy
+    case 7: // Yêu cầu hoàn tiền
+    case 8: // Yêu cầu hủy
       return '#e53e3e'; // Red
+    case 3: // Yêu cầu xét nghiệm STIs
+      return '#8b5cf6'; // Purple
     case 0: // Chờ xác nhận
-    case 2: // Đang xử lý
+    case 2: // Đang thực hiện
+    case 4: // Đợi kết quả
       return '#f59e42'; // Orange
     default:
       return '#6b7280'; // Gray
@@ -82,15 +86,17 @@ const statusColor = (status: number) => {
 const statusIcon = (status: number) => {
   switch (status) {
     case 1: // Đã xác nhận
-    case 3: // Hoàn thành
-    case 5: // Đã thanh toán
+    case 5: // Hoàn thành
       return <FaCheckCircle color="#16a34a" style={{marginRight: 4}} />;
-    case 4: // Đã hủy
-    case 6: // Yêu cầu hoàn tiền
-    case 7: // Yêu cầu hủy
+    case 6: // Đã hủy
+    case 7: // Yêu cầu hoàn tiền
+    case 8: // Yêu cầu hủy
       return <FaTimesCircle color="#e53e3e" style={{marginRight: 4}} />;
+    case 3: // Yêu cầu xét nghiệm STIs
+      return <FaVial color="#8b5cf6" style={{marginRight: 4}} />;
     case 0: // Chờ xác nhận
-    case 2: // Đang xử lý
+    case 2: // Đang thực hiện
+    case 4: // Đợi kết quả
       return <FaClock color="#f59e42" style={{marginRight: 4}} />;
     default:
       return <FaClock color="#6b7280" style={{marginRight: 4}} />;
@@ -123,6 +129,8 @@ const paymentStatusColor = (status: number) => {
       return '#16a34a'; // Green
     case 3: // Đã hoàn tiền
       return '#2563eb'; // Blue
+    case 4: // Hoàn tiền một phần
+      return '#8b5cf6'; // Purple
     case 1: // Đã đặt cọc
       return '#f59e42'; // Orange
     case 0: // Chờ thanh toán
@@ -205,6 +213,7 @@ const Profile = () => {
     dateOfBirth: '',
     address: '',
   });
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Function to create sample user
   const createSampleUser = () => {
@@ -237,7 +246,7 @@ const Profile = () => {
     });
     setError(null);
     
-    alert("Đã tạo người dùng mẫu. Hãy tải lại dữ liệu.");
+    setErrorMessage("Đã tạo người dùng mẫu. Hãy tải lại dữ liệu.");
   };
 
   // Function to reload data
@@ -369,6 +378,7 @@ const Profile = () => {
 
   const handleSave = async () => {
     try {
+      setErrorMessage(null);
       if (!user) return;
       
       // Update user profile
@@ -389,8 +399,284 @@ const Profile = () => {
       setEditMode(false);
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert('Có lỗi xảy ra khi cập nhật thông tin. Vui lòng thử lại sau.');
+      setErrorMessage('Có lỗi xảy ra khi cập nhật thông tin. Vui lòng thử lại sau.');
     }
+  };
+  
+  // State for STI test modal
+  const [showSTIModal, setShowSTIModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentData | null>(null);
+  const [stiServices, setSTIServices] = useState<any[]>([]);
+  const [selectedService, setSelectedService] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [updatedAppointmentId, setUpdatedAppointmentId] = useState<string | null>(null);
+
+  // Utility function to check if an appointment already has test services
+  const hasTestServices = (appointment: AppointmentData): boolean => {
+    if (!appointment.appointmentDetails || appointment.appointmentDetails.length === 0) {
+      return false;
+    }
+    
+    return appointment.appointmentDetails.some(detail => {
+      if (!detail.service) return false;
+      
+      const service = detail.service as any;
+      const name = (service.servicesName || '').toLowerCase();
+      
+      return service.serviceType === 1 || 
+             service.type === 1 || 
+             name.includes('xét nghiệm') || 
+             name.includes('test') ||
+             name.includes('sti');
+    });
+  };
+  
+  // Handle payment for the STI test registration
+  const handlePayment = async () => {
+    try {
+      // Clear any previous error
+      setErrorMessage(null);
+      
+      if (!updatedAppointmentId) {
+        console.error('Missing appointment ID for payment');
+        setErrorMessage('Không tìm thấy mã lịch hẹn. Vui lòng thử lại.');
+        return;
+      }
+      
+      setIsLoading(true);
+      
+      // Get the payment URL using the imported function from api.ts
+      const response: any = await getAppointmentPaymentUrl(updatedAppointmentId);
+      
+      console.log('📡 Payment URL response:', response);
+      
+      // Handle various response formats:
+      // 1. Direct URL string: "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?..."
+      // 2. Object with data property containing URL
+      // 3. Object with paymentUrl property
+      
+      if (typeof response === 'string' && response.startsWith('http')) {
+        // Direct URL string response
+        console.log('📡 Direct URL string detected, redirecting to:', response);
+        window.location.href = response;
+      } else if (response && typeof response === 'object') {
+        if (typeof response.data === 'string' && response.data.startsWith('http')) {
+          console.log('📡 URL in response.data detected, redirecting to:', response.data);
+          window.location.href = response.data;
+        } else if (response.data && response.data.paymentUrl) {
+          console.log('📡 URL in response.data.paymentUrl detected, redirecting to:', response.data.paymentUrl);
+          window.location.href = response.data.paymentUrl;
+        } else if (response.paymentUrl) {
+          console.log('📡 URL in response.paymentUrl detected, redirecting to:', response.paymentUrl);
+          window.location.href = response.paymentUrl;
+        } else {
+          console.error('📡 Payment URL not found in response:', response);
+          setErrorMessage('Không tìm thấy link thanh toán. Vui lòng thử lại sau.');
+        }
+      } else {
+        console.error('📡 Invalid payment response format:', response);
+        setErrorMessage('Không tìm thấy link thanh toán. Vui lòng thử lại sau.');
+      }
+    } catch (error) {
+      console.error('Error getting payment URL:', error);
+      setErrorMessage('Có lỗi xảy ra khi lấy đường dẫn thanh toán. Vui lòng thử lại sau.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle STI test request
+  const handleShowSTIModal = async (appointment: AppointmentData) => {
+    try {
+      // Log appointment details for debugging
+      console.log('📋 Opening STI modal for appointment:', {
+        id: appointment.appointmentID,
+        status: appointment.status,
+        hasTestServices: hasTestServices(appointment),
+        services: appointment.appointmentDetails?.map(d => d.service?.servicesName) || []
+      });
+      
+      setIsLoading(true);
+      setSelectedAppointment(appointment);
+      setShowSTIModal(true);
+      
+      // Fetch STI test services (filter for serviceType = 1)
+      const servicesResponse = await serviceAPI.getServices();
+      console.log('📡 Services response:', servicesResponse);
+      
+      if (servicesResponse.statusCode === 200 && servicesResponse.data) {
+        // Check the structure of the first service to understand the data format
+        if (servicesResponse.data.length > 0) {
+          console.log('📡 Sample service structure:', servicesResponse.data[0]);
+          
+          // Log all services with their type information to help debug
+          console.log('📡 Services with their type info:', servicesResponse.data.map((service: any) => ({
+            id: service.servicesID || service.id,
+            name: service.servicesName || service.name,
+            serviceType: service.serviceType,
+            type: service.type,
+            categoryID: service.categoryID
+          })));
+        }
+        
+        // Filter for ONLY services with serviceType = 1 (STI test services)
+        const testServices = servicesResponse.data.filter((service: any) => {
+          // First, try to match by explicit serviceType or type property
+          if (service.serviceType === 1 || service.type === 1) {
+            return true;
+          }
+          
+          // If no explicit type match, check other indicators of test services
+          // but make sure it's not a consultation service (type 0)
+          if (service.serviceType === 0 || service.type === 0) {
+            return false; // Exclude consultation services
+          }
+          
+          // Category based checks
+          if (service.category === 'test' || service.categoryID === 1) {
+            return true;
+          }
+          
+          // Name-based checks - only if no explicit type is found
+          if (service.servicesName) {
+            const name = service.servicesName.toLowerCase();
+            // Only include if it has test-related words and doesn't have consultation-related words
+            return (name.includes('xét nghiệm') || name.includes('test')) && 
+                  !name.includes('tư vấn') && 
+                  !name.includes('consultation');
+          }
+          
+          return false;
+        });
+        
+        console.log('📡 Filtered STI test services:', testServices);
+        setSTIServices(testServices);
+      }
+    } catch (error) {
+      console.error('Error fetching STI services:', error);
+      setErrorMessage('Có lỗi xảy ra khi tải dịch vụ xét nghiệm.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle STI test request submission
+  const handleSubmitSTIRequest = async () => {
+    try {
+      setErrorMessage(null);
+      if (!selectedAppointment || selectedService === null) {
+        setErrorMessage('Vui lòng chọn một dịch vụ xét nghiệm');
+        return;
+      }
+      
+      setIsLoading(true);
+      
+      // Create the request payload based on the API endpoint format
+      // The API expects appointmentID as a query parameter
+      const requestData = {
+        appointmentDetails: [
+          {
+            servicesID: selectedService,
+            quantity: 1
+          }
+        ]
+      };
+      
+      // Call the API to update appointment with STI request
+      // Using the URL format: /api/appointment/UpdateAppointmentWithSTIRequest?appointmentID=1
+      const appointmentId = selectedAppointment.appointmentID;
+      console.log(`📡 Making API call to UpdateAppointmentWithSTIRequest for appointment ID: ${appointmentId}`);
+      console.log('📡 Request data:', JSON.stringify(requestData, null, 2));
+      
+      const response = await appointmentAPI.updateAppointmentWithSTIRequest(appointmentId, requestData);
+      
+      if (response.statusCode === 200) {
+        // Save the appointmentId for payment
+        setUpdatedAppointmentId(appointmentId);
+        
+        // Hide the service selection modal
+        setShowSTIModal(false);
+        
+        // Show the success modal
+        setShowSuccessModal(true);
+        
+        // Reload appointments data in the background
+        reloadData();
+      } else {
+        setErrorMessage(`Lỗi: ${response.message || 'Không thể đăng ký xét nghiệm'}`);
+      }
+    } catch (error) {
+      console.error('Error submitting STI request:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      setErrorMessage('Có lỗi xảy ra khi đăng ký xét nghiệm.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Helper function to check if an appointment is ONLY consultation type (0) with NO test services
+  const checkIfConsultationType = (appointment: AppointmentData): boolean => {
+    // First check if there's an explicit appointmentType property
+    if ((appointment as any).appointmentType !== undefined) {
+      return (appointment as any).appointmentType === 0; // 0 = consultation
+    }
+    
+    // Log the details to help debug
+    console.log('📊 Checking appointment details:', appointment.appointmentDetails?.map(detail => ({
+      serviceName: detail.service?.servicesName,
+      serviceId: detail.service?.servicesID,
+    })));
+    
+    // If we have no details, we can't determine the type
+    if (!appointment.appointmentDetails || appointment.appointmentDetails.length === 0) {
+      return false;
+    }
+    
+    // Check if this is ONLY a consultation appointment with no test services
+    // The appointment should contain at least one consultation service AND no test services
+    
+    let hasConsultationService = false;
+    let hasTestService = false;
+    
+    for (const detail of appointment.appointmentDetails) {
+      if (!detail.service || !detail.service.servicesName) continue;
+      
+      const service = detail.service as any;
+      const name = service.servicesName.toLowerCase();
+      
+      // Check if this is a test service
+      if (
+        service.serviceType === 1 || 
+        service.type === 1 || 
+        name.includes('xét nghiệm') || 
+        name.includes('test') ||
+        name.includes('stis') ||
+        name.includes('sti')
+      ) {
+        console.log('🧪 Found test service:', service.servicesName);
+        hasTestService = true;
+      }
+      
+      // Check if this is a consultation service
+      if (
+        service.serviceType === 0 || 
+        service.type === 0 || 
+        name.includes('tư vấn') || 
+        name.includes('consultation')
+      ) {
+        console.log('👨‍⚕️ Found consultation service:', service.servicesName);
+        hasConsultationService = true;
+      }
+    }
+    
+    // Only return true if it has consultation services and NO test services
+    const result = hasConsultationService && !hasTestService;
+    console.log(`🔍 Appointment ${appointment.appointmentID} is ${result ? 'ONLY consultation' : 'not only consultation'}`);
+    return result;
   };
 
   // Handle tab change
@@ -569,6 +855,15 @@ const Profile = () => {
                       <div style={{ display: 'flex', gap: 8, flexDirection: 'column', alignItems: 'flex-end' }}>
                         <AppointmentStatusBadge status={appointment.status || 0} />
                         <PaymentStatusBadge status={appointment.paymentStatus || 0} />
+                        {/* For now, let's determine type based on services - assume test services have "test" or "xét nghiệm" in the name */}
+                        {appointment.appointmentDetails && appointment.appointmentDetails.length > 0 && (
+                          <AppointmentTypeBadge type={
+                            appointment.appointmentDetails.some(detail => 
+                              detail.service?.servicesName?.toLowerCase().includes('test') || 
+                              detail.service?.servicesName?.toLowerCase().includes('xét nghiệm')
+                            ) ? 1 : 0
+                          } />
+                        )}
                       </div>
                     </div>
                     
@@ -600,12 +895,465 @@ const Profile = () => {
                           <div>{appointment.consultant.name || 'Chưa phân công'}</div>
                         </div>
                       )}
+                      
+                      {/* Hiển thị tên dịch vụ */}
+                      {appointment.appointmentDetails && appointment.appointmentDetails.length > 0 && (
+                        <div>
+                          <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>🏥 Dịch vụ:</div>
+                          <div>
+                            {appointment.appointmentDetails.map((detail, idx) => {
+                              // Determine service type for visual indicator
+                              let serviceType = "unknown";
+                              let serviceIcon = "🔹";
+                              let serviceColor = "#6b7280";
+                              
+                              if (detail.service?.servicesName) {
+                                const name = detail.service.servicesName.toLowerCase();
+                                const serviceObj = detail.service as any;
+                                
+                                if (serviceObj.serviceType === 1 || 
+                                    serviceObj.type === 1 ||
+                                    name.includes('xét nghiệm') || 
+                                    name.includes('test') ||
+                                    name.includes('sti')) {
+                                  serviceType = "test";
+                                  serviceIcon = "🧪";
+                                  serviceColor = "#8b5cf6"; // Purple for test services
+                                } else if (serviceObj.serviceType === 0 || 
+                                          serviceObj.type === 0 ||
+                                          name.includes('tư vấn') || 
+                                          name.includes('consultation')) {
+                                  serviceType = "consultation";
+                                  serviceIcon = "👨‍⚕️";
+                                  serviceColor = "#3b82f6"; // Blue for consultation
+                                }
+                              }
+                              
+                              return (
+                                <div key={idx} style={{
+                                  marginBottom: idx < appointment.appointmentDetails!.length - 1 ? 8 : 0,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 8,
+                                  padding: '4px 10px',
+                                  backgroundColor: `${serviceColor}10`,
+                                  borderRadius: 6,
+                                  border: `1px solid ${serviceColor}30`
+                                }}>
+                                  <span>{serviceIcon}</span>
+                                  <span style={{
+                                    color: serviceColor,
+                                    fontWeight: serviceType === "test" ? 500 : 400
+                                  }}>
+                                    {detail.service?.servicesName || 'Không có thông tin'}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
+                    
+                    {/* Add button for STI Test if status is 3 (RequireSTIsTest) AND appointment is ONLY consultation type (0) */}
+                    {(() => {
+                      // Check if the button should be displayed and log reasoning
+                      const isStatus3 = appointment.status === 3;
+                      const isConsultationOnly = checkIfConsultationType(appointment);
+                      
+                      console.log(`🔍 Button check for appointment ${appointment.appointmentID}: 
+                        Status is 3: ${isStatus3}
+                        Is consultation only: ${isConsultationOnly}
+                        Should show button: ${isStatus3 && isConsultationOnly}
+                      `);
+                      
+                      return isStatus3 && isConsultationOnly ? (
+                        <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center' }}>
+                          <button
+                            onClick={() => handleShowSTIModal(appointment)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                              background: '#8b5cf6',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: 8,
+                              padding: '10px 16px',
+                              fontWeight: 600,
+                              fontSize: 14,
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            }}
+                          >
+                            <FaVial /> Đăng ký xét nghiệm STIs
+                          </button>
+                        </div>
+                      ) : null;
+                    })()}
                   </div>
                 ))}
               </div>
             </div>
           )}
+        </div>
+      )}
+      
+      {/* Error message display */}
+      {errorMessage && (
+        <div style={{
+          position: 'fixed',
+          bottom: 20,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#ef4444',
+          color: 'white',
+          padding: '12px 24px',
+          borderRadius: 8,
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          zIndex: 2000,
+          maxWidth: 400,
+          textAlign: 'center',
+          animation: 'fadeIn 0.3s ease-out',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12
+        }}>
+          <FaTimesCircle size={18} />
+          <div>{errorMessage}</div>
+          <button 
+            onClick={() => setErrorMessage(null)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              marginLeft: 8,
+              cursor: 'pointer',
+              fontSize: 20,
+              display: 'flex',
+              alignItems: 'center',
+              padding: 0
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+      
+      {/* STI Test Modal */}
+      {/* Show STI modal when active */}
+      {showSTIModal && selectedAppointment && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#fff',
+            borderRadius: 12,
+            padding: 24,
+            width: '90%',
+            maxWidth: 500,
+            boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+          }}>
+            <h3 style={{ fontSize: 20, marginBottom: 16, color: '#2563eb', textAlign: 'center' }}>
+              Đăng Ký Xét Nghiệm STIs
+            </h3>
+            
+            {isLoading ? (
+              <div style={{ textAlign: 'center', padding: 24 }}>
+                Đang tải dịch vụ xét nghiệm...
+              </div>
+            ) : (
+              <>
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#2563eb' }}>
+                    Chọn dịch vụ xét nghiệm:
+                  </label>
+                  <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 12 }}>
+                    Hãy lựa chọn dịch vụ xét nghiệm phù hợp với nhu cầu của bạn.
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '300px', overflowY: 'auto' }}>
+                    {stiServices.length > 0 ? (
+                      stiServices.map(service => (
+                        <div 
+                          key={service.servicesID || service.id} 
+                          style={{ 
+                            padding: 16,
+                            border: `2px solid ${selectedService === (service.servicesID || service.id) ? '#3b82f6' : '#e5e7eb'}`,
+                            borderRadius: 12,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            backgroundColor: selectedService === (service.servicesID || service.id) ? '#f0f7ff' : '#ffffff',
+                            boxShadow: selectedService === (service.servicesID || service.id) ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
+                            transition: 'all 0.2s ease-in-out'
+                          }}
+                          onClick={() => setSelectedService(service.servicesID || service.id)}
+                        >
+                          <div style={{ flex: 1 }}>
+                            <div style={{ 
+                              fontWeight: 600, 
+                              fontSize: 16, 
+                              color: selectedService === (service.servicesID || service.id) ? '#2563eb' : '#374151',
+                              marginBottom: 6
+                            }}>
+                              {service.servicesName || service.name}
+                            </div>
+                            <div style={{ fontSize: 14, color: '#6b7280', marginTop: 4, lineHeight: 1.5 }}>
+                              {(service.description || service.desc)?.substring(0, 150)}
+                              {(service.description || service.desc)?.length > 150 ? '...' : ''}
+                            </div>
+                          </div>
+                          <div style={{ 
+                            color: '#059669', 
+                            fontWeight: 600, 
+                            marginLeft: 16, 
+                            display: 'flex', 
+                            flexDirection: 'column',
+                            alignItems: 'flex-end',
+                            justifyContent: 'center'
+                          }}>
+                            <div>{(service.servicesPrice || service.price)?.toLocaleString('vi-VN')} VNĐ</div>
+                            {selectedService === (service.servicesID || service.id) && (
+                              <div style={{ 
+                                fontSize: 12, 
+                                color: '#2563eb', 
+                                marginTop: 4, 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: 4 
+                              }}>
+                                <FaCheckCircle /> Đã chọn
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div style={{ 
+                        textAlign: 'center', 
+                        color: '#6b7280', 
+                        padding: 24, 
+                        backgroundColor: '#f9fafb', 
+                        borderRadius: 8,
+                        border: '1px dashed #d1d5db'
+                      }}>
+                        Không tìm thấy dịch vụ xét nghiệm nào. Vui lòng thử lại sau.
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between',
+                  borderTop: '1px solid #e5e7eb',
+                  paddingTop: 20,
+                  marginTop: 24 
+                }}>
+                  <div style={{ fontSize: 14, color: '#4b5563' }}>
+                    {selectedService !== null && stiServices.find(s => (s.servicesID || s.id) === selectedService) ? (
+                      <div style={{ fontStyle: 'italic' }}>
+                        Dịch vụ đã chọn: <span style={{ fontWeight: 600, color: '#2563eb' }}>
+                          {stiServices.find(s => (s.servicesID || s.id) === selectedService)?.servicesName || 
+                           stiServices.find(s => (s.servicesID || s.id) === selectedService)?.name}
+                        </span>
+                      </div>
+                    ) : (
+                      <div>Vui lòng chọn một dịch vụ xét nghiệm</div>
+                    )}
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <button
+                      onClick={() => setShowSTIModal(false)}
+                      style={{
+                        padding: '10px 16px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: 8,
+                        background: '#ffffff',
+                        color: '#374151',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
+                    >
+                      <FaTimesCircle size={14} /> Hủy bỏ
+                    </button>
+                    <button
+                      onClick={handleSubmitSTIRequest}
+                      disabled={selectedService === null || isLoading}
+                      style={{
+                        padding: '10px 20px',
+                        border: 'none',
+                        borderRadius: 8,
+                        background: selectedService === null ? '#9ca3af' : '#3b82f6',
+                        color: '#fff',
+                        fontWeight: 600,
+                        cursor: selectedService === null ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        transition: 'all 0.2s',
+                        boxShadow: selectedService !== null ? '0 2px 4px rgba(59, 130, 246, 0.3)' : 'none'
+                      }}
+                      onMouseOver={(e) => {
+                        if (selectedService !== null && !isLoading) {
+                          e.currentTarget.style.backgroundColor = '#2563eb';
+                          e.currentTarget.style.boxShadow = '0 4px 6px rgba(59, 130, 246, 0.4)';
+                        }
+                      }}
+                      onMouseOut={(e) => {
+                        if (selectedService !== null && !isLoading) {
+                          e.currentTarget.style.backgroundColor = '#3b82f6';
+                          e.currentTarget.style.boxShadow = '0 2px 4px rgba(59, 130, 246, 0.3)';
+                        }
+                      }}
+                    >
+                      {isLoading ? (
+                        <>
+                          <div style={{ 
+                            width: 16, 
+                            height: 16, 
+                            border: '2px solid rgba(255,255,255,0.3)', 
+                            borderTop: '2px solid #fff',
+                            borderRadius: '50%',
+                            animation: 'spin 1s linear infinite'
+                          }}></div>
+                          Đang xử lý...
+                        </>
+                      ) : (
+                        <>
+                          <FaCheckCircle size={16} /> Xác nhận đăng ký
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Add some CSS for animations */}
+                <style>
+                  {`
+                    @keyframes spin {
+                      0% { transform: rotate(0deg); }
+                      100% { transform: rotate(360deg); }
+                    }
+                    @keyframes fadeIn {
+                      from { opacity: 0; transform: translateY(10px) translateX(-50%); }
+                      to { opacity: 1; transform: translateY(0) translateX(-50%); }
+                    }
+                  `}
+                </style>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Success Modal for STI Test Registration */}
+      {showSuccessModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: 12,
+            padding: 24,
+            width: '100%',
+            maxWidth: 500,
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+            position: 'relative',
+          }}>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              textAlign: 'center',
+            }}>
+              <FaCheckCircle size={60} color="#16a34a" style={{ marginBottom: 16 }} />
+              <h3 style={{ fontSize: 24, margin: '0 0 12px', color: '#16a34a' }}>Đăng ký xét nghiệm thành công!</h3>
+              <p style={{ fontSize: 16, marginBottom: 24, color: '#4b5563' }}>
+                Bạn đã đăng ký dịch vụ xét nghiệm STI thành công. Vui lòng thanh toán để hoàn tất quá trình đăng ký.
+              </p>
+              
+              <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+                <button
+                  onClick={() => setShowSuccessModal(false)}
+                  style={{
+                    padding: '10px 20px',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 8,
+                    background: '#ffffff',
+                    color: '#374151',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <FaTimesCircle size={14} /> Đóng
+                </button>
+                <button
+                  onClick={handlePayment}
+                  disabled={isLoading}
+                  style={{
+                    padding: '10px 20px',
+                    border: 'none',
+                    borderRadius: 8,
+                    background: '#3b82f6',
+                    color: '#fff',
+                    fontWeight: 600,
+                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  {isLoading ? (
+                    <>
+                      <div style={{
+                        width: 16,
+                        height: 16,
+                        border: '2px solid #f3f4f6',
+                        borderTop: '2px solid #3b82f6',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite',
+                      }}></div>
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    <>
+                      <FaMoneyBillWave size={16} /> Thanh toán ngay
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

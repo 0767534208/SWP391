@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Booking.css';
 import AdvisorModal from '../Booking/AdvisorModal';
@@ -16,9 +16,7 @@ interface TimeSlot {
   end: string;
 }
 
-interface DaySchedule {
-  [key: string]: TimeSlot[];
-}
+// Removed unused interface DaySchedule
 
 interface Certificate {
   id: number;
@@ -58,6 +56,7 @@ interface ServiceData {
   updateAt: string;
   servicesPrice: number;
   status: boolean;
+  serviceType?: number; // 1 = test service (no consultant), 0 = consultation service
   imageServices: string[];
 }
 
@@ -71,14 +70,7 @@ interface ServiceUI {
   imageUrl?: string;
 }
 
-// Interface for API category data
-interface CategoryData {
-  categoryID: number;
-  name: string;
-  createAt: string;
-  updateAt: string;
-  status: boolean;
-}
+// Removed unused interface CategoryData
 
 // Interface for consultant slot data
 interface ConsultantSlot {
@@ -88,41 +80,14 @@ interface ConsultantSlot {
   startTime: string;
   endTime: string;
   isBooked: boolean;
+  appointmentCount?: number; // Current number of appointments for this slot
+  maxAppointments?: number;  // Maximum number of appointments allowed for this slot
 }
 
 // Interface for consultant data
-interface ConsultantData {
-  consultantID: string;
-  userID: string;
-  name: string;
-  specialty: string;
-  experience: number;
-  bio: string;
-  rating: number;
-  imageUrl?: string;
-  id?: number;
-  image?: string;
-  education?: string;
-  certificates?: Certificate[];
-  schedule?: {
-    monday: TimeSlot[];
-    tuesday: TimeSlot[];
-    wednesday: TimeSlot[];
-    thursday: TimeSlot[];
-    friday: TimeSlot[];
-    saturday: TimeSlot[];
-    sunday: TimeSlot[];
-  };
-  price?: string;
-}
+// Removed unused interface ConsultantData
 
-// Define the type for slot selection
-interface SlotSelection {
-  slot: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-}
+// Removed unused interface SlotSelection
 
 const Booking = () => {
   const navigate = useNavigate();
@@ -133,7 +98,7 @@ const Booking = () => {
   const [selectedConsultant, setSelectedConsultant] = useState<string | null>(null);
   const [modalConsultant, setModalConsultant] = useState<Consultant | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentSlide, setCurrentSlide] = useState(0);
+  // Removed unused state currentSlide
   const [currentServicePage, setCurrentServicePage] = useState(0);
   const [personalDetails, setPersonalDetails] = useState<PersonalDetails>({
     name: '',
@@ -141,8 +106,7 @@ const Booking = () => {
     email: ''
   });
   const [services, setServices] = useState<ServiceUI[]>([]);
-  const [categories, setCategories] = useState<CategoryData[]>([]);
-  const [consultantCategoryId, setConsultantCategoryId] = useState<number | null>(null);
+  // Removed unused states for categories and consultantCategoryId
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [consultantSlotData, setConsultantSlotData] = useState<any[]>([]);
@@ -150,6 +114,18 @@ const Booking = () => {
   const [filteredSlots, setFilteredSlots] = useState<ConsultantSlot[]>([]);
   const [consultantLoading, setConsultantLoading] = useState(false);
   const [consultantProfiles, setConsultantProfiles] = useState<any[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Auto-dismiss error message after 5 seconds
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => {
+        setErrorMessage(null);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
+  
   // Lấy thông tin profile tư vấn viên khi load trang
   useEffect(() => {
     (async () => {
@@ -177,6 +153,8 @@ const Booking = () => {
     if (lower.includes('duplicate')) return 'Bạn đã đặt lịch cho dịch vụ này hoặc khung giờ này.';
     if (lower.includes('required')) return 'Vui lòng điền đầy đủ thông tin.';
     if (lower.includes('invalid')) return 'Thông tin không hợp lệ. Vui lòng kiểm tra lại.';
+    if (lower.includes('cannot select consultantid') || lower.includes('sti testing')) 
+      return 'Dịch vụ xét nghiệm không yêu cầu tư vấn viên. Hệ thống đang xử lý yêu cầu của bạn.';
     // Thêm các trường hợp khác nếu cần
     return msg;
   };
@@ -208,26 +186,16 @@ const Booking = () => {
         const categoryResponse = await categoryAPI.getCategories();
         
         if (serviceResponse.statusCode === 200 && serviceResponse.data && categoryResponse.statusCode === 200 && categoryResponse.data) {
-          // Store categories
-          setCategories(categoryResponse.data);
-          
-          // Find the consultant category (assuming there's a category for consultant services)
-          // For now, let's assume it's a category with a specific name like "consultation"
-          const consultantCategory = categoryResponse.data.find(
-            category => category.name.toLowerCase().includes('consult')
-          );
-          
-          if (consultantCategory) {
-            setConsultantCategoryId(consultantCategory.categoryID);
-          }
+          // We can ignore storing categories since they're not being used
+          // Note: We've removed the consultantCategory lookup since it's not being used
           
           // Map API data to UI format
           const mappedServices: ServiceUI[] = serviceResponse.data.map((service: ServiceData) => ({
             id: service.servicesID,
             name: service.servicesName,
             price: formatPrice(service.servicesPrice),
-            // A service requires consultant if it belongs to the consultant category
-            requiresConsultant: true, // Đặt tất cả dịch vụ đều cần tư vấn viên
+            // A service requires consultant if serviceType is not 1
+            requiresConsultant: service.serviceType !== 1, // Type 1 = test service (no consultant needed)
             description: service.description,
             imageUrl: service.imageServices && service.imageServices.length > 0 
               ? service.imageServices[0] 
@@ -287,7 +255,12 @@ const Booking = () => {
               consultantID: item.consultantID // thêm consultantID vào object consultant cho tiện truy xuất
             },
             slotID: item.slotID,
-            slot: item.slot,
+            slot: {
+              ...item.slot,
+              // Make sure we capture appointmentCount and maxAppointments if they exist
+              appointmentCount: item.slot.appointmentCount || item.appointmentCount || 0,
+              maxAppointments: item.slot.maxAppointments || item.maxAppointments || 5 // Default max is 5 if not specified
+            },
             assignedDate: item.assignedDate,
             isBooked: item.isBooked || false
           })));
@@ -310,40 +283,71 @@ const Booking = () => {
       setFilteredSlots([]);
       return;
     }
+    
     const selectedDateStr = selectedDate;
-    // Debug: log slot.startTime
-    consultantSlotData.forEach(item => {
-      console.log('DEBUG slot.startTime:', item.slot.startTime, '->', item.slot.startTime.split('T')[0]);
-    });
+    
+    // Filter slots for the selected date
     const slotsOnDate = consultantSlotData.filter(item => {
       const slotDateStr = item.slot.startTime.split('T')[0];
       return slotDateStr === selectedDateStr;
     });
-    // Lấy unique consultant theo consultantID
-    const uniqueConsultants = Array.from(
-      new Map(slotsOnDate.map(item => [
-        item.consultantID,
-        {
-          id: item.consultantID,
-          name: item.consultant.name,
-          specialty: item.consultant.specialty || 'Tư vấn sức khỏe',
-          address: item.consultant.address,
-          phone: item.consultant.phone,
-          dateOfBirth: item.consultant.dateOfBirth,
-          status: item.consultant.status,
-          imageUrl: item.consultant.imageUrl || '',
-          experience: item.consultant.experience || '',
-          education: item.consultant.education || '',
-          certificates: item.consultant.certificates || [],
-          consultantID: item.consultantID
-        }
-      ])).values()
-    );
-    setFilteredConsultants(uniqueConsultants);
-    setFilteredSlots([]); // reset slot khi đổi ngày
-    setSelectedConsultant(null);
+    
+    // If service doesn't require a consultant, directly populate available slots
+    if (selectedService && !serviceRequiresConsultant()) {
+      const availableSlots = slotsOnDate.map(item => ({
+        slotID: item.slotID.toString(),
+        consultantID: item.consultantID, // Keep the consultantID for data structure consistency
+        date: selectedDateStr,
+        startTime: new Date(item.slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        endTime: new Date(item.slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        isBooked: item.isBooked || false,
+        appointmentCount: item.slot.appointmentCount,
+        maxAppointments: item.slot.maxAppointments
+      }));
+      
+      // Filter out slots that are booked or have reached maximum appointments
+      setFilteredSlots(availableSlots.filter(slot => 
+        !slot.isBooked && 
+        (slot.appointmentCount === undefined || 
+         slot.maxAppointments === undefined || 
+         slot.appointmentCount < slot.maxAppointments)
+      ));
+      // For non-consultant services, still set consultantID to the first available one
+      // This will help us track the slot but won't be sent to the API for test services
+      if (availableSlots.length > 0 && !selectedConsultant) {
+        setSelectedConsultant(availableSlots[0].consultantID);
+      }
+    } else {
+      // For consultant services, get unique consultants
+      const uniqueConsultants = Array.from(
+        new Map(slotsOnDate.map(item => [
+          item.consultantID,
+          {
+            id: item.consultantID,
+            name: item.consultant.name,
+            specialty: item.consultant.specialty || 'Tư vấn sức khỏe',
+            address: item.consultant.address,
+            phone: item.consultant.phone,
+            dateOfBirth: item.consultant.dateOfBirth,
+            status: item.consultant.status,
+            imageUrl: item.consultant.imageUrl || '',
+            experience: item.consultant.experience || '',
+            education: item.consultant.education || '',
+            certificates: item.consultant.certificates || [],
+            consultantID: item.consultantID
+          }
+        ])).values()
+      );
+      setFilteredConsultants(uniqueConsultants);
+      setFilteredSlots([]); // reset slot khi đổi ngày
+    }
+    
+    // Always reset these when changing date
+    if (serviceRequiresConsultant()) {
+      setSelectedConsultant(null);
+    }
     setSelectedTime('');
-  }, [selectedDate, consultantSlotData]);
+  }, [selectedDate, consultantSlotData, selectedService]);
 
   // Khi chọn consultant, lọc ra các slot của consultant đó vào ngày đã chọn
   useEffect(() => {
@@ -364,9 +368,18 @@ const Booking = () => {
       date: selectedDateStr,
       startTime: new Date(item.slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       endTime: new Date(item.slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isBooked: item.isBooked || false
+      isBooked: item.isBooked || false,
+      appointmentCount: item.slot.appointmentCount,
+      maxAppointments: item.slot.maxAppointments
     }));
-    setFilteredSlots(slots);
+    
+    // Filter out slots that are booked or have reached maximum appointments
+    setFilteredSlots(slots.filter(slot => 
+      !slot.isBooked && 
+      (slot.appointmentCount === undefined || 
+       slot.maxAppointments === undefined || 
+       slot.appointmentCount < slot.maxAppointments)
+    ));
     setSelectedTime('');
   }, [selectedConsultant, selectedDate, consultantSlotData]);
 
@@ -414,50 +427,70 @@ const Booking = () => {
   };
 
   const handleSubmit = () => {
+    // Clear any previous error message
+    setErrorMessage(null);
+    
+    // Check if the selected service requires a consultant
+    const requiresConsultantSelection = serviceRequiresConsultant();
+    
     if (!selectedService) {
-      alert('Vui lòng chọn dịch vụ');
+      setErrorMessage('Vui lòng chọn dịch vụ');
       return;
     }
     if (!selectedDate) {
-      alert('Vui lòng chọn ngày');
+      setErrorMessage('Vui lòng chọn ngày');
       return;
     }
-    if (!selectedConsultant) {
-      alert('Vui lòng chọn tư vấn viên');
+    
+    // Only validate consultant selection if the service requires it
+    if (requiresConsultantSelection && (!selectedConsultant || selectedConsultant === "")) {
+      setErrorMessage('Vui lòng chọn tư vấn viên');
       return;
     }
     if (!selectedTime) {
-      alert('Vui lòng chọn giờ');
+      setErrorMessage('Vui lòng chọn giờ');
       return;
     }
     if (!personalDetails.name || !personalDetails.phone || !personalDetails.email) {
-      alert('Vui lòng điền đầy đủ thông tin cá nhân');
+      setErrorMessage('Vui lòng điền đầy đủ thông tin cá nhân');
       return;
     }
     if (!isLoggedIn) {
-      alert('Vui lòng đăng nhập để đặt lịch');
+      setErrorMessage('Vui lòng đăng nhập để đặt lịch');
       navigate('/auth/login', { state: { returnUrl: '/booking' } });
       return;
     }
+    // Find the selected slot information
+    // Since we're now ensuring filteredSlots is populated for both service types,
+    // we can find the selected slot information the same way
     const selectedSlotInfo = filteredSlots.find(slot => 
       slot.date === selectedDate && 
       `${slot.startTime} - ${slot.endTime}` === selectedTime
     );
+    
     if (!selectedSlotInfo) {
-      alert('Không tìm thấy thông tin khung giờ đã chọn');
+      setErrorMessage('Không tìm thấy thông tin khung giờ đã chọn');
       return;
     }
+    
+    // Get the slot ID for the API request
+    const slotID = parseInt(selectedSlotInfo.slotID);
     const userData = localStorage.getItem('user');
     if (!userData) {
-      alert('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại');
+      setErrorMessage('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại');
       navigate('/auth/login');
       return;
     }
     const user = JSON.parse(userData);
     const appointmentDateISO = selectedDate + 'T00:00:00';
-    // Tìm đúng consultantProfileID từ consultantProfiles
-    let consultantProfileID = 2;
-    if (selectedConsultant && consultantProfiles.length > 0) {
+    
+    // Get the current service to check its type
+    const currentService = services.find(s => s.id === selectedService);
+    const isTestService = currentService?.requiresConsultant === false; // This checks if serviceType=1 (test service)
+    
+    // Tìm đúng consultantProfileID từ consultantProfiles (chỉ cho dịch vụ tư vấn - type 0)
+    let consultantProfileID = 2; // Default value
+    if (!isTestService && selectedConsultant && consultantProfiles.length > 0) {
       // Tìm profile chỉ theo tên tư vấn viên (không phân biệt hoa thường, trim)
       const consultantObj = filteredConsultants.find(c => c.id?.toString() === selectedConsultant?.toString());
       if (consultantObj) {
@@ -469,25 +502,54 @@ const Booking = () => {
         }
       }
     }
-    const appointmentData = {
-      customerID: user.customerID || user.userID,
-      consultantID: selectedConsultant,
-      clinicID: 1, // Default clinic ID
-      slotID: parseInt(selectedSlotInfo.slotID),
-      appointmentDate: appointmentDateISO,
-      appointmentDetails: [
-        {
+    
+    // Double check that for type 0, we have a valid consultant selected
+    if (!isTestService && (!selectedConsultant || selectedConsultant === "")) {
+      setErrorMessage('Dịch vụ tư vấn yêu cầu phải chọn tư vấn viên');
+      return;
+    }
+    
+    // Prepare appointment data with proper typing based on service type
+    let appointmentData: any;
+    
+    if (isTestService) {
+      // For test services (serviceType=1), create data without consultantID and consultantProfileID
+      appointmentData = {
+        customerID: user.customerID || user.userID,
+        clinicID: 1, // Default clinic ID
+        slotID: slotID, // Use the slotID we found earlier
+        appointmentDate: appointmentDateISO,
+        appointmentDetails: [{
           servicesID: selectedService,
-          consultantProfileID,
           quantity: 1
-        }
-      ]
-    };
+        }]
+      };
+    } else {
+      // For consultation services (serviceType=0), include all fields with required consultant data
+      appointmentData = {
+        customerID: user.customerID || user.userID,
+        consultantID: selectedConsultant, // For type 0, consultantID is required and should be valid
+        clinicID: 1, // Default clinic ID
+        slotID: slotID, // Use the slotID we found earlier
+        appointmentDate: appointmentDateISO,
+        appointmentDetails: [{
+          servicesID: selectedService,
+          consultantProfileID: consultantProfileID, // Always include for type 0
+          quantity: 1
+        }]
+      };
+    }
     appointmentAPI.createAppointment(appointmentData)
       .then((response: any) => {  
         if (response.statusCode === 201) {
           const serviceDetails = services.find(s => s.id === selectedService);
-          const consultantDetails = filteredConsultants.find(c => c.id === selectedConsultant || c.consultantID === selectedConsultant);
+          const isTestService = serviceDetails?.requiresConsultant === false; // Check if it's a test service
+          
+          // For test services (serviceType=1), don't try to find consultant details
+          const consultantDetails = !isTestService && selectedConsultant ? 
+            filteredConsultants.find(c => c.id === selectedConsultant || c.consultantID === selectedConsultant) : 
+            null;
+          
           // Lưu appointmentID vào localStorage để backup
           localStorage.setItem('lastAppointmentId', response.data.appointmentID);
           navigate('/confirm-booking', { 
@@ -497,7 +559,7 @@ const Booking = () => {
                 name: serviceDetails?.name || 'Dịch vụ đã chọn',
                 duration: selectedTime,
                 price: serviceDetails?.price || '',
-                requiresConsultant: serviceRequiresConsultant()
+                requiresConsultant: !isTestService // Not a test service means it requires consultant
               },
               consultant: consultantDetails ? {
                 id: parseInt(consultantDetails.consultantID),
@@ -519,7 +581,7 @@ const Booking = () => {
           });
         } else {
           const apiError = response?.message || response?.error || 'Đã xảy ra lỗi không xác định.';
-          alert(translateError(apiError));
+          setErrorMessage(translateError(apiError));
         }
       })
       .catch((error: any) => {
@@ -531,7 +593,7 @@ const Booking = () => {
         } else if (typeof error === 'string') {
           errorMsg = error;
         }
-        alert(translateError(errorMsg));
+        setErrorMessage(translateError(errorMsg));
       });
   };
 
@@ -560,8 +622,15 @@ const Booking = () => {
 
   // Update getConsultantTimeSlots to use API slot data
   const getConsultantTimeSlots = (): string[] => {
-    if (!selectedConsultant || !selectedDate) return [];
+    if (!selectedDate) return [];
     
+    // If service doesn't require consultant, return filtered slots directly
+    if (!serviceRequiresConsultant()) {
+      return filteredSlots.map(slot => `${slot.startTime} - ${slot.endTime}`);
+    }
+    
+    // If service requires consultant, only return slots for selected consultant
+    if (!selectedConsultant) return [];
     return filteredSlots.map(slot => `${slot.startTime} - ${slot.endTime}`);
   };
 
@@ -648,8 +717,8 @@ const Booking = () => {
               </div>
             )}
 
-            {/* Bước 3: Chọn tư vấn viên (hiển thị sau khi chọn ngày) */}
-            {selectedService && selectedDate && (
+            {/* Bước 3: Chọn tư vấn viên (chỉ hiển thị nếu dịch vụ yêu cầu tư vấn viên) */}
+            {selectedService && selectedDate && serviceRequiresConsultant() && (
               <div className="form-section">
                 <h3>3. Chọn Tư Vấn Viên</h3>
                 {consultantLoading ? (
@@ -722,10 +791,10 @@ const Booking = () => {
               </div>
             )}
 
-            {/* Bước 4: Chọn giờ (hiển thị sau khi chọn tư vấn viên) */}
-            {selectedService && selectedDate && selectedConsultant && (
+            {/* Bước 3/4: Chọn giờ (hiển thị sau khi chọn tư vấn viên hoặc sau khi chọn ngày nếu không yêu cầu tư vấn viên) */}
+            {selectedService && selectedDate && ((!serviceRequiresConsultant()) || selectedConsultant) && (
               <div className="form-section">
-                <h3>4. Chọn Giờ</h3>
+                <h3>{serviceRequiresConsultant() ? '4. Chọn Giờ' : '3. Chọn Giờ'}</h3>
                 <div className="time-slots">
                   {consultantLoading ? (
                     <div className="loading-container">
@@ -802,12 +871,17 @@ const Booking = () => {
               </div>
             </div>
             
-            {/* Không hiển thị lỗi trên giao diện, chỉ dùng alert */}
+            {/* Hiển thị lỗi bằng thông báo error toast */}
             <div className="booking-footer">
               <button
                 className="submit-button"
                 onClick={handleSubmit}
-                disabled={!selectedService || !selectedDate || !selectedTime || (serviceRequiresConsultant() && !selectedConsultant)}
+                disabled={
+                  !selectedService || 
+                  !selectedDate || 
+                  !selectedTime || 
+                  (serviceRequiresConsultant() && !selectedConsultant)
+                }
               >
                 Xác Nhận Đặt Lịch
               </button>
@@ -819,6 +893,61 @@ const Booking = () => {
       {isModalOpen && modalConsultant && (
         <AdvisorModal consultant={modalConsultant} onClose={closeConsultantModal} />
       )}
+      
+      {/* Error message toast */}
+      {errorMessage && (
+        <div className="error-toast" style={{
+          position: 'fixed',
+          bottom: 20,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#ef4444',
+          color: 'white',
+          padding: '12px 24px',
+          borderRadius: 8,
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          zIndex: 2000,
+          maxWidth: 400,
+          textAlign: 'center',
+          animation: 'fadeIn 0.3s ease-out',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12
+        }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
+          <div>{errorMessage}</div>
+          <button 
+            onClick={() => setErrorMessage(null)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              marginLeft: 8,
+              cursor: 'pointer',
+              fontSize: 20,
+              display: 'flex',
+              alignItems: 'center',
+              padding: 0
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+      
+      {/* Add CSS for animations */}
+      <style>
+        {`
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px) translateX(-50%); }
+            to { opacity: 1; transform: translateY(0) translateX(-50%); }
+          }
+        `}
+      </style>
     </div>
   );
 };

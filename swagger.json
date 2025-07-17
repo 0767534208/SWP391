@@ -6997,6 +6997,78 @@
         },
         "additionalProperties": false
       },
+      "GetLabtestForTreatmentOutcome": {
+        "type": "object",
+        "properties": {
+          "labTestID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "customerID": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "staffID": {
+            "type": "string",
+            "nullable": true
+          },
+          "staffName": {
+            "type": "string",
+            "nullable": true
+          },
+          "staffEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "treatmentID": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "treatmentDiagnosis": {
+            "type": "string",
+            "nullable": true
+          },
+          "testName": {
+            "type": "string",
+            "nullable": true
+          },
+          "result": {
+            "type": "string",
+            "nullable": true
+          },
+          "referenceRange": {
+            "type": "string",
+            "nullable": true
+          },
+          "unit": {
+            "type": "string",
+            "nullable": true
+          },
+          "isPositive": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "testDate": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2025-05-10T00:00:00"
+          }
+        },
+        "additionalProperties": false
+      },
       "GetServiceResponse": {
         "type": "object",
         "properties": {
@@ -7239,6 +7311,13 @@
             "type": "string",
             "format": "date-time",
             "example": "2025-05-10T00:00:00"
+          },
+          "labTests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetLabtestForTreatmentOutcome"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
