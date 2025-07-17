@@ -26,6 +26,7 @@ import TestResultConsultant from './pages/Consultant/TestResultConsultant';
 import TestResultConsultantDetail from './pages/Consultant/TestResultConsultantDetail';
 import NewTestResult from './pages/Consultant/NewTestResult';
 import ConsultantAppointments from './pages/Appointments/ConsultantAppointments';
+import ConsultantSlotRegistration from './pages/Consultant/ConsultantSlotRegistration';
 import Services from './pages/Services/Services';
 import QnA from './pages/QnA/QnA';
 import Payment from './pages/Payment/Payment';
@@ -47,6 +48,8 @@ import TestResultView from './pages/Staff/TestResultView';
 import TestResultManagementStaff from './pages/Staff/TestResultManagementStaff';
 import TestResultEdit from './pages/Staff/TestResultEdit';
 import TestResultForm from './pages/Staff/TestResultForm';
+import StaffTransactions from './pages/Staff/StaffTransactions';
+import NewLabTest from './pages/Staff/NewLabTest';
 
 // Import API Testers
 import ApiTesters from './components/ApiTesters';
@@ -152,7 +155,7 @@ function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="confirm-booking" element={<ConfirmBooking />} />
           <Route path="payment" element={<Payment />} />
-          <Route path="payment-success" element={<PaymentSuccess />} />
+          <Route path="payment-success/:appointmentId" element={<PaymentSuccess />} />
           <Route path="contact" element={<Contact />} />
           <Route path="test-results/:id" element={<TestResults />} />
           <Route path="qna" element={<QnA />} />
@@ -172,7 +175,7 @@ function App() {
           <Route path="test-results" element={<TestResultConsultant />} />
           <Route path="test-results/new" element={<NewTestResult />} />
           <Route path="test-results/:id" element={<TestResultConsultantDetail />} />
-          <Route path="test-results/new" element={<NewTestResult />} />
+          <Route path="slot-registration" element={<ConsultantSlotRegistration />} />
         </Route>
 
         {/* Route dành cho manager */}
@@ -199,9 +202,10 @@ function App() {
           <Route index element={<StaffAppointments />} />
           <Route path="appointments" element={<StaffAppointments />} />
           <Route path="test-results" element={<TestResultManagementStaff />} />
-          <Route path="test-results/new" element={<TestResultForm />} />
+          <Route path="test-results/new" element={<NewLabTest />} />
           <Route path="test-results/:id" element={<TestResultView />} />
           <Route path="test-results/edit/:id" element={<TestResultEdit />} />
+          <Route path="transactions" element={<StaffTransactions />} />
         </Route>
 
         {/* Route dành cho admin */}

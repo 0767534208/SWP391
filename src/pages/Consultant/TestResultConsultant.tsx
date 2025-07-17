@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { FaSearch, FaTimes, FaEye, FaEdit, FaPlus } from 'react-icons/fa';
+import { FaSearch, FaTimes, FaEye, FaEdit, FaPlus, FaFlask } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import './TestResultConsultant.css';
 import { treatmentOutcomeService } from '../../services';
+import testResultService from '../../services/testResultService';
 import { toast } from 'react-hot-toast';
 import type { TreatmentOutcome } from '../../services/treatmentOutcomeService';
 
@@ -11,6 +12,8 @@ interface TreatmentOutcomeWithDetails extends TreatmentOutcome {
   customerName?: string;
   consultantName?: string;
   treatmentDate?: string;
+  labTestID?: number;
+  hasLabTest?: boolean;
 }
 
 interface ViewModalData {
@@ -39,8 +42,11 @@ const TestResultConsultant: React.FC = () => {
   // Modal states
   const [showViewModal, setShowViewModal] = useState<boolean>(false);
   const [showEditModal, setShowEditModal] = useState<boolean>(false);
+  const [showLabTestModal, setShowLabTestModal] = useState<boolean>(false);
   const [viewModalData, setViewModalData] = useState<ViewModalData | null>(null);
   const [editModalData, setEditModalData] = useState<EditModalData | null>(null);
+  const [selectedLabTest, setSelectedLabTest] = useState<any>(null);
+  const [labTestLoading, setLabTestLoading] = useState<boolean>(false);
 
   // Load data on component mount
   useEffect(() => {
@@ -65,18 +71,33 @@ const TestResultConsultant: React.FC = () => {
         const appointmentData = appointmentResponse.statusCode === 200 ? appointmentResponse.data || [] : [];
         // setAppointments(appointmentData);
 
-        // Combine treatment outcomes with appointment details
-        const combinedData = treatmentResponse.data.map(outcome => {
+        // Combine treatment outcomes with appointment details and check for lab tests
+        const combinedData = await Promise.all(treatmentResponse.data.map(async (outcome) => {
           const appointment = appointmentData.find(app => app.appointmentID === outcome.appointmentID);
+          
+          // Check if this treatment has lab tests
+          let hasLabTest = false;
+          let labTestID = null;
+          try {
+            const labTestResponse = await testResultService.getAppointmentTestResults(outcome.treatmentID.toString());
+            if (labTestResponse.statusCode === 200 && labTestResponse.data && labTestResponse.data.length > 0) {
+              hasLabTest = true;
+              labTestID = (labTestResponse.data[0] as any).labTestID || labTestResponse.data[0].id;
+            }
+          } catch (error) {
+            console.error('Error checking lab test for treatment:', outcome.treatmentID, error);
+          }
           
           return {
             ...outcome,
             appointmentCode: appointment?.appointmentCode || 'N/A',
             customerName: appointment?.customer?.name || 'N/A',
             consultantName: appointment?.consultant?.name || 'N/A',
-            treatmentDate: outcome.createAt
+            treatmentDate: outcome.createAt,
+            hasLabTest,
+            labTestID
           };
-        });
+        }));
 
         setTreatmentOutcomes(combinedData);
       } else {
@@ -171,6 +192,39 @@ const TestResultConsultant: React.FC = () => {
       console.error('Error updating treatment outcome:', error);
       toast.error('Có lỗi xảy ra khi cập nhật');
     }
+  };
+
+  // Handle view lab test details
+  const handleViewLabTest = async (treatmentId: number) => {
+    try {
+      setLabTestLoading(true);
+      const labTestResponse = await testResultService.getAppointmentTestResults(treatmentId.toString());
+      
+      if (labTestResponse.statusCode === 200 && labTestResponse.data && labTestResponse.data.length > 0) {
+        const labTestId = (labTestResponse.data[0] as any).labTestID || labTestResponse.data[0].id;
+        const testDetailResponse = await testResultService.getTestResult(labTestId.toString());
+        
+        if (testDetailResponse.statusCode === 200 && testDetailResponse.data) {
+          setSelectedLabTest(testDetailResponse.data);
+          setShowLabTestModal(true);
+        } else {
+          toast.error('Không thể tải chi tiết kết quả xét nghiệm');
+        }
+      } else {
+        toast.error('Không tìm thấy kết quả xét nghiệm cho điều trị này');
+      }
+    } catch (error) {
+      console.error('Error loading lab test details:', error);
+      toast.error('Có lỗi xảy ra khi tải kết quả xét nghiệm');
+    } finally {
+      setLabTestLoading(false);
+    }
+  };
+
+  // Close lab test modal
+  const closeLabTestModal = () => {
+    setShowLabTestModal(false);
+    setSelectedLabTest(null);
   };
 
   // Format date for display
@@ -269,6 +323,16 @@ const TestResultConsultant: React.FC = () => {
                         >
                           <FaEdit />
                         </button>
+                        {outcome.hasLabTest && (
+                          <button
+                            onClick={() => handleViewLabTest(outcome.treatmentID)}
+                            className="action-btn lab-test-btn"
+                            title="Xem kết quả xét nghiệm"
+                            disabled={labTestLoading}
+                          >
+                            <FaFlask />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -432,6 +496,125 @@ const TestResultConsultant: React.FC = () => {
               >
                 Lưu thay đổi
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lab Test Result Modal */}
+      {showLabTestModal && selectedLabTest && (
+        <div className="modal-overlay" onClick={closeLabTestModal}>
+          <div className="modal-content lab-test-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Kết quả xét nghiệm</h3>
+              <button 
+                onClick={closeLabTestModal}
+                className="modal-close"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <div className="modal-body">
+              {labTestLoading ? (
+                <div className="loading-state">
+                  <div className="loading-spinner"></div>
+                  <p>Đang tải kết quả xét nghiệm...</p>
+                </div>
+              ) : (
+                <div className="lab-test-details">
+                  <h4>Thông tin xét nghiệm</h4>
+                  <div className="detail-grid">
+                    <div className="detail-item">
+                      <strong>Tên xét nghiệm:</strong> {selectedLabTest.testName}
+                    </div>
+                    <div className="detail-item">
+                      <strong>Ngày thực hiện:</strong> {formatDate(selectedLabTest.datePerformed)}
+                    </div>
+                    <div className="detail-item">
+                      <strong>Kết quả:</strong> {selectedLabTest.result}
+                    </div>
+                    <div className="detail-item">
+                      <strong>Đơn vị:</strong> {selectedLabTest.unit}
+                    </div>
+                    <div className="detail-item">
+                      <strong>Tham chiếu:</strong> {selectedLabTest.referenceRange}
+                    </div>
+                  </div>
+                  
+
+                  <h4>Ghi chú</h4>
+                  <div className="detail-content">
+                    {selectedLabTest.notes || 'Không có ghi chú'}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lab Test Modal */}
+      {showLabTestModal && selectedLabTest && (
+        <div className="modal-overlay" onClick={closeLabTestModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Chi tiết kết quả xét nghiệm</h3>
+              <button 
+                onClick={closeLabTestModal}
+                className="modal-close"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="modal-info-grid">
+                <div className="modal-info-item">
+                  <label>ID:</label>
+                  <span>{selectedLabTest.labTestID || selectedLabTest.id}</span>
+                </div>
+                <div className="modal-info-item">
+                  <label>Mã điều trị:</label>
+                  <span>{selectedLabTest.treatmentID ? `APT-${selectedLabTest.treatmentID}` : 'N/A'}</span>
+                </div>
+                <div className="modal-info-item">
+                  <label>Bệnh nhân:</label>
+                  <span>{selectedLabTest.customerName || selectedLabTest.patientName || `Bệnh nhân ${selectedLabTest.customerID || 'N/A'}`}</span>
+                </div>
+                <div className="modal-info-item">
+                  <label>Nhân viên xét nghiệm:</label>
+                  <span>{selectedLabTest.staffName || `Nhân viên ${selectedLabTest.staffID || 'N/A'}`}</span>
+                </div>
+                <div className="modal-info-item">
+                  <label>Loại xét nghiệm:</label>
+                  <span>{selectedLabTest.testName || selectedLabTest.testType || 'N/A'}</span>
+                </div>
+                <div className="modal-info-item">
+                  <label>Ngày xét nghiệm:</label>
+                  <span>{selectedLabTest.testDate ? formatDate(selectedLabTest.testDate) : 'N/A'}</span>
+                </div>
+                <div className="modal-info-item">
+                  <label>Kết quả:</label>
+                  <span>{selectedLabTest.result || 'N/A'}</span>
+                </div>
+                <div className="modal-info-item">
+                  <label>Phạm vi tham chiếu:</label>
+                  <span>{selectedLabTest.referenceRange || 'N/A'}</span>
+                </div>
+                <div className="modal-info-item">
+                  <label>Đơn vị đo:</label>
+                  <span>{selectedLabTest.unit || 'N/A'}</span>
+                </div>
+                <div className="modal-info-item">
+                  <label>Tính chất:</label>
+                  <span>{selectedLabTest.isPositive !== undefined ? (selectedLabTest.isPositive ? 'Dương tính' : 'Âm tính') : 'N/A'}</span>
+                </div>
+                {selectedLabTest.notes && (
+                  <div className="modal-info-item full-width">
+                    <label>Ghi chú:</label>
+                    <span>{selectedLabTest.notes}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

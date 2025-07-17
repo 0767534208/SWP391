@@ -57,13 +57,7 @@ const PaymentSuccess: React.FC = () => {
     return 'Không xác định';
   };
 
-  const getPaymentMethodText = () => {
-    if (!appointment) return '';
-    if (appointment.paymentType === 1) return 'VNPay';
-    if (appointment.paymentType === 2) return 'Chuyển khoản ngân hàng';
-    if (appointment.paymentType === 3) return 'Tiền mặt';
-    return 'Không xác định';
-  };
+
 
   if (loading) {
     return <div className="success-page"><div className="success-container"><p>Đang tải thông tin lịch hẹn...</p></div></div>;
@@ -95,7 +89,11 @@ const PaymentSuccess: React.FC = () => {
                     <FontAwesomeIcon icon={faCalendarCheck} className="info-icon" />
                     <span>Dịch vụ:</span>
                   </div>
-                  <div className="booking-info-value">{appointment?.serviceName || 'Chưa xác định'}</div>
+                  <div className="booking-info-value">{
+                    appointment?.appointmentDetails && appointment.appointmentDetails.length > 0 
+                      ? appointment.appointmentDetails[0]?.service?.servicesName || 'Chưa xác định'
+                      : 'Chưa xác định'
+                  }</div>
                 </div>
                 <div className="booking-info-item">
                   <div className="booking-info-label">
@@ -116,7 +114,13 @@ const PaymentSuccess: React.FC = () => {
                     <FontAwesomeIcon icon={faClock} className="info-icon" />
                     <span>Giờ khám:</span>
                   </div>
-                  <div className="booking-info-value">{appointment?.slot?.startTime || 'Chưa xác định'}</div>
+                  <div className="booking-info-value">{
+                    appointment?.slot?.startTime 
+                      ? new Date(appointment.slot.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) +
+                        ' - ' + 
+                        new Date(appointment.slot.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+                      : 'Chưa xác định'
+                  }</div>
                 </div>
                 <div className="booking-info-item">
                   <div className="booking-info-label">
@@ -148,13 +152,7 @@ const PaymentSuccess: React.FC = () => {
                   </div>
                   <div className="booking-info-value price">{appointment?.totalAmount ? appointment.totalAmount.toLocaleString('vi-VN') + ' VNĐ' : 'Chưa xác định'}</div>
                 </div>
-                <div className="booking-info-item">
-                  <div className="booking-info-label">
-                    <FontAwesomeIcon icon={faMoneyBillWave} className="info-icon" />
-                    <span>Phương thức thanh toán:</span>
-                  </div>
-                  <div className="booking-info-value">{getPaymentMethodText()}</div>
-                </div>
+
                 <div className="booking-info-item">
                   <div className="booking-info-label">
                     <FontAwesomeIcon icon={faMoneyBillWave} className="info-icon" />
