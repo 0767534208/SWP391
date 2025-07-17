@@ -24,14 +24,39 @@ const PaymentSuccess: React.FC = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!appointmentId) return;
+    if (!appointmentId) {
+      console.error('❌ No appointmentId provided in URL params');
+      setError('Không có ID lịch hẹn được cung cấp.');
+      setLoading(false);
+      return;
+    }
+    
+    console.log('🔍 Fetching appointment with ID:', appointmentId);
     setLoading(true);
+    
     appointmentAPI.getAppointmentById(appointmentId)
       .then(res => {
+        console.log('📋 Appointment details fetched:', JSON.stringify(res.data, null, 2));
+        
+        // Log specific details about services and payment
+        const appointmentData = res.data;
+        if (appointmentData && appointmentData.appointmentDetails && appointmentData.appointmentDetails.length > 0) {
+          console.log('🧪 Services:', appointmentData.appointmentDetails.map((d: any) => ({
+            id: d.service?.serviceId,
+            name: d.service?.servicesName,
+            price: d.service?.price
+          })));
+        }
+        if (appointmentData) {
+          console.log('💰 Total amount:', appointmentData.totalAmount);
+          console.log('💳 Payment status:', appointmentData.paymentStatus);
+        }
+        
         setAppointment(res.data);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error('❌ Error fetching appointment details:', error);
         setError('Không tìm thấy thông tin lịch hẹn.');
         setLoading(false);
       });
@@ -89,11 +114,31 @@ const PaymentSuccess: React.FC = () => {
                     <FontAwesomeIcon icon={faCalendarCheck} className="info-icon" />
                     <span>Dịch vụ:</span>
                   </div>
-                  <div className="booking-info-value">{
-                    appointment?.appointmentDetails && appointment.appointmentDetails.length > 0 
-                      ? appointment.appointmentDetails[0]?.service?.servicesName || 'Chưa xác định'
-                      : 'Chưa xác định'
-                  }</div>
+                  <div className="booking-info-value">
+                    {appointment?.appointmentDetails && appointment.appointmentDetails.length > 0 ? (
+                      <div>
+                        {appointment.appointmentDetails.map((detail: any, index: number) => (
+                          <div key={index} style={{ 
+                            marginBottom: index < appointment.appointmentDetails.length - 1 ? '8px' : '0',
+                            display: 'flex', 
+                            alignItems: 'center'
+                          }}>
+                            {detail.service?.serviceType === 1 || 
+                              (detail.service?.servicesName?.toLowerCase().includes('xét nghiệm') || 
+                               detail.service?.servicesName?.toLowerCase().includes('test') || 
+                               detail.service?.servicesName?.toLowerCase().includes('sti')) ? (
+                              <span style={{ marginRight: '5px', color: '#8b5cf6' }}>🧪</span>
+                            ) : (
+                              <span style={{ marginRight: '5px', color: '#3b82f6' }}>👨‍⚕️</span>
+                            )}
+                            {detail.service?.servicesName || 'Chưa xác định'}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      'Chưa xác định'
+                    )}
+                  </div>
                 </div>
                 <div className="booking-info-item">
                   <div className="booking-info-label">
@@ -150,7 +195,7 @@ const PaymentSuccess: React.FC = () => {
                     <FontAwesomeIcon icon={faMoneyBillWave} className="info-icon" />
                     <span>Phí dịch vụ:</span>
                   </div>
-                  <div className="booking-info-value price">{appointment?.totalAmount ? appointment.totalAmount.toLocaleString('vi-VN') + ' VNĐ' : 'Chưa xác định'}</div>
+                  <div className="booking-info-value price" style={{ color: '#10b981', fontWeight: 'bold' }}>{appointment?.totalAmount ? appointment.totalAmount.toLocaleString('vi-VN') + ' VNĐ' : 'Chưa xác định'}</div>
                 </div>
 
                 <div className="booking-info-item">

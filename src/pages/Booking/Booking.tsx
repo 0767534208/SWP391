@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Booking.css';
 import AdvisorModal from '../Booking/AdvisorModal';
@@ -16,9 +16,7 @@ interface TimeSlot {
   end: string;
 }
 
-interface DaySchedule {
-  [key: string]: TimeSlot[];
-}
+// Removed unused interface DaySchedule
 
 interface Certificate {
   id: number;
@@ -71,14 +69,7 @@ interface ServiceUI {
   imageUrl?: string;
 }
 
-// Interface for API category data
-interface CategoryData {
-  categoryID: number;
-  name: string;
-  createAt: string;
-  updateAt: string;
-  status: boolean;
-}
+// Removed unused interface CategoryData
 
 // Interface for consultant slot data
 interface ConsultantSlot {
@@ -91,38 +82,9 @@ interface ConsultantSlot {
 }
 
 // Interface for consultant data
-interface ConsultantData {
-  consultantID: string;
-  userID: string;
-  name: string;
-  specialty: string;
-  experience: number;
-  bio: string;
-  rating: number;
-  imageUrl?: string;
-  id?: number;
-  image?: string;
-  education?: string;
-  certificates?: Certificate[];
-  schedule?: {
-    monday: TimeSlot[];
-    tuesday: TimeSlot[];
-    wednesday: TimeSlot[];
-    thursday: TimeSlot[];
-    friday: TimeSlot[];
-    saturday: TimeSlot[];
-    sunday: TimeSlot[];
-  };
-  price?: string;
-}
+// Removed unused interface ConsultantData
 
-// Define the type for slot selection
-interface SlotSelection {
-  slot: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-}
+// Removed unused interface SlotSelection
 
 const Booking = () => {
   const navigate = useNavigate();
@@ -133,7 +95,7 @@ const Booking = () => {
   const [selectedConsultant, setSelectedConsultant] = useState<string | null>(null);
   const [modalConsultant, setModalConsultant] = useState<Consultant | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentSlide, setCurrentSlide] = useState(0);
+  // Removed unused state currentSlide
   const [currentServicePage, setCurrentServicePage] = useState(0);
   const [personalDetails, setPersonalDetails] = useState<PersonalDetails>({
     name: '',
@@ -141,8 +103,7 @@ const Booking = () => {
     email: ''
   });
   const [services, setServices] = useState<ServiceUI[]>([]);
-  const [categories, setCategories] = useState<CategoryData[]>([]);
-  const [consultantCategoryId, setConsultantCategoryId] = useState<number | null>(null);
+  // Removed unused states for categories and consultantCategoryId
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [consultantSlotData, setConsultantSlotData] = useState<any[]>([]);
@@ -150,6 +111,18 @@ const Booking = () => {
   const [filteredSlots, setFilteredSlots] = useState<ConsultantSlot[]>([]);
   const [consultantLoading, setConsultantLoading] = useState(false);
   const [consultantProfiles, setConsultantProfiles] = useState<any[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Auto-dismiss error message after 5 seconds
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => {
+        setErrorMessage(null);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
+  
   // Lấy thông tin profile tư vấn viên khi load trang
   useEffect(() => {
     (async () => {
@@ -208,18 +181,8 @@ const Booking = () => {
         const categoryResponse = await categoryAPI.getCategories();
         
         if (serviceResponse.statusCode === 200 && serviceResponse.data && categoryResponse.statusCode === 200 && categoryResponse.data) {
-          // Store categories
-          setCategories(categoryResponse.data);
-          
-          // Find the consultant category (assuming there's a category for consultant services)
-          // For now, let's assume it's a category with a specific name like "consultation"
-          const consultantCategory = categoryResponse.data.find(
-            category => category.name.toLowerCase().includes('consult')
-          );
-          
-          if (consultantCategory) {
-            setConsultantCategoryId(consultantCategory.categoryID);
-          }
+          // We can ignore storing categories since they're not being used
+          // Note: We've removed the consultantCategory lookup since it's not being used
           
           // Map API data to UI format
           const mappedServices: ServiceUI[] = serviceResponse.data.map((service: ServiceData) => ({
@@ -414,28 +377,31 @@ const Booking = () => {
   };
 
   const handleSubmit = () => {
+    // Clear any previous error message
+    setErrorMessage(null);
+    
     if (!selectedService) {
-      alert('Vui lòng chọn dịch vụ');
+      setErrorMessage('Vui lòng chọn dịch vụ');
       return;
     }
     if (!selectedDate) {
-      alert('Vui lòng chọn ngày');
+      setErrorMessage('Vui lòng chọn ngày');
       return;
     }
     if (!selectedConsultant) {
-      alert('Vui lòng chọn tư vấn viên');
+      setErrorMessage('Vui lòng chọn tư vấn viên');
       return;
     }
     if (!selectedTime) {
-      alert('Vui lòng chọn giờ');
+      setErrorMessage('Vui lòng chọn giờ');
       return;
     }
     if (!personalDetails.name || !personalDetails.phone || !personalDetails.email) {
-      alert('Vui lòng điền đầy đủ thông tin cá nhân');
+      setErrorMessage('Vui lòng điền đầy đủ thông tin cá nhân');
       return;
     }
     if (!isLoggedIn) {
-      alert('Vui lòng đăng nhập để đặt lịch');
+      setErrorMessage('Vui lòng đăng nhập để đặt lịch');
       navigate('/auth/login', { state: { returnUrl: '/booking' } });
       return;
     }
@@ -444,12 +410,12 @@ const Booking = () => {
       `${slot.startTime} - ${slot.endTime}` === selectedTime
     );
     if (!selectedSlotInfo) {
-      alert('Không tìm thấy thông tin khung giờ đã chọn');
+      setErrorMessage('Không tìm thấy thông tin khung giờ đã chọn');
       return;
     }
     const userData = localStorage.getItem('user');
     if (!userData) {
-      alert('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại');
+      setErrorMessage('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại');
       navigate('/auth/login');
       return;
     }
@@ -519,7 +485,7 @@ const Booking = () => {
           });
         } else {
           const apiError = response?.message || response?.error || 'Đã xảy ra lỗi không xác định.';
-          alert(translateError(apiError));
+          setErrorMessage(translateError(apiError));
         }
       })
       .catch((error: any) => {
@@ -531,7 +497,7 @@ const Booking = () => {
         } else if (typeof error === 'string') {
           errorMsg = error;
         }
-        alert(translateError(errorMsg));
+        setErrorMessage(translateError(errorMsg));
       });
   };
 
@@ -802,7 +768,7 @@ const Booking = () => {
               </div>
             </div>
             
-            {/* Không hiển thị lỗi trên giao diện, chỉ dùng alert */}
+            {/* Hiển thị lỗi bằng thông báo error toast */}
             <div className="booking-footer">
               <button
                 className="submit-button"
@@ -819,6 +785,61 @@ const Booking = () => {
       {isModalOpen && modalConsultant && (
         <AdvisorModal consultant={modalConsultant} onClose={closeConsultantModal} />
       )}
+      
+      {/* Error message toast */}
+      {errorMessage && (
+        <div className="error-toast" style={{
+          position: 'fixed',
+          bottom: 20,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#ef4444',
+          color: 'white',
+          padding: '12px 24px',
+          borderRadius: 8,
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          zIndex: 2000,
+          maxWidth: 400,
+          textAlign: 'center',
+          animation: 'fadeIn 0.3s ease-out',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12
+        }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
+          <div>{errorMessage}</div>
+          <button 
+            onClick={() => setErrorMessage(null)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              marginLeft: 8,
+              cursor: 'pointer',
+              fontSize: 20,
+              display: 'flex',
+              alignItems: 'center',
+              padding: 0
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+      
+      {/* Add CSS for animations */}
+      <style>
+        {`
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px) translateX(-50%); }
+            to { opacity: 1; transform: translateY(0) translateX(-50%); }
+          }
+        `}
+      </style>
     </div>
   );
 };

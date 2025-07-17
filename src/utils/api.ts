@@ -443,10 +443,11 @@ export const appointmentAPI = {
 
   /**
    * Cập nhật lịch hẹn với yêu cầu STI
-   * @param appointmentData - Thông tin lịch hẹn với STI request
+   * @param appointmentId - ID của lịch hẹn cần cập nhật
+   * @param appointmentData - Thông tin dịch vụ STI
    */
-  updateAppointmentWithSTIRequest: async (appointmentData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/api/appointment/UpdateAppointmentWithSTIRequest', 'PUT', appointmentData);
+  updateAppointmentWithSTIRequest: async (appointmentId: string, appointmentData: any): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/appointment/UpdateAppointmentWithSTIRequest?appointmentID=${appointmentId}`, 'PUT', appointmentData);
   },
 
   /**
@@ -597,7 +598,7 @@ export const userAPI = {
 
 // Service API endpoints
 export const serviceAPI = {
-  /**
+    /**
    * Lấy tất cả dịch vụ
    */
   getServices: async (): Promise<ApiResponse<any[]>> => {
