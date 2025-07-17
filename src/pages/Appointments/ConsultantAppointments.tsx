@@ -1,21 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { FaSearch, FaTimes, FaCheck, FaSpinner, FaVideo, FaCalendarAlt, FaListUl } from 'react-icons/fa';
+import { FaSearch, FaTimes, FaCheck, FaSpinner, FaVideo, FaCalendarAlt, FaListUl, FaEllipsisV } from 'react-icons/fa';
 import './ConsultantAppointments.css';
 import { consultantService } from '../../services';
 import { toast } from 'react-hot-toast';
-import { Link } from 'react-router-dom';
 
 interface Appointment {
   appointmentID: string;
   customerID: string;
   consultantID: string;
   appointmentDate: string;
+  appointmentCode: string;
   status: number;
   appointmentType: number;
   totalAmount: number;
   paymentStatus: number;
   treatmentID?: string;
   slot?: {
+    slotID: number;
     startTime: string;
     endTime: string;
   };
@@ -24,6 +25,12 @@ interface Appointment {
     phone?: string;
     email?: string;
   };
+  appointmentDetails?: {
+    service?: {
+      servicesName: string;
+      serviceType: number;
+    };
+  }[];
   notes?: string;
 }
 
@@ -31,6 +38,7 @@ const statusLabels = [
   "Đang chờ xác nhận",
   "Đã xác nhận",
   "Đang chờ kết quả",
+  "Yêu cầu xét nghiệm STI",
   "Đã hoàn thành",
   "Đã hủy"
 ];
@@ -39,13 +47,19 @@ const statusClasses = [
   "status-pending",
   "status-confirmed",
   "status-awaiting",
+  "status-testing",
   "status-completed",
   "status-cancelled"
 ];
 
 const appointmentTypeLabels = [
-  "Trực tiếp",
-  "Trực tuyến"
+  "Tư vấn",
+  "Xét nghiệm"
+];
+
+const serviceTypeLabels = [
+  "Tư vấn",
+  "Xét nghiệm STI"
 ];
 
 const ConsultantAppointments: React.FC = () => {
@@ -60,6 +74,121 @@ const ConsultantAppointments: React.FC = () => {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [showDetailModal, setShowDetailModal] = useState<boolean>(false);
+  const [consultantSlots, setConsultantSlots] = useState<number[]>([]);
+  const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
+
+  // Appointment Actions Component
+  const AppointmentActions: React.FC<{appointment: Appointment}> = ({ appointment }) => {
+    const isDropdownOpen = dropdownOpen === appointment.appointmentID;
+    
+    const toggleDropdown = () => {
+      setDropdownOpen(isDropdownOpen ? null : appointment.appointmentID);
+    };
+
+    const closeDropdown = () => {
+      setDropdownOpen(null);
+    };
+
+    const handleAction = (action: () => void) => {
+      action();
+      closeDropdown();
+    };
+
+    return (
+      <div className="appointment-actions-dropdown">
+        <button 
+          className="actions-toggle"
+          onClick={toggleDropdown}
+          title="Thao tác"
+        >
+          <FaEllipsisV />
+        </button>
+        
+        {isDropdownOpen && (
+          <div className="dropdown-menu">
+            <div className="dropdown-overlay" onClick={closeDropdown}></div>
+            <div className="dropdown-content">
+              {!canUpdateAppointment(appointment) ? (
+                <div className="dropdown-item disabled-item">
+                  <span>Không có quyền cập nhật</span>
+                  <small style={{ display: 'block', marginTop: '0.25rem' }}>
+                    (Ngoài slot được phân công)
+                  </small>
+                </div>
+              ) : (
+                <>
+                  {appointment.status === 0 && ( // Pending
+                    <>
+                      <button 
+                        className="dropdown-item approve-item"
+                        onClick={() => handleAction(() => updateAppointmentStatus(appointment.appointmentID, 1))}
+                      >
+                        <FaCheck /> Xác nhận
+                      </button>
+                      <button 
+                        className="dropdown-item cancel-item"
+                        onClick={() => handleAction(() => updateAppointmentStatus(appointment.appointmentID, 4))}
+                      >
+                        <FaTimes /> Từ chối
+                      </button>
+                    </>
+                  )}
+                    
+                  {appointment.status === 1 && ( // Confirmed
+                    <>
+                      <button 
+                        className="dropdown-item complete-item"
+                        onClick={() => handleAction(() => updateAppointmentStatus(appointment.appointmentID, 4))}
+                      >
+                        <FaCheck /> Hoàn thành
+                      </button>
+                      <button 
+                        className="dropdown-item waiting-item"
+                        onClick={() => handleAction(() => updateAppointmentStatus(appointment.appointmentID, 2))}
+                      >
+                        <FaSpinner /> Chờ kết quả
+                      </button>
+                      {canRequestSTITest(appointment) && (
+                        <button 
+                          className="dropdown-item testing-item"
+                          onClick={() => handleAction(() => updateAppointmentStatus(appointment.appointmentID, 3, 2))}
+                        >
+                          🧪 Yêu cầu STI Test
+                        </button>
+                      )}
+                    </>
+                  )}
+                  
+                  {appointment.status === 2 && ( // Awaiting results
+                    <button 
+                      className="dropdown-item complete-item"
+                      onClick={() => handleAction(() => updateAppointmentStatus(appointment.appointmentID, 4))}
+                    >
+                      <FaCheck /> Hoàn thành
+                    </button>
+                  )}
+                  
+                  {appointment.status === 3 && ( // STI Test requested
+                    <div className="dropdown-item disabled-item">
+                      Đang chờ xét nghiệm STI
+                    </div>
+                  )}
+                </>
+              )}
+              
+              {/* Chi tiết luôn hiển thị cho tất cả lịch hẹn */}
+              <button 
+                className="dropdown-item details-item"
+                onClick={() => handleAction(() => viewAppointmentDetails(appointment))}
+              >
+                Chi tiết
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -73,6 +202,7 @@ const ConsultantAppointments: React.FC = () => {
           return;
         }
         
+        // Fetch appointments
         const response = await consultantService.getConsultantAppointments(consultantId);
         
         if (response.statusCode === 200 && response.data) {
@@ -82,6 +212,19 @@ const ConsultantAppointments: React.FC = () => {
         } else {
           setError(`Lỗi khi lấy dữ liệu: ${response.message}`);
           toast.error(`Lỗi khi lấy dữ liệu lịch hẹn: ${response.message}`);
+        }
+
+        // Fetch consultant slots
+        try {
+          const slotsResponse = await consultantService.getConsultantSlots(consultantId);
+          if (slotsResponse.statusCode === 200 && slotsResponse.data) {
+            const slotIds = slotsResponse.data.map((slot: { slotID: number }) => slot.slotID);
+            setConsultantSlots(slotIds);
+            console.log('Consultant slots:', slotIds);
+          }
+        } catch (slotError) {
+          console.error('Error fetching consultant slots:', slotError);
+          // Don't show error to user, just log it
         }
       } catch (error) {
         console.error('Error fetching appointments:', error);
@@ -95,6 +238,20 @@ const ConsultantAppointments: React.FC = () => {
     fetchAppointments();
   }, []);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownOpen && !(event.target as Element).closest('.appointment-actions-dropdown')) {
+        setDropdownOpen(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownOpen]);
+
   // Apply filters whenever filter states change
   useEffect(() => {
     let filtered = [...appointments];
@@ -106,7 +263,16 @@ const ConsultantAppointments: React.FC = () => {
     
     // Apply type filter
     if (typeFilter !== null) {
-      filtered = filtered.filter(app => app.appointmentType === typeFilter);
+      filtered = filtered.filter(app => {
+        const hasSTITest = app.appointmentDetails && app.appointmentDetails.length > 0 && 
+          app.appointmentDetails.some(detail => 
+            detail.service?.serviceType === 1 || 
+            detail.service?.servicesName.toLowerCase().includes('sti') ||
+            detail.service?.servicesName.toLowerCase().includes('xét nghiệm')
+          );
+        const appointmentTypeIndex = hasSTITest ? 1 : 0;
+        return appointmentTypeIndex === typeFilter;
+      });
     }
     
     // Apply date filter
@@ -128,15 +294,39 @@ const ConsultantAppointments: React.FC = () => {
     setFilteredAppointments(filtered);
   }, [appointments, statusFilter, typeFilter, dateFilter, searchTerm]);
 
-  const updateAppointmentStatus = async (appointmentId: string, newStatus: number) => {
+  // Get appointment type from services
+  const getAppointmentType = (appointment: Appointment): string => {
+    if (appointment.appointmentDetails && appointment.appointmentDetails.length > 0) {
+      const hasSTITest = appointment.appointmentDetails.some(detail => 
+        detail.service?.serviceType === 1 || 
+        detail.service?.servicesName.toLowerCase().includes('sti') ||
+        detail.service?.servicesName.toLowerCase().includes('xét nghiệm')
+      );
+      return hasSTITest ? serviceTypeLabels[1] : serviceTypeLabels[0];
+    }
+    return serviceTypeLabels[0];
+  };
+
+  // Check if consultant can update appointment (must be in their assigned slot)
+  const canUpdateAppointment = (appointment: Appointment): boolean => {
+    if (!appointment.slot) return false;
+    return consultantSlots.includes(appointment.slot.slotID);
+  };
+
+  // Validate STI test request - only for confirmed appointments
+  const canRequestSTITest = (appointment: Appointment): boolean => {
+    return appointment.status === 1 && canUpdateAppointment(appointment);
+  };
+
+  const updateAppointmentStatus = async (appointmentId: string, newStatus: number, paymentStatus?: number) => {
     try {
-      const response = await consultantService.updateAppointmentStatus(appointmentId, newStatus);
+      const response = await consultantService.updateAppointmentStatus(appointmentId, newStatus, paymentStatus);
       
       if (response.statusCode === 200) {
         // Update the local state to reflect the change
         setAppointments(appointments.map(appointment => 
           appointment.appointmentID === appointmentId 
-            ? { ...appointment, status: newStatus } 
+            ? { ...appointment, status: newStatus, paymentStatus: paymentStatus || appointment.paymentStatus } 
               : appointment
         ));
         
@@ -331,8 +521,11 @@ const ConsultantAppointments: React.FC = () => {
                 </thead>
                 <tbody>
                   {sortedAppointments.map((appointment) => (
-                    <tr key={appointment.appointmentID}>
-                      <td>{appointment.appointmentID}</td>
+                    <tr 
+                      key={appointment.appointmentID}
+                      className={!canUpdateAppointment(appointment) ? 'not-authorized' : ''}
+                    >
+                      <td>{appointment.appointmentCode || appointment.appointmentID}</td>
                       <td>
                         <div className="patient-info">
                           <span className="patient-name">{appointment.customer?.name || 'Không xác định'}</span>
@@ -348,8 +541,8 @@ const ConsultantAppointments: React.FC = () => {
                         <span className="appointment-time">{getAppointmentTime(appointment)}</span>
                       </td>
                       <td>
-                        <span className={`status-badge ${appointment.appointmentType === 1 ? 'status-badge-info' : 'status-badge-secondary'}`}>
-                          {appointmentTypeLabels[appointment.appointmentType]}
+                        <span className={`status-badge ${getAppointmentType(appointment) === 'Xét nghiệm STI' ? 'status-badge-warning' : 'status-badge-secondary'}`}>
+                          {getAppointmentType(appointment)}
                         </span>
                       </td>
                       <td>
@@ -358,72 +551,7 @@ const ConsultantAppointments: React.FC = () => {
                         </span>
                       </td>
                       <td>
-                        <div className="appointment-actions">
-                          {appointment.status === 0 && ( // Pending
-                            <>
-                              <button 
-                                className="approve-button"
-                                onClick={() => updateAppointmentStatus(appointment.appointmentID, 1)}
-                                title="Xác nhận lịch hẹn"
-                              >
-                                <FaCheck /> Xác nhận
-                              </button>
-                              <button 
-                                className="cancel-button"
-                                onClick={() => updateAppointmentStatus(appointment.appointmentID, 4)}
-                                title="Từ chối lịch hẹn"
-                              >
-                                <FaTimes />
-                              </button>
-                            </>
-                          )}
-                            
-                          {appointment.status === 1 && ( // Confirmed
-                            <>
-                              <button 
-                                className="complete-button"
-                                onClick={() => updateAppointmentStatus(appointment.appointmentID, 3)}
-                                title="Đánh dấu hoàn thành"
-                              >
-                                <FaCheck /> Hoàn thành
-                              </button>
-                              <button 
-                                className="check-in-button"
-                                onClick={() => updateAppointmentStatus(appointment.appointmentID, 2)}
-                                title="Đánh dấu đang chờ kết quả"
-                              >
-                                <FaSpinner /> Chờ kết quả
-                              </button>
-                            </>
-                          )}
-                          
-                          {appointment.status === 2 && ( // Awaiting results
-                            <button 
-                              className="complete-button"
-                              onClick={() => updateAppointmentStatus(appointment.appointmentID, 3)}
-                              title="Đánh dấu hoàn thành"
-                            >
-                              <FaCheck /> Hoàn thành
-                            </button>
-                          )}
-                          
-                          {appointment.appointmentType === 1 && appointment.status === 1 && (
-                            <button 
-                              className="view-details-button"
-                              title="Bắt đầu cuộc gọi video"
-                            >
-                              <FaVideo /> Gọi video
-                            </button>
-                          )}
-                          
-                          <button 
-                            className="view-details-button secondary"
-                            onClick={() => viewAppointmentDetails(appointment)}
-                            title="Xem chi tiết"
-                          >
-                            Chi tiết
-                          </button>
-                        </div>
+                        <AppointmentActions appointment={appointment} />
                       </td>
                     </tr>
                   ))}
@@ -454,7 +582,7 @@ const ConsultantAppointments: React.FC = () => {
         <div className="appointment-detail-modal-overlay">
           <div className="appointment-detail-modal">
             <div className="modal-header">
-              <h2>Chi tiết lịch hẹn - {selectedAppointment.appointmentID}</h2>
+              <h2>Chi tiết lịch hẹn - {selectedAppointment.appointmentCode || selectedAppointment.appointmentID}</h2>
               <button className="close-button" onClick={closeDetailModal}>×</button>
             </div>
             
@@ -486,7 +614,7 @@ const ConsultantAppointments: React.FC = () => {
                 <div className="detail-grid">
                   <div className="detail-item">
                     <div className="detail-label">Mã lịch hẹn</div>
-                    <div className="detail-value">{selectedAppointment.appointmentID}</div>
+                    <div className="detail-value">{selectedAppointment.appointmentCode || selectedAppointment.appointmentID}</div>
                   </div>
                   <div className="detail-item">
                     <div className="detail-label">Ngày hẹn</div>
@@ -498,11 +626,11 @@ const ConsultantAppointments: React.FC = () => {
                   </div>
                   <div className="detail-item">
                     <div className="detail-label">Loại lịch hẹn</div>
-                    <div className="detail-value">{appointmentTypeLabels[selectedAppointment.appointmentType]}</div>
+                    <div className="detail-value">{getAppointmentType(selectedAppointment)}</div>
                   </div>
                   <div className="detail-item">
                     <div className="detail-label">Trạng thái</div>
-                    <div className={`detail-value status ${['pending', 'confirmed', 'awaiting_results', 'completed', 'cancelled'][selectedAppointment.status]}`}>
+                    <div className={`detail-value status ${['pending', 'confirmed', 'awaiting_results', 'testing', 'completed', 'cancelled'][selectedAppointment.status]}`}>
                       {statusLabels[selectedAppointment.status]}
                     </div>
                   </div>
@@ -539,7 +667,7 @@ const ConsultantAppointments: React.FC = () => {
               </button>
               
               <div className="action-buttons">
-                {selectedAppointment.status === 0 && (
+                {selectedAppointment.status === 0 && canUpdateAppointment(selectedAppointment) && (
                   <>
                     <button 
                       className="approve-button"
@@ -562,12 +690,12 @@ const ConsultantAppointments: React.FC = () => {
                   </>
                 )}
                 
-                {selectedAppointment.status === 1 && (
+                {selectedAppointment.status === 1 && canUpdateAppointment(selectedAppointment) && (
                   <>
                     <button 
                       className="complete-button"
                       onClick={() => {
-                        updateAppointmentStatus(selectedAppointment.appointmentID, 3);
+                        updateAppointmentStatus(selectedAppointment.appointmentID, 4);
                         closeDetailModal();
                       }}
                     >
@@ -582,19 +710,42 @@ const ConsultantAppointments: React.FC = () => {
                     >
                       <FaSpinner /> Đánh dấu chờ kết quả
                     </button>
+                    {canRequestSTITest(selectedAppointment) && (
+                      <button 
+                        className="testing-button"
+                        onClick={() => {
+                          updateAppointmentStatus(selectedAppointment.appointmentID, 3, 2);
+                          closeDetailModal();
+                        }}
+                      >
+                        🧪 Yêu cầu STI Test
+                      </button>
+                    )}
                   </>
                 )}
                 
-                {selectedAppointment.status === 2 && (
+                {selectedAppointment.status === 2 && canUpdateAppointment(selectedAppointment) && (
                   <button 
                     className="complete-button"
                     onClick={() => {
-                      updateAppointmentStatus(selectedAppointment.appointmentID, 3);
+                      updateAppointmentStatus(selectedAppointment.appointmentID, 4);
                       closeDetailModal();
                     }}
                   >
                     <FaCheck /> Đánh dấu hoàn thành
                   </button>
+                )}
+                
+                {selectedAppointment.status === 3 && (
+                  <div className="status-note">
+                    Đang chờ xét nghiệm STI - Không thể thay đổi trạng thái
+                  </div>
+                )}
+                
+                {!canUpdateAppointment(selectedAppointment) && (
+                  <div className="status-note">
+                    Bạn không có quyền cập nhật lịch hẹn này (không trong slot được phân công)
+                  </div>
                 )}
               </div>
             </div>

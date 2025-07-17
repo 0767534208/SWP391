@@ -251,8 +251,12 @@ const consultantService = {
   /**
    * Update appointment status
    */
-  updateAppointmentStatus: async (appointmentId: string, status: number): Promise<ApiResponse<any>> => {
-    return api.put<any>(`/api/appointment/ChangeAppointmentStatus?appointmentID=${appointmentId}&status=${status}`, {});
+  updateAppointmentStatus: async (appointmentId: string, status: number, paymentStatus?: number): Promise<ApiResponse<any>> => {
+    let url = `/api/appointment/ChangeAppointmentStatus?appointmentID=${appointmentId}&status=${status}`;
+    if (paymentStatus !== undefined) {
+      url += `&paymentStatus=${paymentStatus}`;
+    }
+    return api.put<any>(url, {});
   },
   
   /**
