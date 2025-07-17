@@ -121,6 +121,14 @@ const Services = () => {
       .format(price)
       .replace('₫', 'VNĐ');
   };
+  
+  // Handle service image with proper fallbacks
+  const getServiceImageUrl = (service: ServiceType) => {
+    if (service.imageServices && service.imageServices.length > 0) {
+      return service.imageServices[0];
+    }
+    return `/assets/images/service-default.jpg`;
+  };
 
   return (
     <div className="services-container">
@@ -183,10 +191,13 @@ const Services = () => {
               <div key={service.servicesID} className="service-card">
                 <div className="service-card-image">
                   <img 
-                    src={service.imageServices && service.imageServices.length > 0 
-                      ? service.imageServices[0] 
-                      : "https://madisonwomenshealth.com/wp-content/uploads/2023/10/getting-tested-for-stis-1030x687.jpg"} 
-                    alt={service.servicesName} 
+                    src={getServiceImageUrl(service)} 
+                    alt={service.servicesName}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null; // Prevent infinite loop
+                      target.src = `/public/images/service-default.jpg`;
+                    }}
                   />
                   <div className="service-card-category">
                     {getCategoryName(service.categoryID)}
@@ -238,10 +249,13 @@ const Services = () => {
             
             <div className="service-modal-header">
               <img 
-                src={selectedService.imageServices && selectedService.imageServices.length > 0 
-                  ? selectedService.imageServices[0] 
-                  : "https://madisonwomenshealth.com/wp-content/uploads/2023/10/getting-tested-for-stis-1030x687.jpg"} 
+                src={getServiceImageUrl(selectedService)}
                 alt={selectedService.servicesName} 
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.onerror = null; // Prevent infinite loop
+                  target.src = `/public/images/service-default.jpg`;
+                }}
               />
               <div className="service-modal-badge">
                 {getCategoryName(selectedService.categoryID)}
