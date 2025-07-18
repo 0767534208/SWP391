@@ -13,7 +13,7 @@ interface ServiceData {
   updateAt: string;
   servicesPrice: number;
   status: boolean;
-  imageServices: string[];
+  imageServices: { image: string }[];
 }
 
 interface CategoryData {
@@ -153,12 +153,24 @@ const Home = () => {
             {featuredServices.length > 0 ? (
               featuredServices.map((service) => (
                 <div key={service.servicesID} className="feature-card service-card">
-                  {service.imageServices && service.imageServices.length > 0 && (
-                    <img
-                      src={service.imageServices[0]}
-                      alt={service.servicesName}
-                    />
-                  )}
+                  <div className="service-image-container">
+                    {service.imageServices && service.imageServices.length > 0 ? (
+                      <img
+                        src={service.imageServices[0].image}
+                        alt={service.servicesName}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null;
+                          target.src = "/healthcare.png"; // Fallback image
+                        }}
+                      />
+                    ) : (
+                      <img
+                        src="/healthcare.png"
+                        alt={service.servicesName}
+                      />
+                    )}
+                  </div>
                   <h3>{service.servicesName}</h3>
                   <p>{service.description}</p>
                   <div className="service-category">{getCategoryName(service.categoryID)}</div>
@@ -197,10 +209,17 @@ const Home = () => {
           {featuredBlogs.length > 0 ? (
             featuredBlogs.map((blog) => (
               <div key={blog.blogID} className="blog-card" onClick={() => handleBlogClick(blog.blogID)}>
-                <img 
-                  src={blog.imageBlogs && blog.imageBlogs.length > 0 ? blog.imageBlogs[0].image : "/blog-1.png"} 
-                  alt={blog.title} 
-                />
+                <div className="blog-image-container">
+                  <img 
+                    src={blog.imageBlogs && blog.imageBlogs.length > 0 ? blog.imageBlogs[0].image : "/blog-1.png"} 
+                    alt={blog.title}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = "/blog-1.png"; // Fallback image
+                    }}
+                  />
+                </div>
                 <h3>{blog.title}</h3>
                 <p>{blog.content.substring(0, 100)}...</p>
                 <div className="blog-link">Xem thêm</div>
@@ -209,19 +228,25 @@ const Home = () => {
           ) : (
             <>
               <div className="blog-card" onClick={() => navigate('/blog/1')}>
-                <img src="/blog-1.png" alt="Giáo dục giới tính cho thanh thiếu niên" />
+                <div className="blog-image-container">
+                  <img src="/blog-1.png" alt="Giáo dục giới tính cho thanh thiếu niên" />
+                </div>
                 <h3>Giáo dục giới tính cho thanh thiếu niên</h3>
                 <p>Tìm hiểu các phương pháp hiệu quả trong giáo dục giới tính và xây dựng mối quan hệ lành mạnh cho giới trẻ.</p>
                 <div className="blog-link">Xem thêm</div>
               </div>
               <div className="blog-card" onClick={() => navigate('/blog/2')}>
-                <img src="/blog-2.png" alt="Hiểu về sức khỏe sinh sản" />
+                <div className="blog-image-container">
+                  <img src="/blog-2.png" alt="Hiểu về sức khỏe sinh sản" />
+                </div>
                 <h3>Hiểu về sức khỏe sinh sản</h3>
                 <p>Hướng dẫn cần thiết để duy trì sức khỏe sinh sản và đưa ra quyết định chăm sóc sức khỏe đúng đắn.</p>
                 <div className="blog-link">Xem thêm</div>
               </div>
               <div className="blog-card" onClick={() => navigate('/blog/3')}>
-                <img src="/blog-3.png" alt="Hướng dẫn phòng ngừa STI" />
+                <div className="blog-image-container">
+                  <img src="/blog-3.png" alt="Hướng dẫn phòng ngừa STI" />
+                </div>
                 <h3>Hướng dẫn phòng ngừa STI</h3>
                 <p>Tìm hiểu về các phương pháp phòng ngừa và phát hiện sớm các bệnh lây truyền qua đường tình dục.</p>
                 <div className="blog-link">Xem thêm</div>

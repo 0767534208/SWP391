@@ -9,6 +9,8 @@ interface PersonalDetails {
   name: string;
   phone: string;
   email: string;
+  dateOfBirth?: string;
+  address?: string;
 }
 
 interface TimeSlot {
@@ -57,7 +59,7 @@ interface ServiceData {
   servicesPrice: number;
   status: boolean;
   serviceType?: number; // 1 = test service (no consultant), 0 = consultation service
-  imageServices: string[];
+  imageServices: { image: string }[];
 }
 
 // Interface for UI service display
@@ -82,6 +84,22 @@ interface ConsultantSlot {
   isBooked: boolean;
   appointmentCount?: number; // Current number of appointments for this slot
   maxAppointments?: number;  // Maximum number of appointments allowed for this slot
+}
+
+// Interface for available time slots with associated consultants
+interface AvailableTimeSlot {
+  slotID: string;
+  startTime: string;
+  endTime: string;
+  timeDisplay: string;
+  consultants: Array<{
+    consultantID: string;
+    name: string;
+    specialty: string;
+    imageUrl: string;
+    price?: number;
+    address?: string;
+  }>;
 }
 
 // Interface for consultant data
@@ -112,9 +130,12 @@ const Booking = () => {
   const [consultantSlotData, setConsultantSlotData] = useState<any[]>([]);
   const [filteredConsultants, setFilteredConsultants] = useState<any[]>([]);
   const [filteredSlots, setFilteredSlots] = useState<ConsultantSlot[]>([]);
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<AvailableTimeSlot[]>([]);
   const [consultantLoading, setConsultantLoading] = useState(false);
   const [consultantProfiles, setConsultantProfiles] = useState<any[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Add a state for selected time slot (to track which time slot was selected for consultant display)
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<AvailableTimeSlot | null>(null);
   // Auto-dismiss error message after 5 seconds
   useEffect(() => {
     if (errorMessage) {
@@ -155,6 +176,9 @@ const Booking = () => {
     if (lower.includes('invalid')) return 'Thông tin không hợp lệ. Vui lòng kiểm tra lại.';
     if (lower.includes('cannot select consultantid') || lower.includes('sti testing')) 
       return 'Dịch vụ xét nghiệm không yêu cầu tư vấn viên. Hệ thống đang xử lý yêu cầu của bạn.';
+    // Xử lý lỗi về Consultant Profile
+    if (lower.includes('consultantprofile') && lower.includes('does not match')) 
+      return 'Có lỗi khi liên kết tư vấn viên. Vui lòng thử chọn tư vấn viên khác hoặc liên hệ hỗ trợ.';
     // Thêm các trường hợp khác nếu cần
     return msg;
   };
@@ -168,7 +192,9 @@ const Booking = () => {
         ...prevDetails,
         name: user.name || '',
         phone: user.phone || '',
-        email: user.email || ''
+        email: user.email || '',
+        dateOfBirth: user.dateOfBirth || '',
+        address: user.address || ''
       }));
     }
   }, []);
@@ -193,13 +219,13 @@ const Booking = () => {
           const mappedServices: ServiceUI[] = serviceResponse.data.map((service: ServiceData) => ({
             id: service.servicesID,
             name: service.servicesName,
-            price: formatPrice(service.servicesPrice),
+            // Chỉ hiển thị giá cho dịch vụ xét nghiệm (serviceType=1), không hiển thị cho dịch vụ tư vấn (serviceType=0)
+            price: service.serviceType === 1 ? formatPrice(service.servicesPrice) : "",
             // A service requires consultant if serviceType is not 1
             requiresConsultant: service.serviceType !== 1, // Type 1 = test service (no consultant needed)
             description: service.description,
-            imageUrl: service.imageServices && service.imageServices.length > 0 
-              ? service.imageServices[0] 
-              : undefined
+            // Không truyền imageUrl vào để không hiển thị ảnh trong booking
+            imageUrl: undefined
           }));
           setServices(mappedServices);
         } else {
@@ -276,11 +302,12 @@ const Booking = () => {
     fetchConsultantSlotData();
   }, []);
 
-  // Khi chọn ngày, lọc ra các consultant có slot vào ngày đó
+  // Khi chọn ngày, lọc ra các khung giờ có sẵn (và tư vấn viên cho mỗi khung giờ)
   useEffect(() => {
-    if (!selectedDate) {
-      setFilteredConsultants([]);
+    if (!selectedDate || !selectedService) {
+      setAvailableTimeSlots([]);
       setFilteredSlots([]);
+      setFilteredConsultants([]);
       return;
     }
     
@@ -293,7 +320,7 @@ const Booking = () => {
     });
     
     // If service doesn't require a consultant, directly populate available slots
-    if (selectedService && !serviceRequiresConsultant()) {
+    if (!serviceRequiresConsultant()) {
       const availableSlots = slotsOnDate.map(item => ({
         slotID: item.slotID.toString(),
         consultantID: item.consultantID, // Keep the consultantID for data structure consistency
@@ -312,45 +339,92 @@ const Booking = () => {
          slot.maxAppointments === undefined || 
          slot.appointmentCount < slot.maxAppointments)
       ));
+      
       // For non-consultant services, still set consultantID to the first available one
       // This will help us track the slot but won't be sent to the API for test services
       if (availableSlots.length > 0 && !selectedConsultant) {
         setSelectedConsultant(availableSlots[0].consultantID);
       }
     } else {
-      // For consultant services, get unique consultants
-      const uniqueConsultants = Array.from(
-        new Map(slotsOnDate.map(item => [
-          item.consultantID,
-          {
-            id: item.consultantID,
-            name: item.consultant.name,
-            specialty: item.consultant.specialty || 'Tư vấn sức khỏe',
-            address: item.consultant.address,
-            phone: item.consultant.phone,
-            dateOfBirth: item.consultant.dateOfBirth,
-            status: item.consultant.status,
-            imageUrl: item.consultant.imageUrl || '',
-            experience: item.consultant.experience || '',
-            education: item.consultant.education || '',
-            certificates: item.consultant.certificates || [],
-            consultantID: item.consultantID
+      // For consultant services, we now group slots by time and collect consultants for each time slot
+      const timeSlotMap = new Map<string, AvailableTimeSlot>();
+      
+      slotsOnDate.forEach(item => {
+        // Skip booked slots or slots at maximum capacity
+        if (item.isBooked || 
+            (item.slot.appointmentCount !== undefined && 
+             item.slot.maxAppointments !== undefined && 
+             item.slot.appointmentCount >= item.slot.maxAppointments)) {
+          return;
+        }
+        
+        const startTime = new Date(item.slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const endTime = new Date(item.slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const timeKey = `${startTime}-${endTime}`;
+        
+        // Find the consultant profile
+        const consultantProfile = consultantProfiles.find((p: any) => {
+          if (p.account?.name && item.consultant?.name) {
+            return p.account.name.trim().toLowerCase() === item.consultant.name.trim().toLowerCase();
           }
-        ])).values()
-      );
-      setFilteredConsultants(uniqueConsultants);
-      setFilteredSlots([]); // reset slot khi đổi ngày
+          return false;
+        });
+        
+        // Create consultant data
+        const consultantData = {
+          consultantID: item.consultantID,
+          name: item.consultant.name,
+          specialty: consultantProfile?.specialty || item.consultant.specialty || 'Tư vấn sức khỏe',
+          imageUrl: item.consultant.imageUrl || '',
+          price: consultantProfile?.consultantPrice,
+          address: item.consultant.address
+        };
+        
+        if (timeSlotMap.has(timeKey)) {
+          // Add consultant to existing time slot
+          const existingSlot = timeSlotMap.get(timeKey)!;
+          
+          // Check if this consultant isn't already in the list
+          if (!existingSlot.consultants.some(c => c.consultantID === consultantData.consultantID)) {
+            existingSlot.consultants.push(consultantData);
+          }
+        } else {
+          // Create new time slot
+          timeSlotMap.set(timeKey, {
+            slotID: item.slotID,
+            startTime,
+            endTime,
+            timeDisplay: `${startTime} - ${endTime}`,
+            consultants: [consultantData]
+          });
+        }
+      });
+      
+      // Convert map to array and sort by time
+      const availableTimeSlots = Array.from(timeSlotMap.values())
+        .sort((a, b) => a.startTime.localeCompare(b.startTime));
+      
+      setAvailableTimeSlots(availableTimeSlots);
+      
+      // Reset selections when date or service changes, but not when just loading profiles
+      if (selectedTime === '' || !selectedTimeSlot) {
+        // Chỉ reset khi chưa chọn khung giờ
+        setSelectedTimeSlot(null);
+        setSelectedConsultant(null);
+        setFilteredConsultants([]);
+      }
     }
-    
-    // Always reset these when changing date
-    if (serviceRequiresConsultant()) {
-      setSelectedConsultant(null);
-    }
-    setSelectedTime('');
-  }, [selectedDate, consultantSlotData, selectedService]);
+  }, [selectedDate, consultantSlotData, selectedService, consultantProfiles]);
 
   // Khi chọn consultant, lọc ra các slot của consultant đó vào ngày đã chọn
+  // Lưu ý: Chỉ sử dụng khi là dịch vụ xét nghiệm, không dùng cho dịch vụ tư vấn
   useEffect(() => {
+    // Nếu là dịch vụ tư vấn (serviceType=0) thì bỏ qua effect này
+    // vì chúng ta đã xử lý trong luồng dịch vụ -> ngày -> khung giờ -> tư vấn viên
+    if (serviceRequiresConsultant()) {
+      return;
+    }
+    
     if (!selectedConsultant || !selectedDate) {
       setFilteredSlots([]);
       return;
@@ -380,7 +454,6 @@ const Booking = () => {
        slot.maxAppointments === undefined || 
        slot.appointmentCount < slot.maxAppointments)
     ));
-    setSelectedTime('');
   }, [selectedConsultant, selectedDate, consultantSlotData]);
 
   // Check if selected service requires consultant
@@ -413,6 +486,7 @@ const Booking = () => {
   };
 
   const handleConsultantSelect = (consultantId: string) => {
+    // Lưu lại thông tin tư vấn viên được chọn mà không thay đổi các state khác
     setSelectedConsultant(consultantId);
   };
 
@@ -441,16 +515,17 @@ const Booking = () => {
       setErrorMessage('Vui lòng chọn ngày');
       return;
     }
+    if (!selectedTime) {
+      setErrorMessage('Vui lòng chọn giờ');
+      return;
+    }
     
     // Only validate consultant selection if the service requires it
     if (requiresConsultantSelection && (!selectedConsultant || selectedConsultant === "")) {
       setErrorMessage('Vui lòng chọn tư vấn viên');
       return;
     }
-    if (!selectedTime) {
-      setErrorMessage('Vui lòng chọn giờ');
-      return;
-    }
+    
     if (!personalDetails.name || !personalDetails.phone || !personalDetails.email) {
       setErrorMessage('Vui lòng điền đầy đủ thông tin cá nhân');
       return;
@@ -460,13 +535,40 @@ const Booking = () => {
       navigate('/auth/login', { state: { returnUrl: '/booking' } });
       return;
     }
-    // Find the selected slot information
-    // Since we're now ensuring filteredSlots is populated for both service types,
-    // we can find the selected slot information the same way
-    const selectedSlotInfo = filteredSlots.find(slot => 
-      slot.date === selectedDate && 
-      `${slot.startTime} - ${slot.endTime}` === selectedTime
-    );
+    
+    // Find the selected slot information based on new workflow
+    let selectedSlotInfo;
+    
+    if (requiresConsultantSelection) {
+      // For consultation services, get slot from selected time slot and consultant
+      if (!selectedTimeSlot) {
+        setErrorMessage('Vui lòng chọn lại khung giờ');
+        return;
+      }
+      
+      // Get the corresponding slot from the consultantSlotData
+      const matchingSlot = consultantSlotData.find(item => 
+        item.consultantID === selectedConsultant &&
+        item.slotID.toString() === selectedTimeSlot.slotID.toString()
+      );
+      
+      if (!matchingSlot) {
+        setErrorMessage('Không tìm thấy thông tin khung giờ đã chọn');
+        return;
+      }
+      
+      selectedSlotInfo = {
+        slotID: matchingSlot.slotID,
+        date: selectedDate,
+        consultantID: selectedConsultant
+      };
+    } else {
+      // For non-consultant services, get slot from filteredSlots
+      selectedSlotInfo = filteredSlots.find(slot => 
+        slot.date === selectedDate && 
+        `${slot.startTime} - ${slot.endTime}` === selectedTime
+      );
+    }
     
     if (!selectedSlotInfo) {
       setErrorMessage('Không tìm thấy thông tin khung giờ đã chọn');
@@ -489,18 +591,39 @@ const Booking = () => {
     const isTestService = currentService?.requiresConsultant === false; // This checks if serviceType=1 (test service)
     
     // Tìm đúng consultantProfileID từ consultantProfiles (chỉ cho dịch vụ tư vấn - type 0)
-    let consultantProfileID = 2; // Default value
-    if (!isTestService && selectedConsultant && consultantProfiles.length > 0) {
-      // Tìm profile chỉ theo tên tư vấn viên (không phân biệt hoa thường, trim)
-      const consultantObj = filteredConsultants.find(c => c.id?.toString() === selectedConsultant?.toString());
-      if (consultantObj) {
-        const foundProfile = consultantProfiles.find(
-          (p: any) => p.account?.name && p.account.name.trim().toLowerCase() === consultantObj.name.trim().toLowerCase()
-        );
+    let consultantProfileID = null; // Khởi tạo với null
+    if (!isTestService && selectedConsultant && selectedTimeSlot && consultantProfiles.length > 0) {
+      // Lấy thông tin tư vấn viên đã được chọn từ selectedTimeSlot
+      const selectedConsultantInfo = selectedTimeSlot.consultants.find(c => c.consultantID === selectedConsultant);
+      
+      if (selectedConsultantInfo) {
+        // Tìm profile dựa theo ID thay vì tên để đảm bảo chính xác
+        const foundProfile = consultantProfiles.find((p: any) => {
+          if (p.accountID && selectedConsultantInfo.consultantID) {
+            return p.accountID.toString() === selectedConsultantInfo.consultantID.toString();
+          }
+          return false;
+        });
+        
         if (foundProfile && foundProfile.consultantProfileID) {
           consultantProfileID = foundProfile.consultantProfileID;
+        } else {
+          // Nếu không tìm thấy theo ID, thử tìm theo tên
+          const foundByName = consultantProfiles.find(
+            (p: any) => p.account?.name && selectedConsultantInfo.name && 
+            p.account.name.trim().toLowerCase() === selectedConsultantInfo.name.trim().toLowerCase()
+          );
+          
+          if (foundByName && foundByName.consultantProfileID) {
+            consultantProfileID = foundByName.consultantProfileID;
+          }
         }
       }
+    }
+    
+    // Nếu không tìm thấy, lấy consultantID làm consultantProfileID (trường hợp nếu ID trùng nhau)
+    if (consultantProfileID === null && selectedConsultant) {
+      consultantProfileID = parseInt(selectedConsultant);
     }
     
     // Double check that for type 0, we have a valid consultant selected
@@ -526,19 +649,32 @@ const Booking = () => {
       };
     } else {
       // For consultation services (serviceType=0), include all fields with required consultant data
+      const appointmentDetail: any = {
+        servicesID: selectedService,
+        quantity: 1
+      };
+      
+      // Chỉ thêm consultantProfileID nếu đã tìm được
+      if (consultantProfileID !== null) {
+        appointmentDetail.consultantProfileID = consultantProfileID;
+      }
+      
       appointmentData = {
         customerID: user.customerID || user.userID,
         consultantID: selectedConsultant, // For type 0, consultantID is required and should be valid
         clinicID: 1, // Default clinic ID
         slotID: slotID, // Use the slotID we found earlier
         appointmentDate: appointmentDateISO,
-        appointmentDetails: [{
-          servicesID: selectedService,
-          consultantProfileID: consultantProfileID, // Always include for type 0
-          quantity: 1
-        }]
+        appointmentDetails: [appointmentDetail]
       };
     }
+    // Debug thông tin trước khi gửi
+    console.log('Appointment data being sent:', appointmentData);
+    console.log('Selected consultant:', selectedConsultant);
+    console.log('Consultant profile ID:', consultantProfileID);
+    console.log('Selected time slot:', selectedTimeSlot);
+    console.log('Consultant profiles:', consultantProfiles);
+    
     appointmentAPI.createAppointment(appointmentData)
       .then((response: any) => {  
         if (response.statusCode === 201) {
@@ -546,9 +682,12 @@ const Booking = () => {
           const isTestService = serviceDetails?.requiresConsultant === false; // Check if it's a test service
           
           // For test services (serviceType=1), don't try to find consultant details
-          const consultantDetails = !isTestService && selectedConsultant ? 
-            filteredConsultants.find(c => c.id === selectedConsultant || c.consultantID === selectedConsultant) : 
-            null;
+          let consultantDetails = null;
+          
+          if (!isTestService && selectedConsultant && selectedTimeSlot) {
+            consultantDetails = selectedTimeSlot.consultants.find(c => c.consultantID === selectedConsultant);
+            console.log('Found consultant details:', consultantDetails);
+          }
           
           // Lưu appointmentID vào localStorage để backup
           localStorage.setItem('lastAppointmentId', response.data.appointmentID);
@@ -566,10 +705,10 @@ const Booking = () => {
                 name: consultantDetails.name,
                 specialty: consultantDetails.specialty || 'Tư vấn viên',
                 image: consultantDetails.imageUrl || '',
-                education: consultantDetails.education || '',
-                experience: `${consultantDetails.experience} năm kinh nghiệm`,
-                certificates: consultantDetails.certificates || [],
-                price: (consultantProfiles.find((p: any) => p.account?.name && p.account.name.trim().toLowerCase() === consultantDetails.name.trim().toLowerCase())?.consultantPrice) || 0
+                education: '', // Thông tin này sẽ được lấy từ consultantProfile nếu cần
+                experience: '', // Thông tin này sẽ được lấy từ consultantProfile nếu cần
+                certificates: [],
+                price: consultantDetails.price || 0
               } : null,
               date: selectedDate,
               time: selectedTime,
@@ -586,17 +725,38 @@ const Booking = () => {
       })
       .catch((error: any) => {
         let errorMsg = 'Đã xảy ra lỗi không xác định.';
+        console.error('API Error:', error);
+        
         if (error?.response?.data?.message) {
           errorMsg = error.response.data.message;
+          console.error('Error message from API:', errorMsg);
         } else if (error?.message) {
           errorMsg = error.message;
         } else if (typeof error === 'string') {
           errorMsg = error;
         }
+        
+        // Nếu có lỗi về consultant profile, thêm thông tin để hỗ trợ debug
+        if (errorMsg.includes('ConsultantProfile') || errorMsg.includes('consultant')) {
+          errorMsg += ` (ConsultantID: ${selectedConsultant}, ProfileID: ${consultantProfileID})`;
+        }
+        
         setErrorMessage(translateError(errorMsg));
       });
   };
 
+  // Khi chọn một khung giờ, hiển thị các tư vấn viên có sẵn trong khung giờ đó
+  const handleTimeSlotSelect = (timeSlot: AvailableTimeSlot) => {
+    setSelectedTime(timeSlot.timeDisplay);
+    setSelectedTimeSlot(timeSlot);
+    
+    // Chỉ reset consultant khi thay đổi khung giờ, không reset khi lần đầu chọn
+    if (selectedConsultant && timeSlot && 
+        (!selectedTimeSlot || (selectedTimeSlot.timeDisplay !== timeSlot.timeDisplay))) {
+      setSelectedConsultant(null);
+    }
+  };
+  
   // Get visible services based on current page (4 services per page)
   const getVisibleServices = () => {
     const startIndex = currentServicePage * 4;
@@ -620,7 +780,7 @@ const Booking = () => {
     }
   };
 
-  // Update getConsultantTimeSlots to use API slot data
+  // Update getConsultantTimeSlots to use API slot data for test services
   const getConsultantTimeSlots = (): string[] => {
     if (!selectedDate) return [];
     
@@ -629,9 +789,8 @@ const Booking = () => {
       return filteredSlots.map(slot => `${slot.startTime} - ${slot.endTime}`);
     }
     
-    // If service requires consultant, only return slots for selected consultant
-    if (!selectedConsultant) return [];
-    return filteredSlots.map(slot => `${slot.startTime} - ${slot.endTime}`);
+    // For consultation services, return available time slots
+    return availableTimeSlots.map(slot => slot.timeDisplay);
   };
 
   return (
@@ -717,84 +876,10 @@ const Booking = () => {
               </div>
             )}
 
-            {/* Bước 3: Chọn tư vấn viên (chỉ hiển thị nếu dịch vụ yêu cầu tư vấn viên) */}
-            {selectedService && selectedDate && serviceRequiresConsultant() && (
+            {/* Bước 3: Chọn khung giờ */}
+            {selectedService && selectedDate && (
               <div className="form-section">
-                <h3>3. Chọn Tư Vấn Viên</h3>
-                {consultantLoading ? (
-                  <div className="loading-container">
-                    <div className="loading-spinner"></div>
-                    <p>Đang tải tư vấn viên có lịch vào ngày {selectedDate}...</p>
-                  </div>
-                ) : filteredConsultants.length > 0 ? (
-                  <div className="consultants-grid">
-                    {filteredConsultants.map(consultant => {
-                      // So sánh duy nhất theo tên tư vấn viên (không phân biệt hoa thường, trim)
-                      let profile = consultantProfiles.find((p: any) => {
-                        if (p.account?.name && consultant.name) {
-                          return p.account.name.trim().toLowerCase() === consultant.name.trim().toLowerCase();
-                        }
-                        return false;
-                      });
-                      if (!profile) {
-                        // Log chi tiết để debug
-                        console.warn('Không tìm thấy profile cho consultant (so sánh theo tên):', consultant);
-                        console.log('Danh sách profile:', consultantProfiles);
-                        console.log('Consultant đang xét:', consultant);
-                      }
-                      const price = profile?.consultantPrice;
-                      return (
-                        <div 
-                          key={consultant.id} 
-                          className={`consultant-card-compact ${selectedConsultant === consultant.id ? 'selected' : ''}`}
-                          onClick={() => handleConsultantSelect(consultant.id)}
-                        >
-                          <h4 title={consultant.name}>{consultant.name}</h4>
-                          <p className="consultant-specialty">{profile?.specialty || consultant.specialty || "Tư vấn sức khỏe"}</p>
-                          <p className="consultant-address">{consultant.address}</p>
-                          {price && (
-                            <p className="consultant-price" style={{ color: '#0a7c1c', fontWeight: 600 }}>
-                              Giá: {price.toLocaleString('vi-VN')} VNĐ
-                            </p>
-                          )}
-                          <button 
-                            className="view-details-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // Lấy thông tin chi tiết từ profile nếu có
-                              const consultantForModal: Consultant = {
-                                id: consultant.id,
-                                name: consultant.name,
-                                specialty: profile?.specialty || consultant.specialty || "Tư vấn sức khỏe",
-                                image: consultant.imageUrl || "https://via.placeholder.com/150",
-                                education: profile?.education || consultant.education || "Chuyên viên tư vấn",
-                                experience: profile?.experience || consultant.experience || "5 năm kinh nghiệm",
-                                certificates: consultant.certificates || [],
-                                schedule: {
-                                  monday: [], tuesday: [], wednesday: [], 
-                                  thursday: [], friday: [], saturday: [], sunday: []
-                                },
-                                price: price ? price.toLocaleString('vi-VN') + ' VNĐ' : ''
-                              };
-                              openConsultantModal(consultantForModal);
-                            }}
-                          >
-                            Chi tiết
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="no-slots-message">Không có tư vấn viên có lịch vào ngày {selectedDate}</p>
-                )}
-              </div>
-            )}
-
-            {/* Bước 3/4: Chọn giờ (hiển thị sau khi chọn tư vấn viên hoặc sau khi chọn ngày nếu không yêu cầu tư vấn viên) */}
-            {selectedService && selectedDate && ((!serviceRequiresConsultant()) || selectedConsultant) && (
-              <div className="form-section">
-                <h3>{serviceRequiresConsultant() ? '4. Chọn Giờ' : '3. Chọn Giờ'}</h3>
+                <h3>3. Chọn Khung Giờ</h3>
                 <div className="time-slots">
                   {consultantLoading ? (
                     <div className="loading-container">
@@ -802,19 +887,99 @@ const Booking = () => {
                       <p>Đang tải khung giờ...</p>
                     </div>
                   ) : getConsultantTimeSlots().length > 0 ? (
-                    getConsultantTimeSlots().map((time) => (
-                      <button
-                        key={time}
-                        className={`time-slot ${selectedTime === time ? 'selected' : ''}`}
-                        onClick={() => setSelectedTime(time)}
-                      >
-                        {time}
-                      </button>
-                    ))
+                    serviceRequiresConsultant() ? (
+                      // Display time slots for consultation services
+                      availableTimeSlots.map((timeSlot) => (
+                        <button
+                          key={timeSlot.timeDisplay}
+                          className={`time-slot ${selectedTime === timeSlot.timeDisplay ? 'selected' : ''}`}
+                          onClick={() => handleTimeSlotSelect(timeSlot)}
+                        >
+                          {timeSlot.timeDisplay}
+                        </button>
+                      ))
+                    ) : (
+                      // Display time slots for test services
+                      getConsultantTimeSlots().map((time) => (
+                        <button
+                          key={time}
+                          className={`time-slot ${selectedTime === time ? 'selected' : ''}`}
+                          onClick={() => setSelectedTime(time)}
+                        >
+                          {time}
+                        </button>
+                      ))
+                    )
                   ) : (
                     <p className="no-slots-message">Không có lịch trống vào ngày này</p>
                   )}
                 </div>
+              </div>
+            )}
+            
+            {/* Bước 4: Chọn tư vấn viên (chỉ hiển thị cho dịch vụ tư vấn và sau khi đã chọn khung giờ) */}
+            {selectedService && selectedDate && selectedTime && serviceRequiresConsultant() && selectedTimeSlot && (
+              <div className="form-section">
+                <h3>4. Chọn Tư Vấn Viên</h3>
+                {consultantLoading ? (
+                  <div className="loading-container">
+                    <div className="loading-spinner"></div>
+                    <p>Đang tải tư vấn viên cho khung giờ đã chọn...</p>
+                  </div>
+                ) : selectedTimeSlot && selectedTimeSlot.consultants && selectedTimeSlot.consultants.length > 0 ? (
+                  <div className="consultants-grid">
+                    {selectedTimeSlot.consultants.map(consultant => (
+                      <div 
+                        key={consultant.consultantID} 
+                        className={`consultant-card-compact ${selectedConsultant === consultant.consultantID ? 'selected' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Ngăn không cho sự kiện lan ra ngoài
+                          handleConsultantSelect(consultant.consultantID);
+                        }}
+                      >
+                        <h4 title={consultant.name}>{consultant.name}</h4>
+                        <p className="consultant-specialty">{consultant.specialty || "Tư vấn sức khỏe"}</p>
+                        <p className="consultant-address">{consultant.address}</p>
+                        {consultant.price && (
+                          <p className="consultant-price" style={{ color: '#0a7c1c', fontWeight: 600 }}>
+                            Giá: {consultant.price.toLocaleString('vi-VN')} VNĐ
+                          </p>
+                        )}
+                        <button 
+                          className="view-details-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Tìm thêm thông tin chi tiết từ consultantProfiles nếu có
+                            const profile = consultantProfiles.find(
+                              (p: any) => p.account?.name && 
+                                         p.account.name.trim().toLowerCase() === consultant.name.trim().toLowerCase()
+                            );
+                            
+                            const consultantForModal: Consultant = {
+                              id: parseInt(consultant.consultantID),
+                              name: consultant.name,
+                              specialty: consultant.specialty || "Tư vấn sức khỏe",
+                              image: consultant.imageUrl || "https://via.placeholder.com/150",
+                              education: profile?.education || "Chuyên viên tư vấn",
+                              experience: profile?.experience || "5 năm kinh nghiệm",
+                              certificates: profile?.certificates || [],
+                              schedule: {
+                                monday: [], tuesday: [], wednesday: [], 
+                                thursday: [], friday: [], saturday: [], sunday: []
+                              },
+                              price: consultant.price ? consultant.price.toLocaleString('vi-VN') + ' VNĐ' : ''
+                            };
+                            openConsultantModal(consultantForModal);
+                          }}
+                        >
+                          Chi tiết
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="no-slots-message">Không có tư vấn viên cho khung giờ này</p>
+                )}
               </div>
             )}
           </div>
@@ -863,6 +1028,34 @@ const Booking = () => {
                     onChange={handlePersonalDetails}
                     placeholder="Nhập địa chỉ email của bạn"
                     required
+                    className="form-input"
+                    readOnly={isLoggedIn}
+                    disabled={isLoggedIn}
+                  />
+                </div>
+                <div className="input-group">
+                  <label htmlFor="dateOfBirth">Ngày sinh</label>
+                  <input
+                    id="dateOfBirth"
+                    type="date"
+                    name="dateOfBirth"
+                    value={personalDetails.dateOfBirth || ''}
+                    onChange={handlePersonalDetails}
+                    placeholder="Chọn ngày sinh"
+                    className="form-input"
+                    readOnly={isLoggedIn}
+                    disabled={isLoggedIn}
+                  />
+                </div>
+                <div className="input-group">
+                  <label htmlFor="address">Địa chỉ</label>
+                  <input
+                    id="address"
+                    type="text"
+                    name="address"
+                    value={personalDetails.address || ''}
+                    onChange={handlePersonalDetails}
+                    placeholder="Nhập địa chỉ của bạn"
                     className="form-input"
                     readOnly={isLoggedIn}
                     disabled={isLoggedIn}

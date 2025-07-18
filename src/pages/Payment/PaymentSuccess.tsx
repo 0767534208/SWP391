@@ -85,21 +85,57 @@ const PaymentSuccess: React.FC = () => {
 
 
   if (loading) {
-    return <div className="success-page"><div className="success-container"><p>Đang tải thông tin lịch hẹn...</p></div></div>;
+    return (
+      <div className="success-page">
+        <div className="success-container">
+          <div className="loading-spinner" style={{
+            display: 'inline-block',
+            width: '50px',
+            height: '50px',
+            border: '5px solid rgba(59, 130, 246, 0.2)',
+            borderRadius: '50%',
+            borderTop: '5px solid var(--primary-color, #3b82f6)',
+            animation: 'spin 1s linear infinite',
+            margin: '2rem auto'
+          }}></div>
+          <p style={{ fontSize: '1.1rem' }}>Đang tải thông tin lịch hẹn...</p>
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      </div>
+    );
   }
+  
   if (error) {
-    return <div className="success-page"><div className="success-container"><p style={{color:'red'}}>{error}</p></div></div>;
+    return (
+      <div className="success-page">
+        <div className="success-container">
+          <div style={{ color: '#ef4444', marginBottom: '1.5rem' }}>
+            <FontAwesomeIcon icon={faCheckCircle} style={{ fontSize: '3rem', marginBottom: '1rem' }} />
+            <h2 style={{ color: '#ef4444', marginBottom: '1rem' }}>Đã xảy ra lỗi</h2>
+          </div>
+          <p style={{ color: '#ef4444', marginBottom: '2rem' }}>{error}</p>
+          <button className="primary-button" onClick={handleReturnHome}>
+            <FontAwesomeIcon icon={faHome} size="lg" /> Trở về trang chủ
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="success-page">
       <div className="success-container">
         <div className="success-icon">
-          <FontAwesomeIcon icon={faCheckCircle} />
+          <FontAwesomeIcon icon={faCheckCircle} className="check-icon" />
         </div>
         <h1 className="success-title">Đặt Lịch Thành Công!</h1>
         <p className="success-message">
-          Cảm ơn bạn đã đặt lịch khám. Thông tin chi tiết về lịch hẹn đã được gửi qua email của bạn.
+          Cảm ơn bạn đã đặt lịch khám. Thông tin chi tiết về lịch hẹn của bạn đã được xác nhận.
         </p>
         <div className="appointment-details">
           <div className="appointment-card">
@@ -216,15 +252,14 @@ const PaymentSuccess: React.FC = () => {
             <h4>Lưu ý:</h4>
             <ul>
               <li>Vui lòng đến trước giờ hẹn 15 phút để hoàn tất thủ tục.</li>
-              <li>Mang theo CMND/CCCD và thẻ BHYT (nếu có).</li>
               <li>Nếu có thay đổi lịch hẹn, vui lòng liên hệ trước 24 giờ.</li>
               <li>Số điện thoại hỗ trợ: <strong>1900 1234</strong></li>
             </ul>
           </div>
         </div>
         <div className="action-buttons">
-          <button className="primary-button" onClick={handleReturnHome}>
-            <FontAwesomeIcon icon={faHome} /> Trở về trang chủ
+          <button className="home-button" onClick={handleReturnHome} style={{width: '100%', maxWidth: '250px', margin: '0 auto'}}>
+            <FontAwesomeIcon icon={faHome} style={{ marginRight: '10px' }} /> Trở về trang chủ
           </button>
         </div>
       </div>

@@ -36,7 +36,9 @@ interface PersonalInfo {
   name: string;
   phone: string;
   email: string;
-  notes: string;
+  notes?: string;
+  dateOfBirth?: string;
+  address?: string;
 }
 
 interface LocationState {
@@ -223,6 +225,18 @@ const ConfirmBooking: React.FC = () => {
               <div className="confirm-item">
                 <span className="label">Ghi chú:</span>
                 <span className="value">{personal.notes}</span>
+              </div>
+            )}
+            {personal.dateOfBirth && (
+              <div className="confirm-item">
+                <span className="label">Ngày sinh:</span>
+                <span className="value">{new Date(personal.dateOfBirth).toLocaleDateString('vi-VN')}</span>
+              </div>
+            )}
+            {personal.address && (
+              <div className="confirm-item">
+                <span className="label">Địa chỉ:</span>
+                <span className="value">{personal.address}</span>
               </div>
             )}
           </div>

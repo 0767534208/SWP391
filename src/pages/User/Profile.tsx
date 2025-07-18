@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { FaUserCircle, FaCheckCircle, FaTimesCircle, FaClock, FaEnvelope, FaPhone, FaBirthdayCake, FaMapMarkerAlt, FaUser, FaVial, FaMoneyBillWave } from 'react-icons/fa';
 
 import { userAPI, appointmentAPI, serviceAPI, getAppointmentPaymentUrl } from '../../utils/api';
@@ -215,38 +216,30 @@ const Profile = () => {
   });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Function to create sample user
-  const createSampleUser = () => {
-    const sampleUser = {
-      userID: "73539b7a-f7e5-4889-a662-b71c9bbf7e88",
-      customerID: "73539b7a-f7e5-4889-a662-b71c9bbf7e88",
-      userName: "customer",
-      email: "customer@gmail.com",
-      name: "Customer Sample",
-      address: "Sample Address",
-      phone: "0786014911",
-      dateOfBirth: "2000-01-01",
-      isActive: true,
-      roles: ["Customer"],
-      token: "sample-token",
-      refreshToken: "sample-refresh-token"
-    };
-    
-    localStorage.setItem('user', JSON.stringify(sampleUser));
-    localStorage.setItem('token', "sample-token");
-    localStorage.setItem('isLoggedIn', "true");
-    localStorage.setItem('userRole', "Customer");
-    
-    setUser(sampleUser);
-    setForm({
-      name: sampleUser.name || '',
-      phone: sampleUser.phone || '',
-      dateOfBirth: sampleUser.dateOfBirth || '',
-      address: sampleUser.address || '',
-    });
-    setError(null);
-    
-    setErrorMessage("Đã tạo người dùng mẫu. Hãy tải lại dữ liệu.");
+  // Function to get user data from localStorage
+  const getUserFromLocalStorage = () => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        setForm({
+          name: parsedUser.name || '',
+          phone: parsedUser.phone || '',
+          dateOfBirth: parsedUser.dateOfBirth || '',
+          address: parsedUser.address || '',
+        });
+        setError(null);
+        return parsedUser;
+      } catch (error) {
+        console.error("Error parsing user data from localStorage:", error);
+        setError("Dữ liệu người dùng không hợp lệ. Vui lòng đăng nhập lại.");
+        return null;
+      }
+    } else {
+      setError("Không tìm thấy dữ liệu người dùng. Vui lòng đăng nhập.");
+      return null;
+    }
   };
 
   // Function to reload data
@@ -254,9 +247,10 @@ const Profile = () => {
     try {
       setLoading(true);
       setError(null);
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        const parsedUser = JSON.parse(userData);
+      
+      const parsedUser = getUserFromLocalStorage();
+      
+      if (parsedUser) {
         // Ưu tiên sử dụng customerID, nếu không có thì dùng userID
         const customerId = parsedUser.customerID || parsedUser.userID;
         console.log('🔍 Debug - Parsed User:', parsedUser);
@@ -278,7 +272,7 @@ const Profile = () => {
           }
         } else {
           console.error('❌ No customer ID found');
-          setError("Không tìm thấy ID khách hàng. Vui lòng thiết lập ID mẫu trước.");
+          setError("Không tìm thấy ID khách hàng. Vui lòng đăng nhập lại.");
         }
       }
     } catch (error) {
@@ -299,20 +293,11 @@ const Profile = () => {
       try {
         setLoading(true);
         setError(null);
-        // Get user data from localStorage
-        const userData = localStorage.getItem('user');
-        if (userData) {
-          const parsedUser = JSON.parse(userData);
-          setUser(parsedUser);
-          console.log("🔍 Debug - User data from localStorage:", parsedUser);
-          
-          setForm({
-            name: parsedUser.name || '',
-            phone: parsedUser.phone || '',
-            dateOfBirth: parsedUser.dateOfBirth || '',
-            address: parsedUser.address || '',
-          });
-          
+        
+        // Get user data from localStorage using our helper function
+        const parsedUser = getUserFromLocalStorage();
+        
+        if (parsedUser) {
           // Fetch appointments using customer ID from localStorage
           // Ưu tiên sử dụng customerID, nếu không có thì dùng userID
           const customerId = parsedUser.customerID || parsedUser.userID;
@@ -698,21 +683,22 @@ const Profile = () => {
       <div style={{ padding: 32, textAlign: 'center' }}>
         <div style={{ marginBottom: 20, fontSize: 20, color: '#4b5563' }}>Bạn chưa đăng nhập!</div>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <button 
-            onClick={createSampleUser} 
-            style={{ 
-              background: '#3b82f6', 
-              color: '#fff', 
-              border: 'none', 
-              borderRadius: 8, 
-              padding: '12px 32px', 
-              fontWeight: 700, 
-              cursor: 'pointer',
-              boxShadow: '0 4px 6px rgba(59, 130, 246, 0.25)'
-            }}
-          >
-            Tạo người dùng mẫu
-          </button>
+          <Link to="/login">
+            <button 
+              style={{ 
+                background: '#3b82f6', 
+                color: '#fff', 
+                border: 'none', 
+                borderRadius: 8, 
+                padding: '12px 32px', 
+                fontWeight: 700, 
+                cursor: 'pointer',
+                boxShadow: '0 4px 6px rgba(59, 130, 246, 0.25)'
+              }}
+            >
+              Đăng nhập
+            </button>
+          </Link>
         </div>
         <div style={{ marginTop: 16, color: '#ef4444', fontSize: 14 }}>
           {error && <p>{error}</p>}
