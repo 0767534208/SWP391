@@ -42,6 +42,7 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  //
   // Fetch services and categories from API
   useEffect(() => {
     const fetchData = async () => {
