@@ -7,6 +7,11 @@ export const getAppointmentsByCustomerId = async (customerId: string) => {
 export const getAppointmentPaymentUrl = async (appointmentId: string) => {
   return apiRequest<any>(`/api/appointment/AppointmentPayment?appointmentID=${appointmentId}`, 'POST');
 };
+
+// API thay đổi trạng thái cuộc hẹn
+export const changeAppointmentStatus = async (appointmentId: string, status: number, paymentStatus: number) => {
+  return apiRequest<any>(`/api/appointment/ChangeAppointmentStatus?appointmentID=${appointmentId}&status=${status}&paymentStatus=${paymentStatus}`, 'PUT');
+};
 // Lấy tất cả profile tư vấn viên
 export const consultantProfileAPI = {
   getAllConsultantProfiles: async (): Promise<ApiResponse<any[]>> => {
@@ -411,10 +416,24 @@ export const appointmentAPI = {
 
   /**
    * Hoàn tiền toàn bộ lịch hẹn
-   * @param refundData - Thông tin hoàn tiền
+   * @param appointmentID - Mã cuộc hẹn
+   * @param accountId - ID tài khoản người dùng
+   * @param refundType - Loại hoàn tiền (full, consultation, sti)
    */
-  appointmentRefundFull: async (refundData: any): Promise<ApiResponse<any>> => {
-    return apiRequest<any>('/api/appointment/AppointmentPayment-Refund-Full', 'POST', refundData);
+  appointmentRefundFull: async (appointmentID: number, accountId: string, refundType: string): Promise<string> => {
+    const response = await fetch(`/api/appointment/AppointmentPayment-Refund-Full?appointmentID=${appointmentID}&accountId=${accountId}&refundType=${refundType}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status}`);
+    }
+    
+    // Return the raw text response which should be the VNPay URL
+    return response.text();
   },
 
   /**
