@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { ChangeEvent } from 'react';
 import './StaffAppointments.css';
-import { FaSync, FaCheckCircle, FaTimesCircle, FaEye, FaPencilAlt } from 'react-icons/fa';
+import { FaSync, FaCheckCircle, FaTimesCircle, FaEye, FaPencilAlt, FaMoneyBillWave } from 'react-icons/fa';
 import { appointmentAPI } from '../../utils/api';
 
 interface AppointmentType {
@@ -10,6 +10,7 @@ interface AppointmentType {
   patientPhone: string;
   service: string;
   serviceType: 'test' | 'consultation';
+  price: string;
   date: string;
   time: string;
   consultant: string;
@@ -159,42 +160,77 @@ const mapStatusStringToNumber = (statusString: string): number => {
 const getPaymentStatusText = (status: number): string => {
   switch (status) {
     case 0:
-      return 'Chưa thanh toán';
+      return 'Chờ thanh toán';
     case 1:
       return 'Đã đặt cọc';
     case 2:
       return 'Đã thanh toán';
+    case 3:
+      return 'Đã hoàn tiền';
+    case 4:
+      return 'Hoàn tiền một phần';
     default:
-      return 'Chưa thanh toán';
+      return 'Không xác định';
   }
 };
 
-// Helper function for payment status badge class
-const getPaymentStatusBadgeClass = (status: number): string => {
-  switch (status) {
-    case 0:
-      return 'status-badge payment-badge-unpaid';
-    case 1:
-      return 'status-badge payment-badge-deposit';
-    case 2:
-      return 'status-badge payment-badge-paid';
-    default:
-      return 'status-badge payment-badge-unpaid';
-  }
-};
+// Payment status badge classes are now handled by the PaymentStatusBadge component
 
-// Helper function for payment status style
-const getPaymentStatusStyle = (status: number): React.CSSProperties => {
-  switch (status) {
-    case 0:
-      return { backgroundColor: '#fee2e2', color: '#b91c1c' };
-    case 1:
-      return { backgroundColor: '#fef3c7', color: '#92400e' };
-    case 2:
-      return { backgroundColor: '#d1fae5', color: '#047857' };
-    default:
-      return { backgroundColor: '#fee2e2', color: '#b91c1c' };
-  }
+// Payment status styles are now handled directly in the PaymentStatusBadge component
+
+// Payment Status Badge Component
+const PaymentStatusBadge = ({ status }: { status: number }) => {
+  // Get background color based on status
+  const getPaymentStatusBgColor = (status: number) => {
+    switch (status) {
+      case 2: // Đã thanh toán
+        return '#d1fadf'; // Light green background
+      case 3: // Đã hoàn tiền
+        return '#dbeafe'; // Light blue background
+      case 4: // Hoàn tiền một phần
+        return '#ede9fe'; // Light purple background
+      case 1: // Đã đặt cọc
+        return '#fef9c3'; // Light yellow background
+      case 0: // Chờ thanh toán
+        return '#fee2e2'; // Light red background
+      default:
+        return '#f3f4f6'; // Light gray background
+    }
+  };
+  
+  // Get text color based on status
+  const getPaymentStatusTextColor = (status: number) => {
+    switch (status) {
+      case 2: // Đã thanh toán
+        return '#16a34a'; // Green text
+      case 3: // Đã hoàn tiền
+        return '#2563eb'; // Blue text
+      case 4: // Hoàn tiền một phần
+        return '#8b5cf6'; // Purple text
+      case 1: // Đã đặt cọc
+        return '#92400e'; // Orange/brown text
+      case 0: // Chờ thanh toán
+        return '#b91c1c'; // Red text
+      default:
+        return '#6b7280'; // Gray text
+    }
+  };
+
+  return (
+    <span style={{
+      display: 'inline-block',
+      padding: '6px 12px',
+      borderRadius: '20px',
+      fontSize: '13px',
+      fontWeight: 600,
+      color: getPaymentStatusTextColor(status),
+      backgroundColor: getPaymentStatusBgColor(status),
+      border: 'none',
+      textAlign: 'center',
+    }}>
+      {getPaymentStatusText(status)}
+    </span>
+  );
 };
 
 const StaffAppointments = () => {
@@ -214,6 +250,10 @@ const StaffAppointments = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const appointmentsPerPage = 10;
+  
+  // Refund related states
+  const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
+  const [refundType, setRefundType] = useState<'full' | 'consultation' | 'sti'>('full');
 
   // Toast notifications state
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
@@ -307,12 +347,22 @@ const StaffAppointments = () => {
           // Join all service names with comma or use default value if no services found
           const serviceName = serviceNames.length > 0 ? serviceNames.join(', ') : "Tư Vấn";
           
+          // Use totalAmount from the API response directly
+          const totalPrice = appointment.totalAmount || 0;
+          
+          // Format price as Vietnamese currency
+          const formattedPrice = new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+          }).format(totalPrice);
+          
           return {
             id: appointment.appointmentID.toString(),
             patientName: customerName,
             patientPhone: phoneNumber,
             service: serviceName,
             serviceType: serviceType as 'test' | 'consultation',
+            price: formattedPrice,
             date: formattedDate,
             time: formattedTime,
             consultant: consultantName,
@@ -528,6 +578,56 @@ const StaffAppointments = () => {
     setDateRange({startDate: '', endDate: ''});
     setCurrentPage(1);
   };
+  
+  // Handle opening refund modal
+  const handleRefundClick = (appointment: AppointmentType) => {
+    setCurrentAppointment(appointment);
+    setIsRefundModalOpen(true);
+    setRefundType('full'); // Default to full refund
+  };
+  
+  // Process refund
+  const processRefund = async () => {
+    if (!currentAppointment) return;
+    
+    try {
+      setIsSubmitting(true);
+      
+      // Use fixed account ID for now - in production this should come from the logged-in user
+      const accountId = "73539b7a-f7e5-4889-a662-b71c9bbf7e88";
+      const appointmentID = parseInt(currentAppointment.id);
+      
+      // Call the API with the correct parameters
+      const paymentUrl = await appointmentAPI.appointmentRefundFull(
+        appointmentID,
+        accountId, 
+        refundType
+      );
+      
+      console.log("Refund API response (payment URL):", paymentUrl);
+      
+      // Check if the returned value is a valid VNPay URL
+      if (paymentUrl && typeof paymentUrl === 'string' && paymentUrl.includes('vnpayment.vn')) {
+        // Open the payment URL in a new tab immediately
+        window.open(paymentUrl, '_blank');
+        // Close the modal and reset state
+        setIsRefundModalOpen(false);
+        setRefundType('full');
+        showToast("Đã tạo yêu cầu hoàn tiền thành công", "success");
+        // Refresh appointments after creating refund
+        fetchAppointments();
+      } else {
+        showToast("Không thể tạo yêu cầu hoàn tiền: Không nhận được URL thanh toán hợp lệ", "error");
+      }
+    } catch (error) {
+      console.error("Error processing refund:", error);
+      showToast("Xử lý hoàn tiền thất bại", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  // No longer needed since we're redirecting immediately after refund processing
 
   return (
     <div className="staff-appointments-container">
@@ -647,6 +747,7 @@ const StaffAppointments = () => {
                 <th className="w-12">ID</th>
                 <th>Bệnh Nhân</th>
                 <th>Dịch Vụ</th>
+                <th>Giá Tiền</th>
                 <th>Ngày & Giờ</th>
                 <th>Chuyên Gia</th>
                 <th>Trạng Thái</th>
@@ -671,6 +772,9 @@ const StaffAppointments = () => {
                       </div>
                     </td>
                     <td>
+                      <div className="font-medium text-green-700">{appointment.price}</div>
+                    </td>
+                    <td>
                       <div>{appointment.date}</div>
                       <div className="text-xs text-gray-500">{appointment.time}</div>
                     </td>
@@ -684,12 +788,7 @@ const StaffAppointments = () => {
                       </span>
                     </td>
                     <td>
-                      <span 
-                        className={getPaymentStatusBadgeClass(appointment.paymentStatus)}
-                        style={getPaymentStatusStyle(appointment.paymentStatus)}
-                      >
-                        {getPaymentStatusText(appointment.paymentStatus)}
-                      </span>
+                      <PaymentStatusBadge status={appointment.paymentStatus} />
                     </td>
                     <td>
                       <div className="flex space-x-1">
@@ -709,6 +808,17 @@ const StaffAppointments = () => {
                         >
                           <FaPencilAlt className="h-4 w-4" />
                         </button>
+                        {/* Show refund button only for appointments with 'request_cancel' status and payment status 2 (Đã thanh toán) */}
+                        {appointment.status === 'request_cancel' && appointment.paymentStatus === 2 && (
+                          <button 
+                            className="action-button"
+                            onClick={() => handleRefundClick(appointment)}
+                            title="Xử lý hoàn tiền"
+                            style={{ backgroundColor: '#fee2e2', color: '#b91c1c' }}
+                          >
+                            <FaMoneyBillWave className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -848,9 +958,7 @@ const StaffAppointments = () => {
                   </div>
                   <div className="flex">
                     <span className="w-32 text-sm text-gray-500">Trạng thái thanh toán:</span>
-                    <span className={getPaymentStatusBadgeClass(currentAppointment.paymentStatus)}>
-                      {getPaymentStatusText(currentAppointment.paymentStatus)}
-                    </span>
+                    <PaymentStatusBadge status={currentAppointment.paymentStatus} />
                   </div>
                   <div>
                     <div className="text-sm text-gray-500 mb-2">Chọn trạng thái mới:</div>
@@ -1041,6 +1149,10 @@ const StaffAppointments = () => {
                     <span className="text-sm font-medium">{currentAppointment.time}</span>
                   </div>
                   <div className="flex">
+                    <span className="w-32 text-sm text-gray-500">Giá tiền:</span>
+                    <span className="text-sm font-medium text-green-700">{currentAppointment.price}</span>
+                  </div>
+                  <div className="flex">
                     <span className="w-32 text-sm text-gray-500">Trạng thái:</span>
                     <span 
                       className={getStatusBadgeClass(currentAppointment.status)}
@@ -1113,6 +1225,106 @@ const StaffAppointments = () => {
                   }}
                 >
                   Cập nhật trạng thái
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Refund Modal */}
+      {isRefundModalOpen && currentAppointment && (
+        <div className="fixed inset-0 z-50 overflow-auto bg-gray-800 bg-opacity-75 flex items-center justify-center modal-overlay">
+          <div className="bg-white rounded-lg w-full max-w-md mx-3 overflow-hidden modal-container">
+            <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="font-medium text-lg text-gray-900">Xử lý hoàn tiền</h3>
+              <button 
+                className="text-gray-400 hover:text-gray-500"
+                onClick={() => setIsRefundModalOpen(false)}
+              >
+                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4">
+              <div className="mb-4">
+                <p className="text-gray-700 mb-2">Thông tin lịch hẹn:</p>
+                <div className="bg-gray-50 p-3 rounded-md mb-4">
+                  <div><span className="font-medium">ID:</span> {currentAppointment.id}</div>
+                  <div><span className="font-medium">Bệnh nhân:</span> {currentAppointment.patientName}</div>
+                  <div><span className="font-medium">Dịch vụ:</span> {currentAppointment.service}</div>
+                  <div><span className="font-medium">Giá tiền:</span> <span className="text-green-700 font-semibold">{currentAppointment.price}</span></div>
+                  <div><span className="font-medium">Ngày & giờ:</span> {currentAppointment.date} {currentAppointment.time}</div>
+                  <div className="mt-2 pt-2 border-t border-gray-200">
+                    <div className="text-sm text-gray-700 font-medium mb-1">Chi tiết hoàn tiền:</div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>• Hoàn tiền toàn bộ:</div>
+                      <div className="text-right font-medium">{currentAppointment.price}</div>
+                      <div>• Hoàn tiền tư vấn:</div>
+                      <div className="text-right font-medium">350.000 ₫</div>
+                      <div>• Hoàn tiền xét nghiệm:</div>
+                      <div className="text-right font-medium">500.000 ₫</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-gray-700 font-medium mb-2">Chọn loại hoàn tiền:</label>
+                  <div className="space-y-2">
+                    <div className="flex items-center">
+                      <input 
+                        type="radio" 
+                        id="full-refund" 
+                        name="refund-type" 
+                        checked={refundType === 'full'} 
+                        onChange={() => setRefundType('full')} 
+                        className="mr-2"
+                      />
+                      <label htmlFor="full-refund" className="text-gray-700">Hoàn tiền toàn bộ (Full)</label>
+                    </div>
+                    <div className="flex items-center">
+                      <input 
+                        type="radio" 
+                        id="consultation-refund" 
+                        name="refund-type" 
+                        checked={refundType === 'consultation'} 
+                        onChange={() => setRefundType('consultation')} 
+                        className="mr-2"
+                      />
+                      <label htmlFor="consultation-refund" className="text-gray-700">Hoàn tiền tư vấn (Consultation)</label>
+                    </div>
+                    <div className="flex items-center">
+                      <input 
+                        type="radio" 
+                        id="sti-refund" 
+                        name="refund-type" 
+                        checked={refundType === 'sti'} 
+                        onChange={() => setRefundType('sti')} 
+                        className="mr-2"
+                      />
+                      <label htmlFor="sti-refund" className="text-gray-700">Hoàn tiền xét nghiệm (STI)</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-between mt-4">
+                <button
+                  onClick={() => setIsRefundModalOpen(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={processRefund}
+                  className={`px-4 py-2 text-white rounded-md transition-colors ${
+                    isSubmitting ? 'bg-red-400 cursor-wait' : 'bg-red-500 hover:bg-red-600'
+                  }`}
+                  disabled={isSubmitting}
+                  style={{ opacity: isSubmitting ? 0.9 : 1 }}
+                >
+                  {isSubmitting ? 'Đang xử lý...' : 'Xử lý hoàn tiền'}
                 </button>
               </div>
             </div>

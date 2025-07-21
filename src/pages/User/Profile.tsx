@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { FaUserCircle, FaCheckCircle, FaTimesCircle, FaClock, FaEnvelope, FaPhone, FaBirthdayCake, FaMapMarkerAlt, FaUser, FaVial, FaMoneyBillWave } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
+import { FaUserCircle, FaCheckCircle, FaTimesCircle, FaClock, FaEnvelope, FaPhone, FaBirthdayCake, FaMapMarkerAlt, FaUser, FaVial, FaMoneyBillWave, FaBan } from 'react-icons/fa';
 
-import { userAPI, appointmentAPI, serviceAPI, getAppointmentPaymentUrl } from '../../utils/api';
+import { userAPI, appointmentAPI, serviceAPI, getAppointmentPaymentUrl, changeAppointmentStatus } from '../../utils/api';
 import type { UserData } from '../../types';
 import type { AppointmentData } from '../../utils/api';
 import { format } from 'date-fns';
+import CancelAppointmentModal from '../../components/CancelAppointmentModal';
 
 // Helper function to get status text based on status code
-const getStatusText = (status: number): string => {
+export const getStatusText = (status: number): string => {
   switch (status) {
     case 0: return 'Chờ xác nhận';          // Pending
     case 1: return 'Đã xác nhận';           // Confirmed
@@ -44,7 +46,7 @@ const getAppointmentTypeText = (type: number): string => {
 };
 
 // Helper function to format date
-const formatDate = (dateString: string): string => {
+export const formatDate = (dateString: string): string => {
   try {
     const date = new Date(dateString);
     return format(date, 'dd/MM/yyyy');
@@ -54,7 +56,7 @@ const formatDate = (dateString: string): string => {
 };
 
 // Helper function to format time
-const formatTime = (timeString: string): string => {
+export const formatTime = (timeString: string): string => {
   try {
     const date = new Date(timeString);
     return format(date, 'HH:mm');
@@ -63,7 +65,7 @@ const formatTime = (timeString: string): string => {
   }
 };
 
-const statusColor = (status: number) => {
+export const statusColor = (status: number) => {
   switch (status) {
     case 1: // Đã xác nhận
     case 5: // Hoàn thành
@@ -214,39 +216,32 @@ const Profile = () => {
     address: '',
   });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Function to create sample user
-  const createSampleUser = () => {
-    const sampleUser = {
-      userID: "73539b7a-f7e5-4889-a662-b71c9bbf7e88",
-      customerID: "73539b7a-f7e5-4889-a662-b71c9bbf7e88",
-      userName: "customer",
-      email: "customer@gmail.com",
-      name: "Customer Sample",
-      address: "Sample Address",
-      phone: "0786014911",
-      dateOfBirth: "2000-01-01",
-      isActive: true,
-      roles: ["Customer"],
-      token: "sample-token",
-      refreshToken: "sample-refresh-token"
-    };
-    
-    localStorage.setItem('user', JSON.stringify(sampleUser));
-    localStorage.setItem('token', "sample-token");
-    localStorage.setItem('isLoggedIn', "true");
-    localStorage.setItem('userRole', "Customer");
-    
-    setUser(sampleUser);
-    setForm({
-      name: sampleUser.name || '',
-      phone: sampleUser.phone || '',
-      dateOfBirth: sampleUser.dateOfBirth || '',
-      address: sampleUser.address || '',
-    });
-    setError(null);
-    
-    setErrorMessage("Đã tạo người dùng mẫu. Hãy tải lại dữ liệu.");
+  // Function to get user data from localStorage
+  const getUserFromLocalStorage = () => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        setForm({
+          name: parsedUser.name || '',
+          phone: parsedUser.phone || '',
+          dateOfBirth: parsedUser.dateOfBirth || '',
+          address: parsedUser.address || '',
+        });
+        setError(null);
+        return parsedUser;
+      } catch (error) {
+        console.error("Error parsing user data from localStorage:", error);
+        setError("Dữ liệu người dùng không hợp lệ. Vui lòng đăng nhập lại.");
+        return null;
+      }
+    } else {
+      setError("Không tìm thấy dữ liệu người dùng. Vui lòng đăng nhập.");
+      return null;
+    }
   };
 
   // Function to reload data
@@ -254,9 +249,10 @@ const Profile = () => {
     try {
       setLoading(true);
       setError(null);
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        const parsedUser = JSON.parse(userData);
+      
+      const parsedUser = getUserFromLocalStorage();
+      
+      if (parsedUser) {
         // Ưu tiên sử dụng customerID, nếu không có thì dùng userID
         const customerId = parsedUser.customerID || parsedUser.userID;
         console.log('🔍 Debug - Parsed User:', parsedUser);
@@ -278,7 +274,7 @@ const Profile = () => {
           }
         } else {
           console.error('❌ No customer ID found');
-          setError("Không tìm thấy ID khách hàng. Vui lòng thiết lập ID mẫu trước.");
+          setError("Không tìm thấy ID khách hàng. Vui lòng đăng nhập lại.");
         }
       }
     } catch (error) {
@@ -299,20 +295,11 @@ const Profile = () => {
       try {
         setLoading(true);
         setError(null);
-        // Get user data from localStorage
-        const userData = localStorage.getItem('user');
-        if (userData) {
-          const parsedUser = JSON.parse(userData);
-          setUser(parsedUser);
-          console.log("🔍 Debug - User data from localStorage:", parsedUser);
-          
-          setForm({
-            name: parsedUser.name || '',
-            phone: parsedUser.phone || '',
-            dateOfBirth: parsedUser.dateOfBirth || '',
-            address: parsedUser.address || '',
-          });
-          
+        
+        // Get user data from localStorage using our helper function
+        const parsedUser = getUserFromLocalStorage();
+        
+        if (parsedUser) {
           // Fetch appointments using customer ID from localStorage
           // Ưu tiên sử dụng customerID, nếu không có thì dùng userID
           const customerId = parsedUser.customerID || parsedUser.userID;
@@ -411,6 +398,10 @@ const Profile = () => {
   const [selectedService, setSelectedService] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [updatedAppointmentId, setUpdatedAppointmentId] = useState<string | null>(null);
+  
+  // State for cancel appointment modal
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   // Utility function to check if an appointment already has test services
   const hasTestServices = (appointment: AppointmentData): boolean => {
@@ -678,6 +669,45 @@ const Profile = () => {
     console.log(`🔍 Appointment ${appointment.appointmentID} is ${result ? 'ONLY consultation' : 'not only consultation'}`);
     return result;
   };
+  
+  // Function to handle showing cancel confirmation modal
+  const handleShowCancelModal = (appointment: AppointmentData) => {
+    setSelectedAppointment(appointment);
+    setShowCancelModal(true);
+  };
+  
+  // Function to cancel appointment
+  const handleCancelAppointment = async () => {
+    if (!selectedAppointment) return;
+    
+    try {
+      setCancelLoading(true);
+      const { appointmentID } = selectedAppointment;
+      
+      console.log('🚫 Cancelling appointment:', appointmentID);
+      
+      const response = await changeAppointmentStatus(appointmentID, 8, selectedAppointment.paymentStatus);
+      
+      if (response.statusCode === 200) {
+        console.log('✅ Appointment cancelled successfully');
+        setShowCancelModal(false);
+        setErrorMessage('');
+        
+        // Show success message
+        setSuccessMessage('Yêu cầu hủy cuộc hẹn đã được gửi thành công');
+        
+        // Reload appointments data
+        reloadData();
+      } else {
+        setErrorMessage(`Lỗi: ${response.message || 'Không thể hủy cuộc hẹn'}`);
+      }
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
+      setErrorMessage('Đã xảy ra lỗi khi hủy cuộc hẹn. Vui lòng thử lại sau.');
+    } finally {
+      setCancelLoading(false);
+    }
+  };
 
   // Handle tab change
   const handleTabChange = (newTab: 'profile' | 'history') => {
@@ -698,21 +728,22 @@ const Profile = () => {
       <div style={{ padding: 32, textAlign: 'center' }}>
         <div style={{ marginBottom: 20, fontSize: 20, color: '#4b5563' }}>Bạn chưa đăng nhập!</div>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <button 
-            onClick={createSampleUser} 
-            style={{ 
-              background: '#3b82f6', 
-              color: '#fff', 
-              border: 'none', 
-              borderRadius: 8, 
-              padding: '12px 32px', 
-              fontWeight: 700, 
-              cursor: 'pointer',
-              boxShadow: '0 4px 6px rgba(59, 130, 246, 0.25)'
-            }}
-          >
-            Tạo người dùng mẫu
-          </button>
+          <Link to="/login">
+            <button 
+              style={{ 
+                background: '#3b82f6', 
+                color: '#fff', 
+                border: 'none', 
+                borderRadius: 8, 
+                padding: '12px 32px', 
+                fontWeight: 700, 
+                cursor: 'pointer',
+                boxShadow: '0 4px 6px rgba(59, 130, 246, 0.25)'
+              }}
+            >
+              Đăng nhập
+            </button>
+          </Link>
         </div>
         <div style={{ marginTop: 16, color: '#ef4444', fontSize: 14 }}>
           {error && <p>{error}</p>}
@@ -897,17 +928,17 @@ const Profile = () => {
                       )}
                       
                       {/* Hiển thị tên dịch vụ */}
-                      {appointment.appointmentDetails && appointment.appointmentDetails.length > 0 && (
+                      <div>
+                        <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>🏥 Dịch vụ:</div>
                         <div>
-                          <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>🏥 Dịch vụ:</div>
-                          <div>
-                            {appointment.appointmentDetails.map((detail, idx) => {
+                          {appointment.appointmentDetails && appointment.appointmentDetails.length > 0 ? (
+                            appointment.appointmentDetails.map((detail, idx) => {
                               // Determine service type for visual indicator
                               let serviceType = "unknown";
                               let serviceIcon = "🔹";
                               let serviceColor = "#6b7280";
                               
-                              if (detail.service?.servicesName) {
+                              if (detail && detail.service && detail.service.servicesName) {
                                 const name = detail.service.servicesName.toLowerCase();
                                 const serviceObj = detail.service as any;
                                 
@@ -949,26 +980,37 @@ const Profile = () => {
                                   </span>
                                 </div>
                               );
-                            })}
-                          </div>
+                            })
+                          ) : (
+                            <div style={{ 
+                              padding: '8px 12px', 
+                              backgroundColor: '#f3f4f6', 
+                              borderRadius: 6,
+                              color: '#6b7280',
+                              fontStyle: 'italic'
+                            }}>
+                              Không có thông tin dịch vụ
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </div>
                     
-                    {/* Add button for STI Test if status is 3 (RequireSTIsTest) AND appointment is ONLY consultation type (0) */}
-                    {(() => {
-                      // Check if the button should be displayed and log reasoning
-                      const isStatus3 = appointment.status === 3;
-                      const isConsultationOnly = checkIfConsultationType(appointment);
-                      
-                      console.log(`🔍 Button check for appointment ${appointment.appointmentID}: 
-                        Status is 3: ${isStatus3}
-                        Is consultation only: ${isConsultationOnly}
-                        Should show button: ${isStatus3 && isConsultationOnly}
-                      `);
-                      
-                      return isStatus3 && isConsultationOnly ? (
-                        <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center' }}>
+                    {/* Add buttons based on appointment status */}
+                    <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center', gap: 16 }}>
+                      {/* Add button for STI Test if status is 3 (RequireSTIsTest) AND appointment is ONLY consultation type (0) */}
+                      {(() => {
+                        // Check if the button should be displayed and log reasoning
+                        const isStatus3 = appointment.status === 3;
+                        const isConsultationOnly = checkIfConsultationType(appointment);
+                        
+                        console.log(`🔍 Button check for appointment ${appointment.appointmentID}: 
+                          Status is 3: ${isStatus3}
+                          Is consultation only: ${isConsultationOnly}
+                          Should show button: ${isStatus3 && isConsultationOnly}
+                        `);
+                        
+                        return isStatus3 && isConsultationOnly ? (
                           <button
                             onClick={() => handleShowSTIModal(appointment)}
                             style={{
@@ -989,9 +1031,48 @@ const Profile = () => {
                           >
                             <FaVial /> Đăng ký xét nghiệm STIs
                           </button>
-                        </div>
-                      ) : null;
-                    })()}
+                        ) : null;
+                      })()}
+                      
+                      {/* Add button for canceling appointment if status is 0, 1, 3 AND payment status is 2 */}
+                      {(() => {
+                        // Check if the cancel button should be displayed
+                        const canCancel = 
+                          // Status conditions (0: Chờ xác nhận, 1: Đã xác nhận, 3: Yêu cầu xét nghiệm STIs)
+                          (appointment.status === 0 || appointment.status === 1 || appointment.status === 3) && 
+                          // Payment status condition (2: Đã thanh toán)
+                          appointment.paymentStatus === 2;
+                        
+                        console.log(`🔍 Cancel button check for appointment ${appointment.appointmentID}: 
+                          Status: ${appointment.status} (${getStatusText(appointment.status)})
+                          Payment status: ${appointment.paymentStatus} (${getPaymentStatusText(appointment.paymentStatus)})
+                          Can cancel: ${canCancel}
+                        `);
+                        
+                        return canCancel ? (
+                          <button
+                            onClick={() => handleShowCancelModal(appointment)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                              background: '#ef4444',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: 8,
+                              padding: '10px 16px',
+                              fontWeight: 600,
+                              fontSize: 14,
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            }}
+                          >
+                            <FaBan /> Hủy cuộc hẹn
+                          </button>
+                        ) : null;
+                      })()}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1024,6 +1105,47 @@ const Profile = () => {
           <div>{errorMessage}</div>
           <button 
             onClick={() => setErrorMessage(null)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              marginLeft: 8,
+              cursor: 'pointer',
+              fontSize: 20,
+              display: 'flex',
+              alignItems: 'center',
+              padding: 0
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Success message display */}
+      {successMessage && (
+        <div style={{
+          position: 'fixed',
+          bottom: 20,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#10b981',
+          color: 'white',
+          padding: '12px 24px',
+          borderRadius: 8,
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          zIndex: 2000,
+          maxWidth: 400,
+          textAlign: 'center',
+          animation: 'fadeIn 0.3s ease-out',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12
+        }}>
+          <FaCheckCircle size={18} />
+          <div>{successMessage}</div>
+          <button 
+            onClick={() => setSuccessMessage(null)}
             style={{
               background: 'none',
               border: 'none',
@@ -1262,6 +1384,143 @@ const Profile = () => {
             )}
           </div>
         </div>
+      )}
+      
+      {/* Cancel Appointment Confirmation Modal */}
+      {showCancelModal && selectedAppointment && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            backgroundColor: '#fff',
+            borderRadius: 12,
+            padding: 24,
+            maxWidth: 500,
+            width: '90%',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+            animation: 'fadeIn 0.3s ease-out'
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <FaBan size={40} color="#ef4444" style={{ marginBottom: 16 }} />
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: '#374151', marginBottom: 8 }}>
+                Xác nhận hủy cuộc hẹn
+              </h2>
+              <p style={{ color: '#6b7280', fontSize: 15, lineHeight: 1.5 }}>
+                Bạn có chắc chắn muốn hủy cuộc hẹn này không? Yêu cầu hủy cuộc hẹn của bạn sẽ được gửi đến quản trị viên để xử lý.
+              </p>
+            </div>
+            
+            <div style={{ 
+              marginTop: 24, 
+              padding: 16, 
+              backgroundColor: '#f9fafb', 
+              borderRadius: 8,
+              border: '1px solid #e5e7eb'
+            }}>
+              <div style={{ fontWeight: 600, marginBottom: 8, color: '#4b5563', fontSize: 15 }}>
+                Thông tin cuộc hẹn:
+              </div>
+              <div style={{ display: 'grid', gap: 8, fontSize: 14 }}>
+                <div><span style={{ fontWeight: 500, color: '#4b5563' }}>Mã cuộc hẹn:</span> {selectedAppointment.appointmentID}</div>
+                <div><span style={{ fontWeight: 500, color: '#4b5563' }}>Ngày hẹn:</span> {formatDate(selectedAppointment.appointmentDate)}</div>
+                {selectedAppointment.slot && (
+                  <div><span style={{ fontWeight: 500, color: '#4b5563' }}>Thời gian:</span> {formatTime(selectedAppointment.slot.startTime)} - {formatTime(selectedAppointment.slot.endTime)}</div>
+                )}
+                <div><span style={{ fontWeight: 500, color: '#4b5563' }}>Trạng thái:</span> <span style={{ color: statusColor(selectedAppointment.status) }}>{getStatusText(selectedAppointment.status)}</span></div>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 24 }}>
+              <button
+                onClick={() => setShowCancelModal(false)}
+                style={{
+                  padding: '10px 16px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: 8,
+                  background: '#ffffff',
+                  color: '#374151',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  transition: 'all 0.2s'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
+              >
+                <FaTimesCircle size={14} /> Đóng lại
+              </button>
+              <button
+                onClick={handleCancelAppointment}
+                disabled={cancelLoading}
+                style={{
+                  padding: '10px 20px',
+                  border: 'none',
+                  borderRadius: 8,
+                  background: cancelLoading ? '#9ca3af' : '#ef4444',
+                  color: '#fff',
+                  fontWeight: 600,
+                  cursor: cancelLoading ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  transition: 'all 0.2s',
+                  boxShadow: cancelLoading ? 'none' : '0 2px 4px rgba(239, 68, 68, 0.3)'
+                }}
+                onMouseOver={(e) => {
+                  if (!cancelLoading) {
+                    e.currentTarget.style.backgroundColor = '#dc2626';
+                    e.currentTarget.style.boxShadow = '0 4px 6px rgba(239, 68, 68, 0.4)';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (!cancelLoading) {
+                    e.currentTarget.style.backgroundColor = '#ef4444';
+                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(239, 68, 68, 0.3)';
+                  }
+                }}
+              >
+                {cancelLoading ? (
+                  <>
+                    <div style={{ 
+                      width: 16, 
+                      height: 16, 
+                      border: '2px solid rgba(255,255,255,0.3)', 
+                      borderTop: '2px solid #fff',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }}></div>
+                    Đang xử lý...
+                  </>
+                ) : (
+                  <>
+                    <FaBan size={16} /> Xác nhận hủy
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Cancel Appointment Confirmation Modal */}
+      {showCancelModal && selectedAppointment && (
+        <CancelAppointmentModal
+          appointment={selectedAppointment}
+          onClose={() => setShowCancelModal(false)}
+          onConfirm={handleCancelAppointment}
+          isLoading={cancelLoading}
+        />
       )}
       
       {/* Success Modal for STI Test Registration */}

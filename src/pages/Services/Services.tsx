@@ -13,7 +13,7 @@ interface ServiceType {
   updateAt: string;
   servicesPrice: number;
   status: boolean;
-  imageServices: string[];
+  imageServices: { image: string }[];
   // Additional fields for UI display
   duration?: string;
   includes?: string[];
@@ -125,9 +125,41 @@ const Services = () => {
   // Handle service image with proper fallbacks
   const getServiceImageUrl = (service: ServiceType) => {
     if (service.imageServices && service.imageServices.length > 0) {
-      return service.imageServices[0];
+      return service.imageServices[0].image;
     }
     return `/assets/images/service-default.jpg`;
+  };
+
+  // State for dropdown
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  
+  // Ref for dropdown
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+  
+  // Get the currently selected category name
+  const getSelectedCategoryName = (): string => {
+    const selectedCategory = categoryOptions.find(category => category.id === filterCategory);
+    return selectedCategory ? selectedCategory.name : 'Tất cả dịch vụ';
+  };
+  
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
+  // Handle category selection
+  const handleCategorySelect = (categoryId: string) => {
+    setFilterCategory(categoryId);
+    setDropdownOpen(false);
   };
 
   return (
@@ -156,16 +188,54 @@ const Services = () => {
           </svg>
         </div>
         
-        <div className="category-filter">
-          {categoryOptions.map((category, index) => (
-            <button
-              key={index}
-              className={`category-button ${filterCategory === category.id ? 'active' : ''}`}
-              onClick={() => setFilterCategory(category.id)}
+        <div className="category-dropdown" ref={dropdownRef}>
+          <button 
+            className={`category-dropdown-button ${dropdownOpen ? 'active' : ''}`}
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+          >
+            <span>{getSelectedCategoryName()}</span>
+            <svg 
+              className="dropdown-icon" 
+              xmlns="http://www.w3.org/2000/svg" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
             >
-              {category.name}
-            </button>
-          ))}
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M19 9l-7 7-7-7" 
+              />
+            </svg>
+          </button>
+          
+          {/* Dropdown menu */}
+          <div className={`category-dropdown-menu ${dropdownOpen ? 'active' : ''}`}>
+            {categoryOptions.map((category, index) => (
+              <div 
+                key={index}
+                className={`category-dropdown-item ${filterCategory === category.id ? 'active' : ''}`}
+                onClick={() => handleCategorySelect(category.id)}
+              >
+                <svg 
+                  className="check-icon" 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M5 13l4 4L19 7" 
+                  />
+                </svg>
+                {category.name}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

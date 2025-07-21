@@ -71,6 +71,7 @@ select {
   padding-right: 30px;
 }
 
+
 /* Filter dropdowns */
 .filter-dropdown select {
   border-radius: 4px;
@@ -414,4 +415,7 @@ select {
     transform: translateY(0);
     opacity: 1;
   }
+}
+.text-white {
+    color: rgb(59 0 0);
 }
