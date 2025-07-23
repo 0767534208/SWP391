@@ -16,6 +16,7 @@ import serviceService from './serviceService';
 import slotService from './slotService';
 import testResultService from './testResultService';
 import treatmentOutcomeService from './treatmentOutcomeService';
+import chatbotService from './chatbotService';
 export { default as qnaService } from './qnaService';
 
 // Export all services
@@ -31,6 +32,7 @@ export {
   slotService,
   testResultService,
   treatmentOutcomeService,
+  chatbotService,
 };
 
 // Also re-export the auth and user APIs from api.ts
@@ -49,4 +51,5 @@ export default {
   slot: slotService,
   testResult: testResultService,
   treatmentOutcome: treatmentOutcomeService,
+  chatbot: chatbotService,
 }; 
