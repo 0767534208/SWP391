@@ -1,6 +1,6 @@
+import React from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import ChatbotWidget from '../ChatBot/ChatbotWidget';
 import './ManagerLayout.css';
 import authService from '../../services/authService';
 import { ROUTES } from '../../config/constants';
@@ -117,7 +117,6 @@ const ManagerLayout = () => {
           </div>
         </div>
       </main>
-      <ChatbotWidget />
     </div>
   );
 };
