@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './ServiceManagement.css';
 import { serviceAPI, categoryAPI } from '../../utils/api';
 import { authService } from '../../services';
@@ -20,26 +20,6 @@ interface Service {
   imageFiles?: File[]; // Thêm field để lưu file objects cho upload
 }
 
-interface UpdateServiceData {
-  servicesName: string;
-  description: string;
-  serviceType: number;
-  status: boolean;
-  servicesPrice?: number; // Optional cho consultation services
-}
-
-interface CreateServiceData {
-  ClinicID: number;
-  CategoryID: number;
-  ManagerID: string;
-  ServicesName: string;
-  Description: string;
-  ServiceType: number;
-  Status: boolean;
-  Images: File[];
-  ServicesPrice?: number; // Optional cho consultation services
-}
-
 interface Category {
   categoryID: number;
   name: string;
@@ -51,7 +31,6 @@ interface Category {
 const ServiceManagement: React.FC = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<number | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [currentService, setCurrentService] = useState<Service | null>(null);
@@ -62,15 +41,6 @@ const ServiceManagement: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [managerID, setManagerID] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Debounce search query để giảm lag khi gõ
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 300); // Đợi 300ms sau khi user ngừng gõ
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
 
   // Fetch services and categories from API
   useEffect(() => {
@@ -91,13 +61,7 @@ const ServiceManagement: React.FC = () => {
         const categoryResponse = await categoryAPI.getCategories();
         
         if (serviceResponse.statusCode === 200 && serviceResponse.data) {
-          // Transform the API response to match our interface
-          const transformedServices = serviceResponse.data.map((service: any) => ({
-            ...service,
-            // Transform imageServices from array of objects to array of strings
-            imageServices: service.imageServices?.map((img: any) => img.image || img) || []
-          }));
-          setServices(transformedServices);
+          setServices(serviceResponse.data);
         } else {
           setError('Không thể tải danh sách dịch vụ. Vui lòng thử lại sau.');
         }
@@ -118,25 +82,23 @@ const ServiceManagement: React.FC = () => {
     fetchData();
   }, []);
 
-  // Format price to VND - tối ưu với useMemo
-  const formatPrice = useCallback((price: number) => {
+  // Format price to VND
+  const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
       .format(price)
       .replace('₫', 'VNĐ');
-  }, []);
+  };
 
-  // Filter services based on search query and category - tối ưu với useMemo và debounced search
-  const filteredServices = useMemo(() => {
-    return services.filter(service => {
-      const matchesSearch = service.servicesName.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-                           service.description.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
-      const matchesCategory = filterCategory === null || service.categoryID === filterCategory;
-      return matchesSearch && matchesCategory;
-    });
-  }, [services, debouncedSearchQuery, filterCategory]);
+  // Filter services based on search query and category
+  const filteredServices = services.filter(service => {
+    const matchesSearch = service.servicesName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         service.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = filterCategory === null || service.categoryID === filterCategory;
+    return matchesSearch && matchesCategory;
+  });
 
-  // Handle adding a new service - tối ưu với useCallback
-  const handleAddService = useCallback(() => {
+  // Handle adding a new service
+  const handleAddService = () => {
     setCurrentService({
       servicesID: 0, // ID sẽ được tạo bởi server
       categoryID: categories.length > 0 ? categories[0].categoryID : 1,
@@ -156,10 +118,10 @@ const ServiceManagement: React.FC = () => {
     setIsEditing(true);
     setIsAddingNew(true);
     setShowModal(true);
-  }, [categories, managerID]);
+  };
 
-  // Handle editing a service - tối ưu với useCallback
-  const handleEditService = useCallback((service: Service) => {
+  // Handle editing a service
+  const handleEditService = (service: Service) => {
     // Ensure service has the required fields
     const serviceToEdit = {
       ...service,
@@ -172,10 +134,10 @@ const ServiceManagement: React.FC = () => {
     setIsEditing(true);
     setIsAddingNew(false);
     setShowModal(true);
-  }, [managerID]);
+  };
 
-  // Handle viewing service details - tối ưu với useCallback
-  const handleViewService = useCallback((service: Service) => {
+  // Handle viewing service details
+  const handleViewService = (service: Service) => {
     // Ensure service has the required fields
     const serviceToView = {
       ...service,
@@ -188,7 +150,7 @@ const ServiceManagement: React.FC = () => {
     setIsEditing(false);
     setIsAddingNew(false);
     setShowModal(true);
-  }, [managerID]);
+  };
 
   // Handle saving a service (add or edit)
   const handleSaveService = async (e: React.FormEvent) => {
@@ -201,23 +163,14 @@ const ServiceManagement: React.FC = () => {
       
       if (!isAddingNew) {
         // Update existing service - chỉ gửi các fields được hỗ trợ
-        const updateData: UpdateServiceData = {
+        const updateData = {
           servicesName: currentService.servicesName,
           description: currentService.description,
+          servicesPrice: currentService.servicesPrice,
           serviceType: currentService.serviceType !== undefined ? currentService.serviceType : 0,
           status: currentService.status
           // Note: không gửi categoryID vì API UpdateService không hỗ trợ
         };
-        
-        // Chỉ thêm servicesPrice nếu serviceType không phải là Consultation (0)
-        // Kiểm tra serviceType hiện tại của currentService (giá trị mới)
-        if (currentService.serviceType !== 0) {
-          if (!currentService.servicesPrice || currentService.servicesPrice <= 0) {
-            setError('Giá dịch vụ là bắt buộc và phải lớn hơn 0 đối với dịch vụ Xét nghiệm STI.');
-            return;
-          }
-          updateData.servicesPrice = currentService.servicesPrice;
-        }
         
         console.log('Updating service with data:', updateData);
         
@@ -230,13 +183,7 @@ const ServiceManagement: React.FC = () => {
           // Refresh lại toàn bộ danh sách services để đảm bảo dữ liệu đồng bộ
           const serviceResponse = await serviceAPI.getServices();
           if (serviceResponse.statusCode === 200 && serviceResponse.data) {
-            // Transform the API response to match our interface
-            const transformedServices = serviceResponse.data.map((service: any) => ({
-              ...service,
-              // Transform imageServices from array of objects to array of strings
-              imageServices: service.imageServices?.map((img: any) => img.image || img) || []
-            }));
-            setServices(transformedServices);
+            setServices(serviceResponse.data);
           }
           
           setShowModal(false);
@@ -247,21 +194,17 @@ const ServiceManagement: React.FC = () => {
         }
       } else {
         // Add new service - gửi đầy đủ dữ liệu cho CreateService
-        const serviceData: CreateServiceData = {
+        const serviceData = {
           ClinicID: currentService.clinicID || 1,
           CategoryID: currentService.categoryID,
           ManagerID: currentService.managerID || managerID,
           ServicesName: currentService.servicesName,
           Description: currentService.description,
+          ServicesPrice: currentService.servicesPrice,
           ServiceType: currentService.serviceType !== undefined ? currentService.serviceType : 0,
           Status: currentService.status,
           Images: currentService.imageFiles || []
         };
-        
-        // Chỉ thêm ServicesPrice nếu serviceType không phải là Consultation (0)
-        if (currentService.serviceType !== 0) {
-          serviceData.ServicesPrice = currentService.servicesPrice;
-        }
         
         console.log('Creating service with data:', serviceData);
         
@@ -271,13 +214,7 @@ const ServiceManagement: React.FC = () => {
           // Refresh lại toàn bộ danh sách services
           const serviceResponse = await serviceAPI.getServices();
           if (serviceResponse.statusCode === 200 && serviceResponse.data) {
-            // Transform the API response to match our interface
-            const transformedServices = serviceResponse.data.map((service: any) => ({
-              ...service,
-              // Transform imageServices from array of objects to array of strings
-              imageServices: service.imageServices?.map((img: any) => img.image || img) || []
-            }));
-            setServices(transformedServices);
+            setServices(serviceResponse.data);
           }
           
           setShowModal(false);
@@ -289,20 +226,7 @@ const ServiceManagement: React.FC = () => {
       }
     } catch (err) {
       console.error('Error saving service:', err);
-      // Hiển thị lỗi cụ thể từ API nếu có
-      if (err instanceof Error) {
-        if (err.message.includes('Không có quyền tạo dịch vụ')) {
-          setError(err.message);
-        } else if (err.message.includes('API error: 400')) {
-          setError('Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin đã nhập.');
-        } else if (err.message.includes('API error: 500')) {
-          setError('Lỗi máy chủ. Vui lòng thử lại sau hoặc liên hệ admin.');
-        } else {
-          setError('Đã xảy ra lỗi khi lưu dịch vụ: ' + err.message);
-        }
-      } else {
-        setError('Đã xảy ra lỗi khi lưu dịch vụ.');
-      }
+      setError('Đã xảy ra lỗi khi lưu dịch vụ.');
     } finally {
       setLoading(false);
     }
@@ -318,31 +242,19 @@ const ServiceManagement: React.FC = () => {
       if (!service) return;
       
       // Call API to update status (provide full service data to match UpdateServiceRequest schema)
-      const updateData: UpdateServiceData = {
+      const response = await serviceAPI.updateService(id, {
         servicesName: service.servicesName,
         description: service.description,
+        servicesPrice: service.servicesPrice,
         serviceType: service.serviceType || 0,
         status: !service.status
-      };
-      
-      // Chỉ thêm servicesPrice nếu serviceType không phải là Consultation (0)
-      if (service.serviceType !== 0) {
-        updateData.servicesPrice = service.servicesPrice;
-      }
-      
-      const response = await serviceAPI.updateService(id, updateData);
+      });
       
       if (response.statusCode === 200) {
         // Refresh lại toàn bộ danh sách services để đảm bảo dữ liệu đồng bộ
         const serviceResponse = await serviceAPI.getServices();
         if (serviceResponse.statusCode === 200 && serviceResponse.data) {
-          // Transform the API response to match our interface
-          const transformedServices = serviceResponse.data.map((service: any) => ({
-            ...service,
-            // Transform imageServices from array of objects to array of strings
-            imageServices: service.imageServices?.map((img: any) => img.image || img) || []
-          }));
-          setServices(transformedServices);
+          setServices(serviceResponse.data);
         }
       } else {
         setError('Không thể cập nhật trạng thái dịch vụ. Vui lòng thử lại sau.');
@@ -352,6 +264,36 @@ const ServiceManagement: React.FC = () => {
       setError('Đã xảy ra lỗi khi cập nhật trạng thái dịch vụ.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Upload image to server and get URL
+  const uploadImage = async (file: File): Promise<string> => {
+    try {
+      // Create form data
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Sử dụng endpoint thực tế để upload ảnh
+      const response = await fetch('/api/Service/UploadImage', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          // Không cần set Content-Type khi dùng FormData
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to upload image');
+      }
+      
+      const result = await response.json();
+      // Giả định rằng API trả về URL của ảnh đã tải lên
+      return result.imageUrl || '';
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw error;
     }
   };
 
@@ -419,14 +361,8 @@ const ServiceManagement: React.FC = () => {
     
     setCurrentService({
       ...currentService,
-      serviceType: value,
-      // Nếu là dịch vụ tư vấn (type 0), set price về 0
-      // Nếu là dịch vụ xét nghiệm (type 1) và chưa có giá, set giá mặc định
-      servicesPrice: value === 0 ? 0 : (currentService.servicesPrice || 100000)
+      serviceType: value
     });
-    
-    // Clear error khi thay đổi service type
-    setError(null);
   };
 
   if (loading) {
@@ -635,13 +571,8 @@ const ServiceManagement: React.FC = () => {
                     value={currentService.servicesPrice}
                     onChange={(e) => setCurrentService({...currentService, servicesPrice: Number(e.target.value)})}
                     required
-                    readOnly={!isEditing || currentService.serviceType === 0}
-                    disabled={currentService.serviceType === 0}
-                    placeholder={currentService.serviceType === 0 ? "Dịch vụ tư vấn không có phí" : "Nhập giá dịch vụ"}
+                    readOnly={!isEditing}
                   />
-                  {currentService.serviceType === 0 && (
-                    <small className="text-muted">Dịch vụ tư vấn không tính phí</small>
-                  )}
                 </div>
                 
                 <div className="form-group full-width">
@@ -737,6 +668,79 @@ const ServiceManagement: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Add CSS for the new image upload UI */}
+      <style>
+        {`
+        .image-gallery {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-top: 10px;
+        }
+        
+        .image-item {
+          position: relative;
+          width: 100px;
+          height: 100px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          overflow: hidden;
+        }
+        
+        .image-thumbnail {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        
+        .remove-image-btn {
+          position: absolute;
+          top: 5px;
+          right: 5px;
+          background: rgba(255, 255, 255, 0.8);
+          border: none;
+          border-radius: 50%;
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: #ff4d4f;
+        }
+        
+        .hidden-file-input {
+          display: none;
+        }
+        
+        .image-upload-container {
+          width: 100px;
+          height: 100px;
+          border: 2px dashed #ddd;
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .file-upload-label {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          width: 100%;
+          height: 100%;
+          color: #666;
+          font-size: 12px;
+        }
+        
+        .file-upload-label svg {
+          margin-bottom: 5px;
+        }
+        `}
+      </style>
     </div>
   );
 };

@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import './SlotManagement.css';
 import { consultantSlotAPI } from '../../utils/api';
-import consultantService from '../../services/consultantService';
 
 // Types based on actual API data structure
 interface ConsultantSlot {
@@ -65,7 +64,7 @@ const SlotManagement = () => {
       setLoading(true);
       setError(null);
       
-      const response = await consultantSlotAPI.getAllConsultants();
+      const response = await consultantSlotAPI.getAllConsultantSlots();
       
       if (response.statusCode === 200 && response.data) {
         setConsultantSlots(response.data);
@@ -158,33 +157,16 @@ const SlotManagement = () => {
 
   // Search function using API
   const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      // If search query is empty, reset to show all data
-      setFilteredSlots(consultantSlots);
-      setFilteredProfiles(consultantProfiles);
-      return;
-    }
+    if (!searchQuery.trim()) return;
 
     try {
       setLoading(true);
+      const response = await consultantSlotAPI.searchConsultantSlots({ query: searchQuery });
       
-      // Perform client-side search
-      const query = searchQuery.toLowerCase();
-      
-      if (activeTab === 'slots') {
-        const filteredSlots = consultantSlots.filter(slot => 
-          slot.consultantID?.toLowerCase().includes(query) ||
-          slot.slotID?.toString().includes(query) ||
-          slot.assignedDate?.toLowerCase().includes(query)
-        );
-        setFilteredSlots(filteredSlots);
-      } else {
-        const filteredProfiles = consultantProfiles.filter(profile =>
-          profile.account?.name?.toLowerCase().includes(query) ||
-          profile.specialty?.toLowerCase().includes(query) ||
-          profile.description?.toLowerCase().includes(query)
-        );
-        setFilteredProfiles(filteredProfiles);
+      if (response.statusCode === 200 && response.data) {
+        if (activeTab === 'slots') {
+          setFilteredSlots(response.data);
+        }
       }
     } catch (error) {
       console.error('Error searching:', error);
@@ -248,7 +230,7 @@ const SlotManagement = () => {
   // Create consultant profile
   const handleCreateProfile = async (profileData: any) => {
     try {
-      const response = await consultantService.createConsultantProfile(profileData);
+      const response = await consultantSlotAPI.createConsultantProfile(profileData);
       
       if (response.statusCode === 200) {
         alert('Tạo profile thành công!');
@@ -268,7 +250,7 @@ const SlotManagement = () => {
   // Update consultant profile
   const handleUpdateProfile = async (profileId: number, profileData: any) => {
     try {
-      const response = await consultantService.updateConsultantProfile(profileId, profileData);
+      const response = await consultantSlotAPI.updateConsultantProfile(profileId, profileData);
       
       if (response.statusCode === 200) {
         alert('Cập nhật profile thành công!');
@@ -288,7 +270,7 @@ const SlotManagement = () => {
   // Swap slots between consultants
   const handleSwapSlots = async (consultantA: string, slotA: number, consultantB: string, slotB: number) => {
     try {
-      const response = await consultantService.swapSlots(consultantA, slotA, consultantB, slotB);
+      const response = await consultantSlotAPI.swapSlots(consultantA, slotA, consultantB, slotB);
       
       if (response.statusCode === 200) {
         alert('Hoán đổi slot thành công!');

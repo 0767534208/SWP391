@@ -59,9 +59,8 @@ const Home = () => {
         const blogResponse = await blogAPI.getBlogs();
 
         if (serviceResponse.statusCode === 200 && serviceResponse.data) {
-          // Lọc chỉ lấy dịch vụ có status = true và sắp xếp theo thời gian tạo mới nhất
-          const activeServices = serviceResponse.data.filter((service: ServiceData) => service.status === true);
-          const sortedServices = [...activeServices].sort((a, b) => 
+          // Sắp xếp dịch vụ theo thời gian tạo mới nhất
+          const sortedServices = [...serviceResponse.data].sort((a, b) => 
             new Date(b.createAt).getTime() - new Date(a.createAt).getTime()
           );
           setServices(sortedServices);
