@@ -212,21 +212,30 @@ const Booking = () => {
         const categoryResponse = await categoryAPI.getCategories();
         
         if (serviceResponse.statusCode === 200 && serviceResponse.data && categoryResponse.statusCode === 200 && categoryResponse.data) {
-          // We can ignore storing categories since they're not being used
-          // Note: We've removed the consultantCategory lookup since it's not being used
+          // Create a map of active categories for quick lookup
+          const activeCategoryIds = new Set(
+            categoryResponse.data
+              .filter((category: any) => category.status === true)
+              .map((category: any) => category.categoryID)
+          );
           
-          // Map API data to UI format
-          const mappedServices: ServiceUI[] = serviceResponse.data.map((service: ServiceData) => ({
-            id: service.servicesID,
-            name: service.servicesName,
-            // Chỉ hiển thị giá cho dịch vụ xét nghiệm (serviceType=1), không hiển thị cho dịch vụ tư vấn (serviceType=0)
-            price: service.serviceType === 1 ? formatPrice(service.servicesPrice) : "",
-            // A service requires consultant if serviceType is not 1
-            requiresConsultant: service.serviceType !== 1, // Type 1 = test service (no consultant needed)
-            description: service.description,
-            // Không truyền imageUrl vào để không hiển thị ảnh trong booking
-            imageUrl: undefined
-          }));
+          // Filter services that are active AND belong to active categories
+          const mappedServices: ServiceUI[] = serviceResponse.data
+            .filter((service: ServiceData) => 
+              service.status === true && // Service must be active
+              activeCategoryIds.has(service.categoryID) // Category must be active
+            )
+            .map((service: ServiceData) => ({
+              id: service.servicesID,
+              name: service.servicesName,
+              // Display price for test services (serviceType=1), empty for consultation services (serviceType=0)
+              price: service.serviceType === 1 ? formatPrice(service.servicesPrice) : "",
+              // A service requires consultant if serviceType is 0 (consultation service)
+              requiresConsultant: service.serviceType === 0, // Type 0 = consultation service (requires consultant)
+              description: service.description,
+              // Don't pass imageUrl to avoid displaying images in booking
+              imageUrl: undefined
+            }));
           setServices(mappedServices);
         } else {
           setError('Failed to fetch data');
@@ -419,8 +428,8 @@ const Booking = () => {
   // Khi chọn consultant, lọc ra các slot của consultant đó vào ngày đã chọn
   // Lưu ý: Chỉ sử dụng khi là dịch vụ xét nghiệm, không dùng cho dịch vụ tư vấn
   useEffect(() => {
-    // Nếu là dịch vụ tư vấn (serviceType=0) thì bỏ qua effect này
-    // vì chúng ta đã xử lý trong luồng dịch vụ -> ngày -> khung giờ -> tư vấn viên
+    // If this is a consultation service (serviceType=0), skip this effect
+    // because we handle it in the flow: service -> date -> time slot -> consultant
     if (serviceRequiresConsultant()) {
       return;
     }
@@ -590,14 +599,14 @@ const Booking = () => {
     const currentService = services.find(s => s.id === selectedService);
     const isTestService = currentService?.requiresConsultant === false; // This checks if serviceType=1 (test service)
     
-    // Tìm đúng consultantProfileID từ consultantProfiles (chỉ cho dịch vụ tư vấn - type 0)
-    let consultantProfileID = null; // Khởi tạo với null
+    // Find the correct consultantProfileID from consultantProfiles (only for consultation services - type 0)
+    let consultantProfileID = null; // Initialize with null
     if (!isTestService && selectedConsultant && selectedTimeSlot && consultantProfiles.length > 0) {
-      // Lấy thông tin tư vấn viên đã được chọn từ selectedTimeSlot
+      // Get the selected consultant information from selectedTimeSlot
       const selectedConsultantInfo = selectedTimeSlot.consultants.find(c => c.consultantID === selectedConsultant);
       
       if (selectedConsultantInfo) {
-        // Tìm profile dựa theo ID thay vì tên để đảm bảo chính xác
+        // Find profile by ID instead of name to ensure accuracy
         const foundProfile = consultantProfiles.find((p: any) => {
           if (p.accountID && selectedConsultantInfo.consultantID) {
             return p.accountID.toString() === selectedConsultantInfo.consultantID.toString();
@@ -608,7 +617,7 @@ const Booking = () => {
         if (foundProfile && foundProfile.consultantProfileID) {
           consultantProfileID = foundProfile.consultantProfileID;
         } else {
-          // Nếu không tìm thấy theo ID, thử tìm theo tên
+          // If not found by ID, try finding by name
           const foundByName = consultantProfiles.find(
             (p: any) => p.account?.name && selectedConsultantInfo.name && 
             p.account.name.trim().toLowerCase() === selectedConsultantInfo.name.trim().toLowerCase()
@@ -621,14 +630,14 @@ const Booking = () => {
       }
     }
     
-    // Nếu không tìm thấy, lấy consultantID làm consultantProfileID (trường hợp nếu ID trùng nhau)
+    // If not found, use consultantID as consultantProfileID (in case IDs are the same)
     if (consultantProfileID === null && selectedConsultant) {
       consultantProfileID = parseInt(selectedConsultant);
     }
     
     // Double check that for type 0, we have a valid consultant selected
     if (!isTestService && (!selectedConsultant || selectedConsultant === "")) {
-      setErrorMessage('Dịch vụ tư vấn yêu cầu phải chọn tư vấn viên');
+      setErrorMessage('Consultation services require a consultant to be selected');
       return;
     }
     
@@ -654,7 +663,7 @@ const Booking = () => {
         quantity: 1
       };
       
-      // Chỉ thêm consultantProfileID nếu đã tìm được
+      // Only add consultantProfileID if found
       if (consultantProfileID !== null) {
         appointmentDetail.consultantProfileID = consultantProfileID;
       }
@@ -668,7 +677,7 @@ const Booking = () => {
         appointmentDetails: [appointmentDetail]
       };
     }
-    // Debug thông tin trước khi gửi
+    // Debug information before sending
     console.log('Appointment data being sent:', appointmentData);
     console.log('Selected consultant:', selectedConsultant);
     console.log('Consultant profile ID:', consultantProfileID);
@@ -689,7 +698,7 @@ const Booking = () => {
             console.log('Found consultant details:', consultantDetails);
           }
           
-          // Lưu appointmentID vào localStorage để backup
+          // Save appointmentID to localStorage as backup
           localStorage.setItem('lastAppointmentId', response.data.appointmentID);
           navigate('/confirm-booking', { 
             state: { 
@@ -703,10 +712,10 @@ const Booking = () => {
               consultant: consultantDetails ? {
                 id: parseInt(consultantDetails.consultantID),
                 name: consultantDetails.name,
-                specialty: consultantDetails.specialty || 'Tư vấn viên',
+                specialty: consultantDetails.specialty || 'Consultant',
                 image: consultantDetails.imageUrl || '',
-                education: '', // Thông tin này sẽ được lấy từ consultantProfile nếu cần
-                experience: '', // Thông tin này sẽ được lấy từ consultantProfile nếu cần
+                education: '', // This information will be retrieved from consultantProfile if needed
+                experience: '', // This information will be retrieved from consultantProfile if needed
                 certificates: [],
                 price: consultantDetails.price || 0
               } : null,
@@ -736,7 +745,7 @@ const Booking = () => {
           errorMsg = error;
         }
         
-        // Nếu có lỗi về consultant profile, thêm thông tin để hỗ trợ debug
+        // If there's an error about consultant profile, add information to help debug
         if (errorMsg.includes('ConsultantProfile') || errorMsg.includes('consultant')) {
           errorMsg += ` (ConsultantID: ${selectedConsultant}, ProfileID: ${consultantProfileID})`;
         }
@@ -745,12 +754,12 @@ const Booking = () => {
       });
   };
 
-  // Khi chọn một khung giờ, hiển thị các tư vấn viên có sẵn trong khung giờ đó
+  // When selecting a time slot, display available consultants for that time slot
   const handleTimeSlotSelect = (timeSlot: AvailableTimeSlot) => {
     setSelectedTime(timeSlot.timeDisplay);
     setSelectedTimeSlot(timeSlot);
     
-    // Chỉ reset consultant khi thay đổi khung giờ, không reset khi lần đầu chọn
+    // Only reset consultant when changing time slot, not when first selecting
     if (selectedConsultant && timeSlot && 
         (!selectedTimeSlot || (selectedTimeSlot.timeDisplay !== timeSlot.timeDisplay))) {
       setSelectedConsultant(null);
@@ -919,8 +928,8 @@ const Booking = () => {
             
             {/* Bước 4: Chọn tư vấn viên (chỉ hiển thị cho dịch vụ tư vấn và sau khi đã chọn khung giờ) */}
             {selectedService && selectedDate && selectedTime && serviceRequiresConsultant() && selectedTimeSlot && (
-              <div className="form-section">
-                <h3>4. Chọn Tư Vấn Viên</h3>
+                      <div className="form-section">
+                <h3>4. Choose Consultant</h3>
                 {consultantLoading ? (
                   <div className="loading-container">
                     <div className="loading-spinner"></div>

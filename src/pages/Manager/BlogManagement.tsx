@@ -35,7 +35,10 @@ const BlogManagement: React.FC = () => {
     setIsLoading(true);
     try {
       const response = await blogAPI.getBlogs();
-      if (response.data) {
+      console.log('Blog API response:', response);
+      
+      // Handle different response scenarios
+      if (response.statusCode === 200 && response.data) {
         const formattedBlogs: BlogDisplay[] = Array.isArray(response.data) ? response.data.map((blog: any) => ({
           id: blog.blogID?.toString() || '',
           title: blog.title || '',
@@ -47,6 +50,13 @@ const BlogManagement: React.FC = () => {
           status: blog.status ? 'published' : 'draft'
         })) : [];
         setBlogs(formattedBlogs);
+      } else if (response.statusCode === 502) {
+        // Handle server error
+        console.error('Server error:', response.message);
+        setBlogs([]); // Set empty array for now
+      } else {
+        console.error('Unexpected response:', response);
+        setBlogs([]);
       }
     } catch (error) {
       console.error('Error fetching blogs:', error);
@@ -71,7 +81,7 @@ const BlogManagement: React.FC = () => {
       content: '',
       imageUrl: '',
       publishedDate: new Date().toLocaleDateString('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' }),
-      author: '',
+      author: 'Admin', // Default author to prevent empty field
       status: 'draft'
     });
     setIsModalOpen(true);
@@ -87,22 +97,44 @@ const BlogManagement: React.FC = () => {
   const handleSaveBlog = async () => {
     if (!currentBlog) return;
 
+    // Validate required fields before sending
+    if (!currentBlog.title.trim()) {
+      alert('Vui lòng nhập tiêu đề blog');
+      return;
+    }
+    if (!currentBlog.author.trim()) {
+      alert('Vui lòng nhập tên tác giả');
+      return;
+    }
+    if (!currentBlog.content.trim()) {
+      alert('Vui lòng nhập nội dung blog');
+      return;
+    }
+
     try {
       if (currentBlog.id) {
         // Update existing blog
         await blogAPI.updateBlog({
           id: currentBlog.id,
-          title: currentBlog.title,
-          content: currentBlog.content,
-          author: currentBlog.author,
+          title: currentBlog.title.trim(),
+          content: currentBlog.content.trim(),
+          author: currentBlog.author.trim(),
           status: currentBlog.status === 'published'
         });
       } else {
         // Create new blog
+        console.log('Creating blog with data:', {
+          title: currentBlog.title.trim(),
+          content: currentBlog.content.trim(),
+          author: currentBlog.author.trim(),
+          isPublished: currentBlog.status === 'published',
+          image: currentBlog.imageUrl
+        });
+        
         await blogAPI.createBlog({
-          title: currentBlog.title,
-          content: currentBlog.content,
-          author: currentBlog.author,
+          title: currentBlog.title.trim(),
+          content: currentBlog.content.trim(),
+          author: currentBlog.author.trim(),
           isPublished: currentBlog.status === 'published',
           image: currentBlog.imageUrl
         });
@@ -114,6 +146,7 @@ const BlogManagement: React.FC = () => {
       setCurrentBlog(null);
     } catch (error) {
       console.error('Error saving blog:', error);
+      alert('Có lỗi xảy ra khi lưu blog. Vui lòng thử lại.');
     }
   };
 
