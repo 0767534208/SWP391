@@ -1,0 +1,822 @@
+import React, { useState, useEffect } from 'react'
+import Calendar from 'react-calendar'
+import 'react-calendar/dist/Calendar.css'
+import './CycleTracker.css'
+import { FaCalendarAlt, FaChartLine, FaInfoCircle, FaBell, FaTimes, FaSave, FaRegCircle, FaCheckCircle, FaTrash, FaTint, FaHeart, FaSeedling, FaBan } from 'react-icons/fa'
+
+// Status types for cycle tracking
+type CycleStatus = 'period' | 'fertile' | 'ovulation' | 'none'
+
+// Data structure for storing cycle information
+interface CycleData {
+    date: string // ISO string format
+    status: CycleStatus
+    notes: string
+    symptoms: string[]
+    flow?: 'light' | 'medium' | 'heavy' | null
+}
+
+const CycleTracker: React.FC = () => {
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+    const [showModal, setShowModal] = useState(false)
+    const [cycleData, setCycleData] = useState<CycleData[]>([])
+    const [currentData, setCurrentData] = useState<CycleData>({
+        date: '',
+        status: 'none',
+        notes: '',
+        symptoms: [],
+        flow: null
+    })
+    const [activeTab, setActiveTab] = useState('calendar')
+    const [cycleLength, setCycleLength] = useState(28)
+    const [periodLength, setPeriodLength] = useState(5)
+    const [lastPeriodStart, setLastPeriodStart] = useState<Date | null>(null)
+
+    // Common symptoms list
+    const commonSymptoms = [
+        'Äau bá»¥ng', 'Äau Ä‘áº§u', 'Äáº§y hÆ¡i', 'Má»‡t má»i', 
+        'Thay Ä‘á»•i tĂ¢m tráº¡ng', 'Äau ngá»±c', 'Äau lÆ°ng', 'Má»¥n'
+    ]
+
+    // Generate sample data for demonstration
+    const generateSampleData = () => {
+        // Táº¡o dá»¯ liá»‡u máº«u há»£p lĂ½ hÆ¡n
+        // TĂ­nh toĂ¡n ngĂ y báº¯t Ä‘áº§u chu ká»³ gáº§n nháº¥t Ä‘á»ƒ hiá»ƒn thá»‹ trĂªn lá»‹ch hiá»‡n táº¡i
+        const today = new Date();
+        const currentMonth = today.getMonth();
+        const currentYear = today.getFullYear();
+        
+        // Chu ká»³ gáº§n nháº¥t (Ä‘ang diá»…n ra hoáº·c vá»«a káº¿t thĂºc)
+        const lastPeriodDate = new Date(currentYear, currentMonth, 3); // NgĂ y 3 cá»§a thĂ¡ng hiá»‡n táº¡i
+        
+        // Chu ká»³ trÆ°á»›c Ä‘Ă³
+        const previousPeriodDate = new Date(lastPeriodDate);
+        previousPeriodDate.setDate(previousPeriodDate.getDate() - 28);
+        
+        // Chu ká»³ trÆ°á»›c ná»¯a
+        const olderPeriodDate = new Date(previousPeriodDate);
+        olderPeriodDate.setDate(olderPeriodDate.getDate() - 28);
+        
+        // Sample data array
+        const sampleData: CycleData[] = [];
+        
+        // ThĂªm dá»¯ liá»‡u cho chu ká»³ cÅ© nháº¥t (Ä‘Ă£ hoĂ n thĂ nh)
+        for (let i = 0; i < 5; i++) {
+            const currentDate = new Date(olderPeriodDate);
+            currentDate.setDate(olderPeriodDate.getDate() + i);
+            
+            // CÆ°á»ng Ä‘á»™ kinh nguyá»‡t theo ngĂ y
+            let flow: 'light' | 'medium' | 'heavy' | null = 'medium';
+            if (i === 0) flow = 'light';
+            if (i === 1 || i === 2) flow = 'heavy';
+            if (i === 4) flow = 'light';
+            
+            // Triá»‡u chá»©ng phĂ¹ há»£p vá»›i tá»«ng ngĂ y
+            const daySymptoms = [];
+            if (i < 3) daySymptoms.push('Äau bá»¥ng');
+            if (i === 1 || i === 2) daySymptoms.push('Äau Ä‘áº§u');
+            if (i > 0 && i < 4) daySymptoms.push('Äáº§y hÆ¡i');
+            if (i < 3) daySymptoms.push('Má»‡t má»i');
+            
+            sampleData.push({
+                date: currentDate.toISOString(),
+                status: 'period',
+                notes: i === 0 ? 'Chu ká»³ báº¯t Ä‘áº§u. Äau bá»¥ng nháº¹.' : 
+                      i === 1 ? 'Äau bá»¥ng nhiá»u, uá»‘ng thuá»‘c giáº£m Ä‘au.' :
+                      i === 2 ? 'Váº«n Ä‘au bá»¥ng vĂ  Ä‘au Ä‘áº§u.' : '',
+                symptoms: daySymptoms,
+                flow
+            });
+        }
+        
+        // ThĂªm dá»¯ liá»‡u cho chu ká»³ trÆ°á»›c (Ä‘Ă£ hoĂ n thĂ nh)
+        for (let i = 0; i < 5; i++) {
+            const currentDate = new Date(previousPeriodDate);
+            currentDate.setDate(previousPeriodDate.getDate() + i);
+            
+            // CÆ°á»ng Ä‘á»™ kinh nguyá»‡t
+            let flow: 'light' | 'medium' | 'heavy' | null = 'medium';
+            if (i === 0) flow = 'light';
+            if (i === 1 || i === 2) flow = 'heavy';
+            if (i === 4) flow = 'light';
+            
+            // Triá»‡u chá»©ng
+            const daySymptoms = [];
+            if (i < 2) daySymptoms.push('Äau bá»¥ng');
+            if (i === 1) daySymptoms.push('Äau Ä‘áº§u');
+            if (i > 0 && i < 4) daySymptoms.push('Äáº§y hÆ¡i');
+            if (i < 2) daySymptoms.push('Thay Ä‘á»•i tĂ¢m tráº¡ng');
+            
+            sampleData.push({
+                date: currentDate.toISOString(),
+                status: 'period',
+                notes: i === 0 ? 'Chu ká»³ báº¯t Ä‘áº§u, nháº¹ hÆ¡n thĂ¡ng trÆ°á»›c.' : 
+                      i === 1 ? 'Äau bá»¥ng nhiá»u, khĂ³ táº­p trung lĂ m viá»‡c.' : '',
+                symptoms: daySymptoms,
+                flow
+            });
+        }
+        
+        // ThĂªm dá»¯ liá»‡u cho chu ká»³ hiá»‡n táº¡i (Ä‘ang diá»…n ra)
+        const currentPeriodLength = Math.min(today.getDate() - lastPeriodDate.getDate() + 1, 5);
+        for (let i = 0; i < currentPeriodLength; i++) {
+            const currentDate = new Date(lastPeriodDate);
+            currentDate.setDate(lastPeriodDate.getDate() + i);
+            
+            // CÆ°á»ng Ä‘á»™ kinh nguyá»‡t
+            let flow: 'light' | 'medium' | 'heavy' | null = 'medium';
+            if (i === 0) flow = 'light';
+            if (i === 1) flow = 'heavy';
+            if (i >= 3) flow = 'light';
+            
+            // Triá»‡u chá»©ng
+            const daySymptoms = [];
+            if (i < 2) daySymptoms.push('Äau bá»¥ng');
+            if (i === 1) daySymptoms.push('Má»‡t má»i');
+            if (i === 1) daySymptoms.push('Äáº§y hÆ¡i');
+            if (i === 0) daySymptoms.push('Thay Ä‘á»•i tĂ¢m tráº¡ng');
+            
+            sampleData.push({
+                date: currentDate.toISOString(),
+                status: 'period',
+                notes: i === 0 ? 'Chu ká»³ báº¯t Ä‘áº§u. Cáº£m tháº¥y má»‡t má»i vĂ  thay Ä‘á»•i tĂ¢m tráº¡ng.' : 
+                      i === 1 ? 'Äau bá»¥ng dá»¯ dá»™i, cáº§n nghá»‰ ngÆ¡i nhiá»u hÆ¡n.' : '',
+                symptoms: daySymptoms,
+                flow
+            });
+        }
+        
+        // ThĂªm dá»¯ liá»‡u vá» thá»i ká»³ rá»¥ng trá»©ng cá»§a chu ká»³ trÆ°á»›c
+        const ovulationDate = new Date(previousPeriodDate);
+        ovulationDate.setDate(previousPeriodDate.getDate() + 14);
+        
+        sampleData.push({
+            date: ovulationDate.toISOString(),
+            status: 'ovulation',
+            notes: 'NgĂ y rá»¥ng trá»©ng. Cáº£m tháº¥y Ä‘au nháº¹ á»Ÿ bá»¥ng dÆ°á»›i bĂªn pháº£i.',
+            symptoms: ['Cramps'],
+            flow: null
+        });
+        
+        // ThĂªm dá»¯ liá»‡u vá» cá»­a sá»• thá»¥ thai xung quanh ngĂ y rá»¥ng trá»©ng
+        for (let i = -2; i <= 2; i++) {
+            if (i === 0) continue; // Bá» qua ngĂ y rá»¥ng trá»©ng vĂ¬ Ä‘Ă£ thĂªm á»Ÿ trĂªn
+            
+            const fertileDate = new Date(ovulationDate);
+            fertileDate.setDate(ovulationDate.getDate() + i);
+            
+            sampleData.push({
+                date: fertileDate.toISOString(),
+                status: 'fertile',
+                notes: i < 0 ? 'Thá»i ká»³ dá»… thá»¥ thai trÆ°á»›c rá»¥ng trá»©ng.' : 'Thá»i ká»³ dá»… thá»¥ thai sau rá»¥ng trá»©ng.',
+                symptoms: [],
+                flow: null
+            });
+        }
+        
+        return {
+            data: sampleData,
+            lastPeriod: lastPeriodDate
+        };
+    };
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        
+        // Try to load data from localStorage first
+        const savedData = localStorage.getItem('cycleData');
+        const savedCycleLength = localStorage.getItem('cycleLength');
+        const savedPeriodLength = localStorage.getItem('periodLength');
+        const savedLastPeriod = localStorage.getItem('lastPeriodStart');
+        
+        // If we have saved data, use it
+        if (savedData && savedCycleLength && savedPeriodLength && savedLastPeriod) {
+            setCycleData(JSON.parse(savedData));
+            setCycleLength(parseInt(savedCycleLength));
+            setPeriodLength(parseInt(savedPeriodLength));
+            setLastPeriodStart(new Date(savedLastPeriod));
+        } else {
+            // Otherwise, initialize with sample data
+            const { data, lastPeriod } = generateSampleData();
+            setCycleData(data);
+            setLastPeriodStart(lastPeriod);
+        }
+    }, [])
+
+    // Save data to localStorage whenever it changes
+    useEffect(() => {
+        if (cycleData.length > 0) {
+            localStorage.setItem('cycleData', JSON.stringify(cycleData))
+        }
+        
+        if (cycleLength) {
+            localStorage.setItem('cycleLength', cycleLength.toString())
+        }
+        
+        if (periodLength) {
+            localStorage.setItem('periodLength', periodLength.toString())
+        }
+        
+        if (lastPeriodStart) {
+            localStorage.setItem('lastPeriodStart', lastPeriodStart.toISOString())
+        }
+    }, [cycleData, cycleLength, periodLength, lastPeriodStart])
+
+    const handleDayClick = (date: Date) => {
+        setSelectedDate(date)
+        
+        // Check if we already have data for this date
+        const dateString = date.toISOString().split('T')[0]
+        const existingData = cycleData.find(data => data.date.startsWith(dateString))
+        
+        if (existingData) {
+            setCurrentData(existingData)
+        } else {
+            setCurrentData({
+                date: date.toISOString(),
+                status: 'none',
+                notes: '',
+                symptoms: [],
+                flow: null
+            })
+        }
+        
+        setShowModal(true)
+    }
+
+    const handleCloseModal = () => {
+        setShowModal(false)
+        setSelectedDate(null)
+    }
+
+    const handleSave = () => {
+        if (!selectedDate) return
+        
+        // Update or add the current data
+        const dateString = selectedDate.toISOString().split('T')[0]
+        const updatedData = cycleData.filter(data => !data.date.startsWith(dateString))
+        
+        // Only save if there's actual data
+        if (currentData.status !== 'none' || currentData.notes || currentData.symptoms.length > 0 || currentData.flow) {
+            updatedData.push(currentData)
+            setCycleData(updatedData)
+            
+            // If this is a period start, update the last period start date
+            if (currentData.status === 'period' && currentData.flow) {
+                setLastPeriodStart(selectedDate)
+            }
+        }
+        
+        setShowModal(false)
+        setSelectedDate(null)
+    }
+
+    const handleDeleteData = () => {
+        if (!selectedDate) return
+        
+        // XĂ¡c nháº­n trÆ°á»›c khi xĂ³a
+        if (window.confirm('Báº¡n cĂ³ cháº¯c cháº¯n muá»‘n xĂ³a dá»¯ liá»‡u cho ngĂ y nĂ y khĂ´ng?')) {
+            const dateString = selectedDate.toISOString().split('T')[0]
+            
+            // Lá»c ra dá»¯ liá»‡u khĂ´ng thuá»™c ngĂ y Ä‘ang chá»n
+            const updatedData = cycleData.filter(data => !data.date.startsWith(dateString))
+            setCycleData(updatedData)
+            
+            // LÆ°u vĂ o localStorage
+            localStorage.setItem('cycleData', JSON.stringify(updatedData))
+            
+            // ÄĂ³ng modal
+            setShowModal(false)
+            setSelectedDate(null)
+        }
+    }
+
+    const handleResetToSampleData = () => {
+        // Reset to sample data
+        const { data, lastPeriod } = generateSampleData();
+        setCycleData(data);
+        setLastPeriodStart(lastPeriod);
+        
+        // Save to localStorage
+        localStorage.setItem('cycleData', JSON.stringify(data));
+        localStorage.setItem('cycleLength', cycleLength.toString());
+        localStorage.setItem('periodLength', periodLength.toString());
+        localStorage.setItem('lastPeriodStart', lastPeriod.toISOString());
+        
+        // Show confirmation
+        alert('Dá»¯ liá»‡u Ä‘Ă£ Ä‘Æ°á»£c Ä‘áº·t láº¡i vá» dá»¯ liá»‡u máº«u Ä‘á»ƒ minh há»a.');
+    };
+
+    const toggleSymptom = (symptom: string) => {
+        if (currentData.symptoms.includes(symptom)) {
+            setCurrentData({
+                ...currentData,
+                symptoms: currentData.symptoms.filter(s => s !== symptom)
+            })
+        } else {
+            setCurrentData({
+                ...currentData,
+                symptoms: [...currentData.symptoms, symptom]
+            })
+        }
+    }
+
+    // Function to predict cycle phases based on last period
+    const getPredictedStatus = (date: Date): CycleStatus => {
+        if (!lastPeriodStart) return 'none'
+        
+        const dayDiff = Math.floor((date.getTime() - lastPeriodStart.getTime()) / (1000 * 60 * 60 * 24))
+        const dayInCycle = ((dayDiff % cycleLength) + cycleLength) % cycleLength
+        
+        if (dayInCycle < periodLength) {
+            return 'period'
+        } else if (dayInCycle >= cycleLength - 14 - 2 && dayInCycle <= cycleLength - 14 + 2) {
+            return 'ovulation'
+        } else if (dayInCycle >= cycleLength - 19 && dayInCycle <= cycleLength - 9) {
+            return 'fertile'
+        }
+        
+        return 'none'
+    }
+
+    // Custom tile content for the calendar
+    const tileContent = ({ date, view }: { date: Date; view: string }) => {
+        if (view !== 'month') return null
+        
+        const dateString = date.toISOString().split('T')[0]
+        const existingData = cycleData.find(data => data.date.startsWith(dateString))
+        const predictedStatus = getPredictedStatus(date)
+        
+        // If we have actual data, show that, otherwise show prediction
+        const status = existingData?.status || predictedStatus
+        
+        let className = ''
+        switch (status) {
+            case 'period':
+                className = 'period-day'
+                break
+            case 'fertile':
+                className = 'fertile-day'
+                break
+            case 'ovulation':
+                className = 'ovulation-day'
+                break
+            default:
+                className = ''
+        }
+        
+        return (
+            <div className={`day-marker ${className} ${existingData ? 'has-data' : ''}`}>
+                {existingData?.symptoms.length ? <div className="symptom-indicator"></div> : null}
+                {existingData && <div className="data-indicator"></div>}
+            </div>
+        )
+    }
+
+    // Generate next predicted periods
+    const getNextPeriods = () => {
+        if (!lastPeriodStart) return []
+        
+        const periods = []
+        const today = new Date()
+        
+        for (let i = 0; i < 3; i++) {
+            const nextPeriod = new Date(lastPeriodStart)
+            nextPeriod.setDate(nextPeriod.getDate() + cycleLength * (i + 1))
+            
+            if (nextPeriod > today) {
+                periods.push({
+                    start: new Date(nextPeriod),
+                    end: new Date(new Date(nextPeriod).setDate(nextPeriod.getDate() + periodLength - 1))
+                })
+            }
+        }
+        
+        return periods
+    }
+
+    return (
+        <div className="cycle-tracker-container">
+            <h1 className="cycle-tracker-title">Theo DĂµi Chu Ká»³ Sinh Sáº£n</h1>
+            
+            <div className="cycle-tracker-tabs">
+                <button 
+                    className={`tab-button ${activeTab === 'calendar' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('calendar')}
+                >
+                    <FaCalendarAlt /> Lá»‹ch
+                </button>
+                <button 
+                    className={`tab-button ${activeTab === 'insights' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('insights')}
+                >
+                    <FaChartLine /> PhĂ¢n TĂ­ch
+                </button>
+                <button 
+                    className={`tab-button ${activeTab === 'predictions' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('predictions')}
+                >
+                    <FaBell /> Dá»± ÄoĂ¡n
+                </button>
+                <button 
+                    className={`tab-button ${activeTab === 'settings' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('settings')}
+                >
+                    <FaInfoCircle /> CĂ i Äáº·t
+                </button>
+            </div>
+            
+            <div className="cycle-tracker-content">
+                {activeTab === 'calendar' && (
+                    <div className="calendar-section">
+                        <div className="calendar-guide">
+                            <h4>HÆ°á»›ng dáº«n sá»­ dá»¥ng:</h4>
+                            <ul>
+                                <li><span className="guide-color period-color-sample"></span> Dá»± Ä‘oĂ¡n ngĂ y cĂ³ kinh nguyá»‡t</li>
+                                <li><span className="guide-color fertile-color-sample"></span> Dá»± Ä‘oĂ¡n thá»i ká»³ dá»… thá»¥ thai</li>
+                                <li><span className="guide-color ovulation-color-sample"></span> Dá»± Ä‘oĂ¡n ngĂ y rá»¥ng trá»©ng</li>
+                            
+                                <li>
+                                    <div className="guide-indicator-wrapper">
+                                        <div className="guide-indicator">
+                                            <div className="data-indicator"></div>
+                                        </div> 
+                                        NgĂ y Ä‘Ă£ cĂ³ dá»¯ liá»‡u
+                                    </div>
+                                </li>
+                                <li>
+                                    <div className="guide-indicator-wrapper">
+                                        <div className="guide-indicator">
+                                            <div className="symptom-indicator"></div>
+                                        </div> 
+                                        NgĂ y cĂ³ ghi nháº­n triá»‡u chá»©ng
+                                    </div>
+                                </li>
+                            </ul>
+                            <p className="guide-tip">Nháº¥p vĂ o báº¥t ká»³ ngĂ y nĂ o Ä‘á»ƒ thĂªm hoáº·c chá»‰nh sá»­a thĂ´ng tin.</p>
+                        </div>
+                        
+            <div className="calendar-wrapper">
+                            <Calendar 
+                                onClickDay={handleDayClick} 
+                                className="large-calendar" 
+                                tileContent={tileContent}
+                            />
+                        </div>
+                    </div>
+                )}
+                
+                {activeTab === 'insights' && (
+                    <div className="insights-section">
+                        <h3>PhĂ¢n TĂ­ch Chu Ká»³</h3>
+                        {cycleData.length > 0 ? (
+                            <div className="insights-content">
+                                <div className="insights-stats">
+                                    <div className="stat-card">
+                                        <h4>Äá»™ DĂ i Chu Ká»³ Trung BĂ¬nh</h4>
+                                        <p className="stat-value">{cycleLength} ngĂ y</p>
+                                    </div>
+                                    <div className="stat-card">
+                                        <h4>Thá»i Gian HĂ nh Kinh Trung BĂ¬nh</h4>
+                                        <p className="stat-value">{periodLength} ngĂ y</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="insights-history">
+                                    <h4>Lá»‹ch Sá»­ Gáº§n ÄĂ¢y</h4>
+                                    <div className="history-list">
+                                        {cycleData
+                                            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                                            .slice(0, 5)
+                                            .map((data, index) => {
+                                                // Dá»‹ch tráº¡ng thĂ¡i sang tiáº¿ng Viá»‡t
+                                                let statusText = '';
+                                                switch(data.status) {
+                                                    case 'period':
+                                                        statusText = 'Kinh nguyá»‡t';
+                                                        break;
+                                                    case 'fertile':
+                                                        statusText = 'Dá»… thá»¥ thai';
+                                                        break;
+                                                    case 'ovulation':
+                                                        statusText = 'Rá»¥ng trá»©ng';
+                                                        break;
+                                                    default:
+                                                        statusText = 'KhĂ´ng xĂ¡c Ä‘á»‹nh';
+                                                }
+                                                
+                                                // Dá»‹ch cÆ°á»ng Ä‘á»™ kinh nguyá»‡t
+                                                let flowText = '';
+                                                if (data.flow) {
+                                                    switch(data.flow) {
+                                                        case 'light':
+                                                            flowText = 'nháº¹';
+                                                            break;
+                                                        case 'medium':
+                                                            flowText = 'vá»«a';
+                                                            break;
+                                                        case 'heavy':
+                                                            flowText = 'náº·ng';
+                                                            break;
+                                                    }
+                                                }
+                                                
+                                                return (
+                                                    <div key={index} className="history-item">
+                                                        <div className="history-date">
+                                                            {new Date(data.date).toLocaleDateString()}
+                                                        </div>
+                                                        <div className="history-details">
+                                                            <div className="history-status">
+                                                                {statusText}
+                                                                {data.flow ? ` (má»©c Ä‘á»™ ${flowText})` : ''}
+                                                            </div>
+                                                            {data.symptoms.length > 0 && (
+                                                                <div className="history-symptoms">
+                                                                    Triá»‡u chá»©ng: {data.symptoms.join(', ')}
+                                                                </div>
+                                                            )}
+                                                            {data.notes && (
+                                                                <div className="history-notes">
+                                                                    Ghi chĂº: {data.notes}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="no-data-message">
+                                Báº¯t Ä‘áº§u theo dĂµi chu ká»³ cá»§a báº¡n Ä‘á»ƒ xem phĂ¢n tĂ­ch táº¡i Ä‘Ă¢y.
+                            </p>
+                        )}
+                    </div>
+                )}
+                
+                {activeTab === 'predictions' && (
+                    <div className="predictions-section">
+                        <h3>Dá»± ÄoĂ¡n Chu Ká»³</h3>
+                        {lastPeriodStart ? (
+                            <div className="predictions-content">
+                                <div className="next-periods">
+                                    <h4>Chu Ká»³ Sáº¯p Tá»›i</h4>
+                                    {getNextPeriods().map((period, index) => (
+                                        <div key={index} className="prediction-card period-prediction">
+                                            <div className="prediction-icon period-icon"></div>
+                                            <div className="prediction-details">
+                                                <div className="prediction-title">Chu ká»³ #{index + 1}</div>
+                                                <div className="prediction-dates">
+                                                    {period.start.toLocaleDateString()} - {period.end.toLocaleDateString()}
+                                                </div>
+                                                <div className="days-away">
+                                                    {Math.ceil((period.start.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} ngĂ y ná»¯a
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <div className="fertility-window">
+                                    <h4>Thá»i Ká»³ Dá»… Thá»¥ Thai</h4>
+                                    {getNextPeriods().map((period, index) => {
+                                        const ovulationDate = new Date(period.start)
+                                        ovulationDate.setDate(ovulationDate.getDate() - 14)
+                                        
+                                        const fertileStart = new Date(ovulationDate)
+                                        fertileStart.setDate(fertileStart.getDate() - 5)
+                                        
+                                        const fertileEnd = new Date(ovulationDate)
+                                        fertileEnd.setDate(fertileEnd.getDate() + 5)
+                                        
+                                        return (
+                                            <div key={index} className="prediction-card fertile-prediction">
+                                                <div className="prediction-icon fertile-icon"></div>
+                                                <div className="prediction-details">
+                                                    <div className="prediction-title">Thá»i ká»³ dá»… thá»¥ thai #{index + 1}</div>
+                                                    <div className="prediction-dates">
+                                                        {fertileStart.toLocaleDateString()} - {fertileEnd.toLocaleDateString()}
+                                                    </div>
+                                                    <div className="ovulation-date">
+                                                        Rá»¥ng trá»©ng khoáº£ng: {ovulationDate.toLocaleDateString()}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="no-data-message">
+                                Vui lĂ²ng thiáº¿t láº­p ngĂ y báº¯t Ä‘áº§u chu ká»³ gáº§n nháº¥t trong pháº§n CĂ i Äáº·t Ä‘á»ƒ xem dá»± Ä‘oĂ¡n.
+                            </p>
+                        )}
+                    </div>
+                )}
+                
+                {activeTab === 'settings' && (
+                    <div className="settings-section">
+                        <h3>CĂ i Äáº·t Theo DĂµi</h3>
+                        
+                        <div className="settings-form">
+                            <div className="form-group">
+                                <label>Äá»™ DĂ i Chu Ká»³ Trung BĂ¬nh (ngĂ y)</label>
+                                <input 
+                                    type="number" 
+                                    min="21" 
+                                    max="35"
+                                    value={cycleLength}
+                                    onChange={(e) => setCycleLength(parseInt(e.target.value))}
+                                    className="settings-input"
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>Thá»i Gian HĂ nh Kinh Trung BĂ¬nh (ngĂ y)</label>
+                                <input 
+                                    type="number" 
+                                    min="2" 
+                                    max="10"
+                                    value={periodLength}
+                                    onChange={(e) => setPeriodLength(parseInt(e.target.value))}
+                                    className="settings-input"
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>NgĂ y Báº¯t Äáº§u Chu Ká»³ Gáº§n Nháº¥t</label>
+                                <input 
+                                    type="date" 
+                                    value={lastPeriodStart ? lastPeriodStart.toISOString().split('T')[0] : ''}
+                                    onChange={(e) => setLastPeriodStart(new Date(e.target.value))}
+                                    className="settings-input"
+                                />
+                            </div>
+                            
+                            <button 
+                                className="save-settings-btn"
+                                onClick={() => {
+                                    localStorage.setItem('cycleLength', cycleLength.toString());
+                                    localStorage.setItem('periodLength', periodLength.toString());
+                                    if (lastPeriodStart) {
+                                        localStorage.setItem('lastPeriodStart', lastPeriodStart.toISOString());
+                                    }
+                                    alert('ÄĂ£ lÆ°u cĂ i Ä‘áº·t thĂ nh cĂ´ng!');
+                                }}
+                            >
+                                <FaSave /> LÆ°u CĂ i Äáº·t
+                            </button>
+                            
+                            <button 
+                                className="reset-data-btn"
+                                onClick={handleResetToSampleData}
+                                style={{
+                                    background: '#f87171',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    padding: '10px 20px',
+                                    marginTop: '20px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    cursor: 'pointer',
+                                    fontWeight: 'bold'
+                                }}
+                            >
+                                <FaTrash /> Äáº·t láº¡i dá»¯ liá»‡u máº«u
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+            
+            {showModal && selectedDate && (
+                <div className="cycle-modal-overlay">
+                    <div className={`cycle-modal ${cycleData.find(data => data.date.startsWith(selectedDate.toISOString().split('T')[0])) ? 'has-existing-data' : ''}`}>
+                        <div className="modal-header">
+                            <h3>Ghi Láº¡i Chu Ká»³</h3>
+                            <button className="close-btn" onClick={handleCloseModal}>
+                                <FaTimes />
+                            </button>
+                        </div>
+                        
+                        <div className="modal-date">
+                            {selectedDate.toLocaleDateString(undefined, { 
+                                weekday: 'long', 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                            })}
+                            {cycleData.find(data => data.date.startsWith(selectedDate.toISOString().split('T')[0])) && 
+                                <div className="existing-data-badge">Dá»¯ liá»‡u Ä‘Ă£ ghi</div>
+                            }
+                        </div>
+                        
+                        <div className="modal-content">
+                            <div className="status-selector">
+                                <h4>Chá»n Tráº¡ng ThĂ¡i:</h4>
+                                <div className="status-options">
+                                    <button 
+                                        className={`status-btn period-btn ${currentData.status === 'period' ? 'active' : ''}`}
+                                        onClick={() => setCurrentData({...currentData, status: 'period'})}
+                                    >
+                                        <FaTint className="status-icon" />
+                                        <span className="status-text">Kinh Nguyá»‡t</span>
+                                    </button>
+                                    <button 
+                                        className={`status-btn fertile-btn ${currentData.status === 'fertile' ? 'active' : ''}`}
+                                        onClick={() => setCurrentData({...currentData, status: 'fertile'})}
+                                    >
+                                        <FaSeedling className="status-icon" />
+                                        <span className="status-text">Dá»… Thá»¥ Thai</span>
+                                    </button>
+                                    <button 
+                                        className={`status-btn ovulation-btn ${currentData.status === 'ovulation' ? 'active' : ''}`}
+                                        onClick={() => setCurrentData({...currentData, status: 'ovulation'})}
+                                    >
+                                        <FaHeart className="status-icon" />
+                                        <span className="status-text">Rá»¥ng Trá»©ng</span>
+                                    </button>
+                                    <button 
+                                        className={`status-btn none-btn ${currentData.status === 'none' ? 'active' : ''}`}
+                                        onClick={() => setCurrentData({...currentData, status: 'none'})}
+                                    >
+                                        <FaBan className="status-icon" />
+                                        <span className="status-text">KhĂ´ng</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            {currentData.status === 'period' && (
+                                <div className="flow-selector">
+                                    <h4>Má»©c Äá»™:</h4>
+                                    <div className="flow-options">
+                                        <button 
+                                            className={`flow-btn light ${currentData.flow === 'light' ? 'active' : ''}`}
+                                            onClick={() => setCurrentData({...currentData, flow: 'light'})}
+                                        >
+                                            Nháº¹
+                                        </button>
+                                        <button 
+                                            className={`flow-btn medium ${currentData.flow === 'medium' ? 'active' : ''}`}
+                                            onClick={() => setCurrentData({...currentData, flow: 'medium'})}
+                                        >
+                                            Vá»«a
+                                        </button>
+                                        <button 
+                                            className={`flow-btn heavy ${currentData.flow === 'heavy' ? 'active' : ''}`}
+                                            onClick={() => setCurrentData({...currentData, flow: 'heavy'})}
+                                        >
+                                            Náº·ng
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            <div className="symptoms-selector">
+                                <h4>Triá»‡u Chá»©ng:</h4>
+                                <div className="symptoms-grid">
+                                    {commonSymptoms.map((symptom, index) => (
+                                        <div 
+                                            key={index}
+                                            className={`symptom-item ${currentData.symptoms.includes(symptom) ? 'active' : ''}`}
+                                            onClick={() => toggleSymptom(symptom)}
+                                        >
+                                            {currentData.symptoms.includes(symptom) ? <FaCheckCircle /> : <FaRegCircle />}
+                                            <span>{symptom}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            <div className="notes-input">
+                                <h4>Ghi ChĂº:</h4>
+                                <textarea
+                                    value={currentData.notes}
+                                    onChange={(e) => setCurrentData({...currentData, notes: e.target.value})}
+                                    placeholder="ThĂªm ghi chĂº á»Ÿ Ä‘Ă¢y..."
+                                    rows={3}
+                                />
+                            </div>
+                        </div>
+                        
+                        <div className="modal-footer">
+                            {cycleData.find(data => data.date.startsWith(selectedDate.toISOString().split('T')[0])) && (
+                                <button className="delete-btn" onClick={handleDeleteData}>
+                                    <FaTrash /> XĂ³a
+                                </button>
+                            )}
+                            <button className="cancel-btn" onClick={handleCloseModal}>ÄĂ³ng</button>
+                            <button className="save-btn" onClick={handleSave}>LÆ°u</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
+
+export default CycleTracker;

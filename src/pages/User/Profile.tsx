@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaUserCircle, FaCheckCircle, FaTimesCircle, FaClock, FaEnvelope, FaPhone, FaBirthdayCake, FaMapMarkerAlt, FaUser, FaVial, FaMoneyBillWave, FaBan } from 'react-icons/fa';
+import { FaUserCircle, FaCheckCircle, FaTimesCircle, FaClock, FaEnvelope, FaPhone, FaBirthdayCake, FaMapMarkerAlt, FaUser, FaVial, FaMoneyBillWave, FaBan, FaEllipsisV, FaInfoCircle, FaRegStickyNote, FaCheck } from 'react-icons/fa';
 
 import { userAPI, appointmentAPI, serviceAPI, getAppointmentPaymentUrl, changeAppointmentStatus } from '../../utils/api';
 import type { UserData } from '../../types';
-import type { AppointmentData } from '../../utils/api';
+import type { AppointmentData as BaseAppointmentData } from '../../utils/api';
+
+// Extended AppointmentData type with showActionMenu property
+type AppointmentData = BaseAppointmentData & {
+  showActionMenu?: boolean;
+};
 import { format } from 'date-fns';
 import CancelAppointmentModal from '../../components/CancelAppointmentModal';
 
@@ -266,7 +271,7 @@ const Profile = () => {
           console.log("✅ Reloaded appointments response:", appointmentsResponse);
           
           if (appointmentsResponse.statusCode === 200 && appointmentsResponse.data) {
-            setAppointments(appointmentsResponse.data);
+            setAppointments(appointmentsResponse.data.map(app => ({ ...app, showActionMenu: false })));
             console.log('✅ Successfully set appointments:', appointmentsResponse.data);
           } else {
             console.warn('⚠️ Response not successful or no data:', appointmentsResponse);
@@ -319,7 +324,7 @@ const Profile = () => {
               console.log("📦 Response data:", appointmentsResponse.data);
               
               if (appointmentsResponse.statusCode === 200 && appointmentsResponse.data) {
-                setAppointments(appointmentsResponse.data);
+                setAppointments(appointmentsResponse.data.map(app => ({ ...app, showActionMenu: false })));
                 console.log('✅ Successfully loaded appointments:', appointmentsResponse.data.length, 'appointments');
               } else {
                 console.warn("⚠️ API response indicates no data or error");
@@ -357,6 +362,24 @@ const Profile = () => {
     };
 
     fetchUserData();
+  }, []);
+  
+  // Handle click outside dropdown menu to close it
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setAppointments(prevAppointments => 
+        prevAppointments.map(app => ({
+          ...app,
+          showActionMenu: false
+        }))
+      );
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -402,6 +425,11 @@ const Profile = () => {
   // State for cancel appointment modal
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
+  
+  // State for appointment details modal
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [appointmentDetails, setAppointmentDetails] = useState<AppointmentData | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
 
   // Utility function to check if an appointment already has test services
   const hasTestServices = (appointment: AppointmentData): boolean => {
@@ -670,6 +698,36 @@ const Profile = () => {
     return result;
   };
   
+  // Function to handle showing appointment details modal
+  const handleViewDetails = async (appointment: AppointmentData) => {
+    try {
+      setDetailsLoading(true);
+      setSelectedAppointment(appointment);
+      
+      // Make API call to get detailed appointment information
+      // Using the endpoint from the screenshot: /api/appointment/GetAppointmentByID/{id}
+      const appointmentId = appointment.appointmentID;
+      console.log(`📡 Fetching appointment details for ID: ${appointmentId}`);
+      
+      // Assuming there's a method in the appointmentAPI service for this
+      const response = await appointmentAPI.getAppointmentById(appointmentId);
+      
+      console.log('📋 Appointment details response:', response);
+      
+      if (response.statusCode === 200 && response.data) {
+        setAppointmentDetails(response.data);
+        setShowDetailsModal(true);
+      } else {
+        setErrorMessage(`Không thể lấy thông tin chi tiết cuộc hẹn: ${response.message || 'Lỗi không xác định'}`);
+      }
+    } catch (error) {
+      console.error('Error fetching appointment details:', error);
+      setErrorMessage('Có lỗi xảy ra khi tải thông tin chi tiết cuộc hẹn.');
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
+  
   // Function to handle showing cancel confirmation modal
   const handleShowCancelModal = (appointment: AppointmentData) => {
     setSelectedAppointment(appointment);
@@ -884,6 +942,145 @@ const Profile = () => {
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 8, flexDirection: 'column', alignItems: 'flex-end' }}>
+                        {/* Three dots menu for actions */}
+                        <div style={{ position: 'relative' }}>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent document click handler from firing
+                              // Toggle dropdown for this appointment
+                              setAppointments(prevAppointments => 
+                                prevAppointments.map(app => ({
+                                  ...app,
+                                  showActionMenu: app.appointmentID === appointment.appointmentID 
+                                    ? !app.showActionMenu 
+                                    : false
+                                }))
+                              );
+                            }}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              fontSize: 20,
+                              padding: '4px 8px',
+                              borderRadius: '50%',
+                              color: '#4b5563',
+                              marginBottom: 8,
+                              marginLeft: 'auto',
+                              display: 'block'
+                            }}
+                            aria-label="Tùy chọn"
+                          >
+                            <FaEllipsisV />
+                          </button>
+                          
+                          {/* Dropdown menu */}
+                          {appointment.showActionMenu && (
+                            <div 
+                              style={{
+                                position: 'absolute',
+                                right: 0,
+                                top: '100%',
+                                background: 'white',
+                                borderRadius: 8,
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                zIndex: 10,
+                                width: 220,
+                                overflow: 'hidden'
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {/* View Details option - always available */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleViewDetails(appointment);
+                                }}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 10,
+                                  padding: '12px 16px',
+                                  width: '100%',
+                                  textAlign: 'left',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  borderBottom: '1px solid #e5e7eb',
+                                  cursor: 'pointer',
+                                  color: '#2563eb',
+                                  fontWeight: 500,
+                                  fontSize: 14,
+                                  transition: 'background-color 0.2s'
+                                }}
+                                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                              >
+                                <FaInfoCircle style={{ fontSize: 16 }} /> Xem chi tiết
+                              </button>
+                              
+                              {/* Cancel appointment option - only show if status is 0, 1, 3 AND payment status is 2 */}
+                              {(appointment.status === 0 || appointment.status === 1 || appointment.status === 3) && 
+                               appointment.paymentStatus === 2 && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleShowCancelModal(appointment);
+                                  }}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 10,
+                                    padding: '12px 16px',
+                                    width: '100%',
+                                    textAlign: 'left',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    borderBottom: '1px solid #e5e7eb',
+                                    cursor: 'pointer',
+                                    color: '#ef4444',
+                                    fontWeight: 500,
+                                    fontSize: 14,
+                                    transition: 'background-color 0.2s'
+                                  }}
+                                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                >
+                                  <FaBan style={{ fontSize: 16 }} /> Hủy cuộc hẹn
+                                </button>
+                              )}
+                              
+                              {/* STI Test option - only show if status is 3 AND appointment is consultation only */}
+                              {appointment.status === 3 && checkIfConsultationType(appointment) && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleShowSTIModal(appointment);
+                                  }}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 10,
+                                    padding: '12px 16px',
+                                    width: '100%',
+                                    textAlign: 'left',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: '#8b5cf6',
+                                    fontWeight: 500,
+                                    fontSize: 14,
+                                    transition: 'background-color 0.2s'
+                                  }}
+                                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                >
+                                  <FaVial style={{ fontSize: 16 }} /> Đăng ký xét nghiệm STIs
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        
                         <AppointmentStatusBadge status={appointment.status || 0} />
                         <PaymentStatusBadge status={appointment.paymentStatus || 0} />
                         {/* For now, let's determine type based on services - assume test services have "test" or "xét nghiệm" in the name */}
@@ -996,83 +1193,7 @@ const Profile = () => {
                       </div>
                     </div>
                     
-                    {/* Add buttons based on appointment status */}
-                    <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center', gap: 16 }}>
-                      {/* Add button for STI Test if status is 3 (RequireSTIsTest) AND appointment is ONLY consultation type (0) */}
-                      {(() => {
-                        // Check if the button should be displayed and log reasoning
-                        const isStatus3 = appointment.status === 3;
-                        const isConsultationOnly = checkIfConsultationType(appointment);
-                        
-                        console.log(`🔍 Button check for appointment ${appointment.appointmentID}: 
-                          Status is 3: ${isStatus3}
-                          Is consultation only: ${isConsultationOnly}
-                          Should show button: ${isStatus3 && isConsultationOnly}
-                        `);
-                        
-                        return isStatus3 && isConsultationOnly ? (
-                          <button
-                            onClick={() => handleShowSTIModal(appointment)}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 8,
-                              background: '#8b5cf6',
-                              color: '#fff',
-                              border: 'none',
-                              borderRadius: 8,
-                              padding: '10px 16px',
-                              fontWeight: 600,
-                              fontSize: 14,
-                              cursor: 'pointer',
-                              transition: 'all 0.2s',
-                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                            }}
-                          >
-                            <FaVial /> Đăng ký xét nghiệm STIs
-                          </button>
-                        ) : null;
-                      })()}
-                      
-                      {/* Add button for canceling appointment if status is 0, 1, 3 AND payment status is 2 */}
-                      {(() => {
-                        // Check if the cancel button should be displayed
-                        const canCancel = 
-                          // Status conditions (0: Chờ xác nhận, 1: Đã xác nhận, 3: Yêu cầu xét nghiệm STIs)
-                          (appointment.status === 0 || appointment.status === 1 || appointment.status === 3) && 
-                          // Payment status condition (2: Đã thanh toán)
-                          appointment.paymentStatus === 2;
-                        
-                        console.log(`🔍 Cancel button check for appointment ${appointment.appointmentID}: 
-                          Status: ${appointment.status} (${getStatusText(appointment.status)})
-                          Payment status: ${appointment.paymentStatus} (${getPaymentStatusText(appointment.paymentStatus)})
-                          Can cancel: ${canCancel}
-                        `);
-                        
-                        return canCancel ? (
-                          <button
-                            onClick={() => handleShowCancelModal(appointment)}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 8,
-                              background: '#ef4444',
-                              color: '#fff',
-                              border: 'none',
-                              borderRadius: 8,
-                              padding: '10px 16px',
-                              fontWeight: 600,
-                              fontSize: 14,
-                              cursor: 'pointer',
-                              transition: 'all 0.2s',
-                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                            }}
-                          >
-                            <FaBan /> Hủy cuộc hẹn
-                          </button>
-                        ) : null;
-                      })()}
-                    </div>
+                    {/* Buttons section removed - actions moved to dropdown menu */}
                   </div>
                 ))}
               </div>
@@ -1521,6 +1642,484 @@ const Profile = () => {
           onConfirm={handleCancelAppointment}
           isLoading={cancelLoading}
         />
+      )}
+      
+      {/* Appointment Details Modal - Redesigned based on the screenshot */}
+      {showDetailsModal && appointmentDetails && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div 
+            style={{
+              backgroundColor: 'white',
+              borderRadius: 12,
+              width: '95%',
+              maxWidth: 650,
+              maxHeight: '85vh',
+              overflow: 'hidden',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
+              display: 'flex',
+              flexDirection: 'column',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button - absolute positioned */}
+            <button
+              onClick={() => setShowDetailsModal(false)}
+              style={{
+                position: 'absolute',
+                top: 10,
+                right: 10,
+                background: '#f1f5f9',
+                border: 'none',
+                borderRadius: '50%',
+                width: 28,
+                height: 28,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 16,
+                cursor: 'pointer',
+                zIndex: 2
+              }}
+              aria-label="Đóng"
+            >
+              ×
+            </button>
+            
+            {/* Header - Improved */}
+            <div style={{
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              padding: '14px 22px',
+              display: 'flex',
+              alignItems: 'center',
+              boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)'
+            }}>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600, letterSpacing: '0.3px' }}>Chi tiết cuộc hẹn</h2>
+            </div>
+            
+            {/* Content - with improved scrollable area */}
+            <div style={{
+              padding: '0',
+              overflowY: 'auto',
+              maxHeight: 'calc(85vh - 110px)',
+              scrollBehavior: 'smooth'
+            }}>
+              {detailsLoading ? (
+                <div style={{ textAlign: 'center', padding: '30px 20px' }}>
+                  <div style={{ fontSize: 16, color: '#6b7280', marginBottom: 10 }}>Đang tải thông tin...</div>
+                </div>
+              ) : (
+                <div>
+                  {/* Main appointment info section */}
+                  <div style={{ padding: '15px 20px', borderBottom: '1px solid #e5e7eb' }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      marginBottom: 8
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ 
+                          backgroundColor: '#3b82f6', 
+                          width: 24, 
+                          height: 24, 
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontSize: 12,
+                          fontWeight: 'bold'
+                        }}>
+                          <FaClock style={{ fontSize: 12 }} />
+                        </div>
+                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#1f2937' }}>Thời gian</h3>
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginLeft: 34 }}>
+                      <div style={{ fontSize: 14 }}>
+                        <span style={{ color: '#6b7280', marginRight: 8 }}>Ngày hẹn:</span>
+                        <span style={{ color: '#1f2937', fontWeight: 500 }}>
+                          {appointmentDetails.appointmentDate ? formatDate(appointmentDetails.appointmentDate) : 'Chưa xác định'}
+                        </span>
+                      </div>
+                      {appointmentDetails.slot && (
+                        <div style={{ fontSize: 14 }}>
+                          <span style={{ color: '#6b7280', marginRight: 8 }}>Giờ hẹn:</span>
+                          <span style={{ color: '#1f2937', fontWeight: 500 }}>
+                            {formatTime(appointmentDetails.slot.startTime)} - {formatTime(appointmentDetails.slot.endTime)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Customer information section */}
+                  {appointmentDetails.customer && (
+                    <div style={{ padding: '15px 20px', borderBottom: '1px solid #e5e7eb' }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        marginBottom: 8
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ 
+                            backgroundColor: '#4f46e5', 
+                            width: 24, 
+                            height: 24, 
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            fontSize: 12,
+                            fontWeight: 'bold'
+                          }}>
+                            <FaUser style={{ fontSize: 12 }} />
+                          </div>
+                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#1f2937' }}>Thông tin khách hàng</h3>
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginLeft: 34 }}>
+                        <div style={{ fontSize: 14 }}>
+                          <span style={{ color: '#6b7280', marginRight: 8 }}>Tên:</span>
+                          <span style={{ color: '#1f2937', fontWeight: 500 }}>{appointmentDetails.customer.name}</span>
+                        </div>
+                        <div style={{ fontSize: 14 }}>
+                          <span style={{ color: '#6b7280', marginRight: 8 }}>Số điện thoại:</span>
+                          <span style={{ color: '#1f2937', fontWeight: 500 }}>{appointmentDetails.customer.phone}</span>
+                        </div>
+                        {appointmentDetails.customer.dateOfBirth && (
+                          <div style={{ fontSize: 14 }}>
+                            <span style={{ color: '#6b7280', marginRight: 8 }}>Ngày sinh:</span>
+                            <span style={{ color: '#1f2937', fontWeight: 500 }}>{formatDate(appointmentDetails.customer.dateOfBirth)}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Payment information section */}
+                  <div style={{ padding: '15px 20px', borderBottom: '1px solid #e5e7eb' }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      marginBottom: 8
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ 
+                          backgroundColor: '#10b981', 
+                          width: 24, 
+                          height: 24, 
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontSize: 12,
+                          fontWeight: 'bold'
+                        }}>
+                          <FaMoneyBillWave style={{ fontSize: 12 }} />
+                        </div>
+                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#1f2937' }}>Thông tin thanh toán</h3>
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginLeft: 34 }}>
+                      <div style={{ fontSize: 14 }}>
+                        <span style={{ color: '#6b7280', marginRight: 8 }}>Tổng tiền:</span>
+                        <span style={{ color: '#10b981', fontWeight: 600 }}>{appointmentDetails.totalAmount?.toLocaleString('vi-VN')} VNĐ</span>
+                      </div>
+                      <div style={{ fontSize: 14 }}>
+                        <span style={{ color: '#6b7280', marginRight: 8 }}>Trạng thái:</span>
+                        <PaymentStatusBadge status={appointmentDetails.paymentStatus || 0} />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Appointment Status section - Enhanced with more visual clarity */}
+                  <div style={{ padding: '15px 20px', borderBottom: '1px solid #e5e7eb' }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      marginBottom: 8
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ 
+                          backgroundColor: statusColor(appointmentDetails.status || 0), 
+                          width: 24, 
+                          height: 24, 
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontSize: 12,
+                          fontWeight: 'bold'
+                        }}>
+                          {statusIcon(appointmentDetails.status || 0)}
+                        </div>
+                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#1f2937' }}>Trạng thái cuộc hẹn</h3>
+                      </div>
+                    </div>
+                    
+                    <div style={{ marginLeft: 34 }}>
+                      <div style={{ fontSize: 14, marginBottom: 12 }}>
+                        <span style={{ color: '#6b7280', marginRight: 8 }}>Mã lịch hẹn:</span>
+                        <span style={{ color: '#1f2937', fontWeight: 500, backgroundColor: '#f9fafb', padding: '3px 8px', borderRadius: 4 }}>
+                          {appointmentDetails.appointmentID}
+                        </span>
+                      </div>
+                      
+                      <div style={{ fontSize: 14, marginBottom: 12 }}>
+                        <span style={{ color: '#6b7280', marginRight: 8 }}>Ngày tạo:</span>
+                        <span style={{ color: '#1f2937', fontWeight: 500 }}>
+                          {appointmentDetails.createAt ? formatDate(appointmentDetails.createAt) : 'N/A'}
+                        </span>
+                      </div>
+                      
+                      <div style={{ 
+                        padding: '12px', 
+                        backgroundColor: statusColor(appointmentDetails.status || 0) + '10', 
+                        borderRadius: '8px',
+                        borderLeft: `4px solid ${statusColor(appointmentDetails.status || 0)}`,
+                        marginBottom: 10
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                          {statusIcon(appointmentDetails.status || 0)}
+                          <span style={{ color: statusColor(appointmentDetails.status || 0), fontWeight: 600, fontSize: 15 }}>
+                            {getStatusText(appointmentDetails.status || 0)}
+                          </span>
+                        </div>
+                        
+                        <div style={{ fontSize: 13, color: '#4b5563', marginLeft: 26 }}>
+                          {appointmentDetails.status === 0 && 'Cuộc hẹn đang đợi xác nhận từ phòng khám'}
+                          {appointmentDetails.status === 1 && 'Phòng khám đã xác nhận cuộc hẹn của bạn'}
+                          {appointmentDetails.status === 2 && 'Dịch vụ đang được thực hiện'}
+                          {appointmentDetails.status === 3 && 'Cuộc hẹn đã hoàn thành thành công'}
+                          {appointmentDetails.status === 4 && 'Cuộc hẹn đã bị hủy'}
+                          {appointmentDetails.status === 5 && 'Phòng khám đã từ chối cuộc hẹn'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Services section - Enhanced with more details */}
+                  <div style={{ padding: '15px 20px', borderBottom: '1px solid #e5e7eb' }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      marginBottom: 8
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ 
+                          backgroundColor: '#8b5cf6', 
+                          width: 24, 
+                          height: 24, 
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontSize: 12,
+                          fontWeight: 'bold'
+                        }}>
+                          <FaVial style={{ fontSize: 12 }} />
+                        </div>
+                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#1f2937' }}>Dịch vụ</h3>
+                      </div>
+                    </div>
+                    
+                    <div style={{ marginLeft: 34 }}>
+                      {appointmentDetails.appointmentDetails && appointmentDetails.appointmentDetails.length > 0 ? (
+                        <>
+                          <div style={{ fontSize: 14, color: '#4b5563', marginBottom: 8 }}>
+                            Tổng số dịch vụ: <strong>{appointmentDetails.appointmentDetails.length}</strong>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {appointmentDetails.appointmentDetails.map((detail, idx) => {
+                              // Determine service type for visual styling
+                              let serviceType = "unknown";
+                              let serviceColor = "#6b7280";
+                              
+                              if (detail && detail.service && detail.service.servicesName) {
+                                const name = detail.service.servicesName.toLowerCase();
+                                const serviceObj = detail.service as any;
+                                
+                                if (serviceObj.serviceType === 1 || 
+                                    serviceObj.type === 1 ||
+                                    name.includes('xét nghiệm') || 
+                                    name.includes('test') ||
+                                    name.includes('sti')) {
+                                  serviceType = "test";
+                                  serviceColor = "#8b5cf6"; // Purple for test services
+                                } else if (serviceObj.serviceType === 0 || 
+                                          serviceObj.type === 0 ||
+                                          name.includes('tư vấn') || 
+                                          name.includes('consultation')) {
+                                  serviceType = "consultation";
+                                  serviceColor = "#3b82f6"; // Blue for consultation
+                                }
+                              }
+                              
+                              return (
+                                <div key={idx} style={{ 
+                                  padding: '10px 12px',
+                                  backgroundColor: '#f9fafb',
+                                  borderRadius: 6,
+                                  border: `1px solid ${serviceColor}20`,
+                                  fontSize: 14
+                                }}>
+                                  <div style={{ 
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    marginBottom: 6
+                                  }}>
+                                    <div style={{ 
+                                      color: serviceColor, 
+                                      fontWeight: 600, 
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 6
+                                    }}>
+                                      {serviceType === "test" ? <FaVial size={12} /> : <FaUserCircle size={12} />}
+                                      {detail.service?.servicesName || 'Không có thông tin'}
+                                    </div>
+                                    <div style={{ 
+                                      fontWeight: 600, 
+                                      color: '#059669',
+                                      backgroundColor: '#f0fdf4',
+                                      padding: '2px 8px',
+                                      borderRadius: 4
+                                    }}>
+                                      {(detail.servicePrice || detail.totalPrice || (detail.service && detail.service.servicesPrice) || 0).toLocaleString('vi-VN')} VNĐ
+                                    </div>
+                                  </div>
+                                  
+                                  {detail.service?.description && (
+                                    <div style={{ 
+                                      fontSize: 13, 
+                                      color: '#6b7280',
+                                      borderTop: '1px dashed #e5e7eb',
+                                      paddingTop: 6,
+                                      marginTop: 4
+                                    }}>
+                                      {detail.service.description}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{ 
+                          padding: '10px', 
+                          backgroundColor: '#f9fafb', 
+                          borderRadius: 6, 
+                          color: '#6b7280',
+                          fontStyle: 'italic',
+                          fontSize: 14
+                        }}>
+                          Không có thông tin dịch vụ
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Appointment Created Date section - Simplified */}
+                  <div style={{ padding: '15px 20px' }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      marginBottom: 8
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ 
+                          backgroundColor: '#3b82f6', 
+                          width: 24, 
+                          height: 24, 
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontSize: 12,
+                          fontWeight: 'bold'
+                        }}>
+                          <FaInfoCircle style={{ fontSize: 12 }} />
+                        </div>
+                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#1f2937' }}>Thông tin đặt lịch</h3>
+                      </div>
+                    </div>
+                    
+                    <div style={{ 
+                      marginLeft: 34,
+                      padding: '12px 15px',
+                      backgroundColor: '#eff6ff',
+                      borderRadius: 8,
+                      border: '1px solid #dbeafe'
+                    }}>
+                      <div style={{ fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <FaCheck style={{ color: '#3b82f6', fontSize: 12 }} />
+                        <span>Đặt hẹn thành công ngày {formatDate(appointmentDetails.createAt || '')}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Footer with improved close button */}
+            <div style={{
+              borderTop: '1px solid #e5e7eb',
+              padding: '16px 22px',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              backgroundColor: '#f9fafb'
+            }}>
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                style={{
+                  padding: '10px 24px',
+                  border: 'none',
+                  borderRadius: 8,
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  fontSize: 15,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 5px rgba(59, 130, 246, 0.3)',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       
       {/* Success Modal for STI Test Registration */}
