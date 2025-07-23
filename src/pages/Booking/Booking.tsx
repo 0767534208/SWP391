@@ -215,18 +215,20 @@ const Booking = () => {
           // We can ignore storing categories since they're not being used
           // Note: We've removed the consultantCategory lookup since it's not being used
           
-          // Map API data to UI format
-          const mappedServices: ServiceUI[] = serviceResponse.data.map((service: ServiceData) => ({
-            id: service.servicesID,
-            name: service.servicesName,
-            // Chỉ hiển thị giá cho dịch vụ xét nghiệm (serviceType=1), không hiển thị cho dịch vụ tư vấn (serviceType=0)
-            price: service.serviceType === 1 ? formatPrice(service.servicesPrice) : "",
-            // A service requires consultant if serviceType is not 1
-            requiresConsultant: service.serviceType !== 1, // Type 1 = test service (no consultant needed)
-            description: service.description,
-            // Không truyền imageUrl vào để không hiển thị ảnh trong booking
-            imageUrl: undefined
-          }));
+          // Map API data to UI format - chỉ lấy các dịch vụ có status = true
+          const mappedServices: ServiceUI[] = serviceResponse.data
+            .filter((service: ServiceData) => service.status === true) // Chỉ lấy dịch vụ đang hoạt động
+            .map((service: ServiceData) => ({
+              id: service.servicesID,
+              name: service.servicesName,
+              // Chỉ hiển thị giá cho dịch vụ xét nghiệm (serviceType=1), không hiển thị cho dịch vụ tư vấn (serviceType=0)
+              price: service.serviceType === 1 ? formatPrice(service.servicesPrice) : "",
+              // A service requires consultant if serviceType is not 1
+              requiresConsultant: service.serviceType !== 1, // Type 1 = test service (no consultant needed)
+              description: service.description,
+              // Không truyền imageUrl vào để không hiển thị ảnh trong booking
+              imageUrl: undefined
+            }));
           setServices(mappedServices);
         } else {
           setError('Failed to fetch data');

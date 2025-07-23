@@ -79,8 +79,10 @@ const Services = () => {
                           service.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = filterCategory === 'all' || 
                            service.categoryID.toString() === filterCategory;
+    // Chỉ hiển thị các dịch vụ có status = true (đang hoạt động)
+    const isActive = service.status === true;
     
-    return matchesSearch && matchesCategory;
+    return matchesSearch && matchesCategory && isActive;
   });
 
   // Get category name by ID

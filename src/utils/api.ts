@@ -636,31 +636,34 @@ export const serviceAPI = {
    * @param serviceData - Thông tin dịch vụ
    */
   createService: async (serviceData: any): Promise<ApiResponse<any>> => {
-    // Tạo query parameters từ serviceData (theo swagger spec)
-    const queryParams = new URLSearchParams();
-    
-    if (serviceData.ClinicID) queryParams.append('ClinicID', serviceData.ClinicID.toString());
-    if (serviceData.CategoryID) queryParams.append('CategoryID', serviceData.CategoryID.toString());
-    if (serviceData.ManagerID) queryParams.append('ManagerID', serviceData.ManagerID);
-    if (serviceData.ServicesName) queryParams.append('ServicesName', serviceData.ServicesName);
-    if (serviceData.Description) queryParams.append('Description', serviceData.Description);
-    if (serviceData.ServicesPrice) queryParams.append('ServicesPrice', serviceData.ServicesPrice.toString());
-    if (serviceData.ServiceType !== undefined) queryParams.append('ServiceType', serviceData.ServiceType.toString());
-    if (serviceData.Status !== undefined) queryParams.append('Status', serviceData.Status.toString());
-    
-    // Tạo URL với query parameters
-    const url = `/api/Service/CreateService?${queryParams.toString()}`;
-    
-    // Tạo FormData cho multipart/form-data (theo swagger spec)
+    // Tạo FormData cho multipart/form-data request
     const formData = new FormData();
     
-    // Thêm hình ảnh vào formData nếu có
+    // Thêm tất cả các fields vào FormData (tất cả đều required)
+    formData.append('ClinicID', serviceData.ClinicID.toString());
+    formData.append('CategoryID', serviceData.CategoryID.toString());
+    formData.append('ManagerID', serviceData.ManagerID);
+    formData.append('ServicesName', serviceData.ServicesName);
+    formData.append('Description', serviceData.Description);
+    formData.append('ServiceType', serviceData.ServiceType.toString());
+    formData.append('Status', serviceData.Status.toString());
+    
+    // Chỉ thêm ServicesPrice nếu ServiceType không phải là Consultation (0)
+    if (serviceData.ServiceType !== 0 && serviceData.ServicesPrice !== undefined) {
+      formData.append('ServicesPrice', serviceData.ServicesPrice.toString());
+    }
+    
+    // Thêm hình ảnh vào formData
     if (serviceData.Images && serviceData.Images.length > 0) {
       for (const image of serviceData.Images) {
         if (image instanceof File || image instanceof Blob) {
           formData.append('Images', image);
         }
       }
+    } else {
+      // Nếu không có images, tạo một file trống để tránh lỗi validation
+      const emptyFile = new File([''], 'placeholder.txt', { type: 'text/plain' });
+      formData.append('Images', emptyFile);
     }
     
     const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
@@ -669,14 +672,45 @@ export const serviceAPI = {
       headers['Authorization'] = `Bearer ${token}`;
     }
     
-    // Gửi request với multipart/form-data
-    const response = await fetch(`${API.BASE_URL}${url}`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
+    console.log('📦 FormData contents:');
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(`  ${key}: File(${value.name}, ${value.size} bytes)`);
+      } else {
+        console.log(`  ${key}: ${value}`);
+      }
+    }
     
-    return handleResponse<any>(response);
+    try {
+      // Gửi request với multipart/form-data
+      const response = await fetch(`${API.BASE_URL}/api/Service/CreateService`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        // Log chi tiết lỗi để debug
+        const errorText = await response.text();
+        console.error('❌ CreateService API Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText
+        });
+        
+        // Nếu là lỗi foreign key constraint, trả về lỗi có ý nghĩa
+        if (errorText.includes('FK_Services_AspNetUsers_ManagerID')) {
+          throw new Error('Không có quyền tạo dịch vụ. Vui lòng liên hệ admin để được cấp quyền Manager.');
+        }
+        
+        throw new Error(`API error: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('❌ CreateService Error:', error);
+      throw error;
+    }
   },
 
   /**
@@ -701,7 +735,9 @@ export const serviceAPI = {
     console.log('UpdateService payload:', updateData);
     
     return apiRequest<any>(`/api/Service/UpdateService?serviceID=${serviceId}`, 'PUT', updateData);
-  }
+  },
+
+
 };
 
 // Cycle Prediction API endpoints (Dự đoán chu kỳ kinh nguyệt)
@@ -1143,6 +1179,14 @@ export const slotAPI = {
   },
 
   /**
+   * Lấy slot theo ID
+   * @param slotId - ID của slot
+   */
+  getSlotById: async (slotId: number): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/slot/${slotId}`, 'GET');
+  },
+
+  /**
    * Tạo slot mới
    * @param slotData - Thông tin slot
    */
@@ -1169,6 +1213,17 @@ export const slotAPI = {
    */
   deleteSlot: async (slotId: string): Promise<ApiResponse<any>> => {
     return apiRequest<any>(`/api/slot/${slotId}`, 'DELETE');
+  },
+
+  /**
+   * Tìm kiếm slot theo keyword
+   * Endpoint: GET /api/slot/search
+   * @param keyword - Từ khóa tìm kiếm
+   */
+  searchSlots: async (keyword?: string): Promise<ApiResponse<any[]>> => {
+    let url = '/api/slot/search';
+    if (keyword) url += `?keyword=${encodeURIComponent(keyword)}`;
+    return apiRequest<any[]>(url, 'GET');
   }
 };
 
@@ -1367,6 +1422,15 @@ export const consultantSlotAPI = {
   },
 
   /**
+   * Lấy tất cả consultant trong một slot
+   * Endpoint: GET /api/consultantSlot/slot/{slotId}
+   * @param slotId - ID của slot
+   */
+  getSlotConsultants: async (slotId: number): Promise<ApiResponse<any[]>> => {
+    return apiRequest<any[]>(`/api/consultantSlot/slot/${slotId}`, 'GET');
+  },
+
+  /**
    * Đăng ký slot cho consultant
    * @param slotId - ID của slot
    * @param maxAppointment - Số lượng appointment tối đa
@@ -1382,13 +1446,69 @@ export const consultantSlotAPI = {
   unregisterSlot: async (slotId: string): Promise<ApiResponse<any>> => {
     return apiRequest<any>(`/api/consultantSlot/unregister?id=${slotId}`, 'DELETE');
   },
+
+  /**
+   * Tìm kiếm slot theo keyword và ngày
+   * Endpoint: GET /api/consultantSlot/search
+   * @param keyword - Từ khóa tìm kiếm
+   * @param date - Ngày tìm kiếm (optional)
+   */
+  searchSlots: async (keyword?: string, date?: string): Promise<ApiResponse<any[]>> => {
+    let url = '/api/consultantSlot/search';
+    const params = new URLSearchParams();
+    if (keyword) params.append('keyword', keyword);
+    if (date) params.append('date', date);
+    if (params.toString()) url += `?${params.toString()}`;
+    return apiRequest<any[]>(url, 'GET');
+  },
+
+  /**
+   * Tạo consultant profile
+   * Endpoint: POST /api/consultantSlot/CreateConsultantProfile
+   * @param profileData - Dữ liệu profile
+   */
+  createConsultantProfile: async (profileData: {
+    accountID: string;
+    description: string;
+    specialty: string;
+    experience: string;
+    consultantPrice: number;
+  }): Promise<ApiResponse<any>> => {
+    return apiRequest<any>('/api/consultantSlot/CreateConsultantProfile', 'POST', profileData);
+  },
+
+  /**
+   * Cập nhật consultant profile
+   * Endpoint: PUT /api/consultantSlot/UpdateConsultantProfile
+   * @param consultantProfileID - ID của consultant profile
+   * @param profileData - Dữ liệu profile cần cập nhật
+   */
+  updateConsultantProfile: async (consultantProfileID: number, profileData: {
+    description: string;
+    specialty: string;
+    experience: string;
+    consultantPrice: number;
+  }): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/consultantSlot/UpdateConsultantProfile?consultantProfileID=${consultantProfileID}`, 'PUT', profileData);
+  },
+
+  /**
+   * Hoán đổi slot giữa 2 consultant
+   * Endpoint: PUT /api/consultantSlot/swap
+   * @param consultantA - ID consultant A
+   * @param slotA - Slot ID của consultant A
+   * @param consultantB - ID consultant B  
+   * @param slotB - Slot ID của consultant B
+   */
+  swapSlots: async (consultantA: string, slotA: number, consultantB: string, slotB: number): Promise<ApiResponse<any>> => {
+    return apiRequest<any>(`/api/consultantSlot/swap?consultantA=${consultantA}&slotA=${slotA}&consultantB=${consultantB}&slotB=${slotB}`, 'PUT');
+  },
   
   /**
    * Lấy tất cả slot có sẵn cho consultant đăng ký
    */
   getAvailableSlots: async (): Promise<ApiResponse<any[]>> => {
     return apiRequest<any[]>('/api/slot/GetSlot', 'GET');
-  
   }
 };
 

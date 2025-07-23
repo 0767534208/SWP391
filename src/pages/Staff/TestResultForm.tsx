@@ -1,7 +1,8 @@
-import React, { useState, type ChangeEvent } from 'react';
+import React, { useState, useEffect, type ChangeEvent } from 'react';
 import './TestResultForm.css';
 import testResultService from '../../services/testResultService';
 import { useNavigate } from 'react-router-dom';
+import { authUtils } from '../../utils/auth';
 import type { CreateLabTestRequest } from '../../utils/api';
 
 interface TestResultFormProps {
@@ -35,7 +36,114 @@ const TestResultForm = ({
     return now.toISOString().split('T')[0];
   };
 
-  const staffId = localStorage.getItem('userId') || localStorage.getItem('AccountID') || '';
+  // Get staff ID from authentication token
+  const staffId = authUtils.getCurrentUserId() || '';
+
+  // Test types with common reference ranges and units
+  const testTypes = [
+    {
+      name: 'Xét nghiệm HIV',
+      referenceRange: '< 0.9 index (Âm tính)',
+      unit: 'S/CO (Signal/Cutoff)',
+      category: 'virus'
+    },
+    {
+      name: 'Xét nghiệm Chlamydia',
+      referenceRange: '< 1.0 index (Âm tính)',
+      unit: 'S/CO',
+      category: 'bacteria'
+    },
+    {
+      name: 'Xét nghiệm Gonorrhea',
+      referenceRange: 'Không phát hiện (Âm tính)',
+      unit: 'PCR',
+      category: 'bacteria'
+    },
+    {
+      name: 'Xét nghiệm Syphilis (RPR)',
+      referenceRange: '< 1:1 (Âm tính)',
+      unit: 'Titer',
+      category: 'bacteria'
+    },
+    {
+      name: 'Xét nghiệm Syphilis (TPPA)',
+      referenceRange: 'Âm tính',
+      unit: 'Định tính',
+      category: 'bacteria'
+    },
+    {
+      name: 'Xét nghiệm Hepatitis B (HBsAg)',
+      referenceRange: '< 0.05 IU/mL (Âm tính)',
+      unit: 'IU/mL',
+      category: 'virus'
+    },
+    {
+      name: 'Xét nghiệm Hepatitis B (Anti-HBs)',
+      referenceRange: '> 10 mIU/mL (Có kháng thể bảo vệ)',
+      unit: 'mIU/mL',
+      category: 'virus'
+    },
+    {
+      name: 'Xét nghiệm Hepatitis C (Anti-HCV)',
+      referenceRange: '< 1.0 S/CO (Âm tính)',
+      unit: 'S/CO',
+      category: 'virus'
+    },
+    {
+      name: 'Xét nghiệm Herpes Simplex Type 1 (HSV-1)',
+      referenceRange: '< 0.9 index (Âm tính)',
+      unit: 'Index',
+      category: 'virus'
+    },
+    {
+      name: 'Xét nghiệm Herpes Simplex Type 2 (HSV-2)',
+      referenceRange: '< 0.9 index (Âm tính)',
+      unit: 'Index',
+      category: 'virus'
+    },
+    {
+      name: 'Xét nghiệm HPV (Human Papillomavirus)',
+      referenceRange: 'Không phát hiện (Âm tính)',
+      unit: 'PCR',
+      category: 'virus'
+    },
+    {
+      name: 'Xét nghiệm Trichomonas',
+      referenceRange: 'Không phát hiện (Âm tính)',
+      unit: 'PCR/Vi sinh',
+      category: 'parasite'
+    },
+    {
+      name: 'Cấy vi khuẩn âm đạo',
+      referenceRange: '< 10^3 CFU/mL',
+      unit: 'CFU/mL',
+      category: 'bacteria'
+    },
+    {
+      name: 'Xét nghiệm nấm Candida',
+      referenceRange: 'Không phát hiện (Âm tính)',
+      unit: 'Vi sinh',
+      category: 'fungus'
+    },
+    {
+      name: 'Xét nghiệm Mycoplasma genitalium',
+      referenceRange: 'Không phát hiện (Âm tính)',
+      unit: 'PCR',
+      category: 'bacteria'
+    },
+    {
+      name: 'Xét nghiệm Ureaplasma urealyticum',
+      referenceRange: '< 10^4 CFU/mL',
+      unit: 'CFU/mL',
+      category: 'bacteria'
+    }
+  ];
+
+  // State for appointment code lookup
+  const [appointmentCode, setAppointmentCode] = useState('');
+  const [customerInfo, setCustomerInfo] = useState<{id: string, name: string} | null>(null);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupError, setLookupError] = useState<string | null>(null);
 
   // Initialize form state
   const [formData, setFormData] = useState<CreateLabTestRequest>(
@@ -56,6 +164,39 @@ const TestResultForm = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
 
+  // Function to lookup customer by appointment code
+  const lookupCustomerByAppointmentCode = async (code: string) => {
+    if (!code.trim()) return;
+    
+    setLookupLoading(true);
+    setLookupError(null);
+    
+    try {
+      // This would need to be implemented in your appointment service
+      // For now, we'll use a placeholder
+      // const response = await appointmentService.getByCode(code);
+      // if (response.data) {
+      //   setCustomerInfo({
+      //     id: response.data.customerID,
+      //     name: response.data.customer?.name || 'Unknown'
+      //   });
+      //   setFormData({
+      //     ...formData,
+      //     customerID: response.data.customerID
+      //   });
+      // }
+      
+      // Placeholder implementation - you'll need to implement the actual API call
+      console.log('Looking up appointment code:', code);
+      setLookupError('Tính năng tra cứu mã hẹn đang được phát triển');
+    } catch (err) {
+      console.error('Error looking up appointment:', err);
+      setLookupError('Không tìm thấy lịch hẹn với mã này');
+    } finally {
+      setLookupLoading(false);
+    }
+  };
+
   // Handle input changes
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -68,6 +209,16 @@ const TestResultForm = ({
         [name]: checkbox.checked
       });
     } 
+    // Handle test type selection - auto-fill reference range and unit
+    else if (name === 'testName') {
+      const selectedTest = testTypes.find(test => test.name === value);
+      setFormData({
+        ...formData,
+        [name]: value,
+        referenceRange: selectedTest?.referenceRange || '',
+        unit: selectedTest?.unit || ''
+      });
+    }
     // Handle number inputs
     else if (name === 'treatmentID') {
       // Convert to number or null if empty
@@ -83,6 +234,17 @@ const TestResultForm = ({
       ...formData,
       [name]: value
     });
+    }
+  };
+
+  // Handle appointment code input
+  const handleAppointmentCodeChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setAppointmentCode(value);
+    
+    // Auto-lookup when code is entered (debounce could be added here)
+    if (value.length >= 6) { // Assuming appointment codes are at least 6 characters
+      lookupCustomerByAppointmentCode(value);
     }
   };
 
