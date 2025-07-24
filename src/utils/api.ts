@@ -25,7 +25,7 @@ export const consultantProfileAPI = {
  * Bao gồm xử lý token, refresh token, và các endpoint API cơ bản
  */
 
-import type { UserData, RegisterRequest, AppointmentRequest } from '../types';
+import type { UserData, RegisterRequest, AppointmentRequest, User } from '../types';
 import { API, STORAGE_KEYS, ROUTES } from '../config/constants';
 
 // Helper function to create a minimal valid image file for placeholder
@@ -1463,11 +1463,13 @@ export const consultantSlotAPI = {
   },
 
   /**
-   * Hủy đăng ký slot của consultant
+   * Hủy đăng ký slot của consultant - không có API unregister riêng
+   * Sử dụng API swap hoặc update thay thế
    * @param slotId - ID của slot đã đăng ký
    */
   unregisterSlot: async (slotId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/consultantSlot/unregister?id=${slotId}`, 'DELETE');
+    // Tạm thời trả về error vì API không tồn tại
+    throw new Error('Unregister API không khả dụng. Vui lòng sử dụng chức năng khác.');
   },
   
   /**
@@ -1478,18 +1480,18 @@ export const consultantSlotAPI = {
   },
 
   /**
-   * Tạo consultant profile mới
+   * Tạo consultant profile mới - sử dụng request body thay vì query params
    * @param profileData - {accountId, description, specialty, experience, consultantPrice}
    */
   createConsultantProfile: async (profileData: any): Promise<ApiResponse<any>> => {
-    const queryParams = new URLSearchParams({
+    const requestBody = {
       accountId: profileData.accountId || '',
       description: profileData.description || '',
       specialty: profileData.specialty || '',
       experience: profileData.experience || '',
-      consultantPrice: profileData.consultantPrice?.toString() || '0'
-    });
-    return apiRequest<any>(`/api/consultantSlot/CreateConsultantProfile?${queryParams.toString()}`, 'POST');
+      consultantPrice: Number(profileData.consultantPrice) || 0
+    };
+    return apiRequest<any>('/api/consultantSlot/CreateConsultantProfile', 'POST', requestBody);
   },
 
   /**
@@ -1509,11 +1511,12 @@ export const consultantSlotAPI = {
   },
 
   /**
-   * Xóa consultant profile
+   * Xóa consultant profile - không có API delete, sử dụng deactivate thay thế
    * @param profileId - ID của profile cần xóa
    */
   deleteConsultantProfile: async (profileId: number): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/consultantSlot/DeleteConsultantProfile?consultantProfileID=${profileId}`, 'DELETE');
+    // Tạm thời trả về error vì API delete không khả dụng
+    throw new Error('Delete profile API không khả dụng. Vui lòng sử dụng chức năng deactivate.');
   },
 
   /**
@@ -1522,20 +1525,21 @@ export const consultantSlotAPI = {
    * @param toConsultantId - ID consultant nhận slot
    * @param slotId - ID của slot cần hoán đổi
    */
-  swapSlots: async (fromConsultantId: string, toConsultantId: string, slotId: number): Promise<ApiResponse<any>> => {
-    const requestBody = {
-      fromConsultantId,
-      toConsultantId,
-      slotId
-    };
-    return apiRequest<any>('/api/consultantSlot/swap', 'POST', requestBody);
+  swapSlots: async (consultantA: string, slotA: number, consultantB: string, slotB: number): Promise<ApiResponse<any>> => {
+    const queryParams = new URLSearchParams({
+      consultantA,
+      slotA: slotA.toString(),
+      consultantB,
+      slotB: slotB.toString()
+    });
+    return apiRequest<any>(`/api/consultantSlot/swap?${queryParams.toString()}`, 'PUT');
   },
 
   /**
    * Lấy danh sách tất cả users có thể làm consultant
    */
-  getAllUsers: async (): Promise<ApiResponse<any[]>> => {
-    return apiRequest<any[]>('/api/account/GetAllAccount', 'GET');
+  getAllUsers: async (): Promise<ApiResponse<User[]>> => {
+    return apiRequest<User[]>('/api/account/GetAllAccounts', 'GET');
   }
 };
 

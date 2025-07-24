@@ -5,6 +5,73 @@
     "version": "v1"
   },
   "paths": {
+    "/api/account/adminDashBoard/GetTotalAccount": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTotalAccountBaseResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTotalAccountBaseResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetTotalAccountBaseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/account/GetAllAccounts": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NewUserDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NewUserDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NewUserDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/account/login": {
       "post": {
         "tags": [
@@ -7186,6 +7253,48 @@
         },
         "additionalProperties": false
       },
+      "GetTotalAccount": {
+        "type": "object",
+        "properties": {
+          "totalAccount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "managersAccount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "customersAccount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "staffsAccount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "consultantAccount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetTotalAccountBaseResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "statusCode": {
+            "$ref": "#/components/schemas/StatusCodeEnum"
+          },
+          "data": {
+            "$ref": "#/components/schemas/GetTotalAccount"
+          }
+        },
+        "additionalProperties": false
+      },
       "GetTotalAppointmentsAndAmount": {
         "type": "object",
         "properties": {
@@ -7669,6 +7778,55 @@
           },
           "receiver": {
             "$ref": "#/components/schemas/Account"
+          }
+        },
+        "additionalProperties": false
+      },
+      "NewUserDto": {
+        "type": "object",
+        "properties": {
+          "userID": {
+            "type": "string",
+            "nullable": true
+          },
+          "userName": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "token": {
+            "type": "string",
+            "nullable": true
+          },
+          "refreshToken": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
