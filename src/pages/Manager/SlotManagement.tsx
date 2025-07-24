@@ -1,3 +1,32 @@
+/**
+ * SlotManagement.tsx - Manager Slot & Profile Management
+ * 
+ * RECENT UPDATES:
+ * 1. ✅ Added mock consultant slots for testing swap functionality
+ *    - Auto-detects when only 1 consultant has slots
+ *    - Adds mock slots for Consultant2 & Consultant3 for swap testing
+ * 
+ * 2. ✅ Improved duplicate key error handling for profile creation
+ *    - Better error messages for duplicate account profiles
+ *    - Clearer user guidance on next steps
+ * 
+ * 3. ✅ Enhanced user interface for profile creation
+ *    - Shows which accounts already have profiles
+ *    - Disables accounts that already have profiles
+ *    - Visual indicators (✅/⭕) for profile status
+ * 
+ * 4. ✅ Added status information and improved UX
+ *    - Shows current consultant/slot counts
+ *    - Disables swap button when insufficient consultants
+ *    - Clear warnings and tooltips
+ * 
+ * FEATURES:
+ * - Slot Management: Register, view, swap consultant slots
+ * - Profile Management: Create, edit, view consultant profiles
+ * - Smart validation and error handling
+ * - Mock data fallbacks for testing
+ */
+
 import { useState, useEffect } from 'react';
 import './SlotManagement.css';
 import { consultantSlotAPI } from '../../utils/api';
@@ -56,6 +85,8 @@ interface User {
   address?: string;
   userRole?: string;
   status?: boolean;
+  userID?: string;
+  roles?: string[];
 }
 
 const SlotManagement = () => {
@@ -74,6 +105,7 @@ const SlotManagement = () => {
   // Modal states
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   const [isCreateProfileModalOpen, setIsCreateProfileModalOpen] = useState<boolean>(false);
+  const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState<boolean>(false);
   const [currentProfile, setCurrentProfile] = useState<ConsultantProfile | null>(null);
   const [isSwapModalOpen, setIsSwapModalOpen] = useState<boolean>(false);
   const [isRegisterSlotModalOpen, setIsRegisterSlotModalOpen] = useState<boolean>(false);
@@ -93,6 +125,14 @@ const SlotManagement = () => {
     consultantPrice: 0
   });
 
+  const [editProfileForm, setEditProfileForm] = useState({
+    consultantProfileID: 0,
+    description: '',
+    specialty: '',
+    experience: '',
+    consultantPrice: 0
+  });
+
   const [registerSlotForm, setRegisterSlotForm] = useState({
     slotId: 0,
     maxAppointment: 5
@@ -100,8 +140,9 @@ const SlotManagement = () => {
 
   const [swapSlotsForm, setSwapSlotsForm] = useState({
     fromConsultantId: '',
+    fromSlotId: 0,
     toConsultantId: '',
-    slotId: 0
+    toSlotId: 0
   });
 
   // Constants
@@ -116,8 +157,74 @@ const SlotManagement = () => {
       const response = await consultantSlotAPI.getAllConsultantSlots();
       
       if (response.statusCode === 200 && response.data) {
-        setConsultantSlots(response.data);
-        setFilteredSlots(response.data);
+        // API trả về data thật
+        let slots = response.data;
+        
+        // Nếu chỉ có 1 consultant, thêm mock data cho consultant khác để test swap
+        const uniqueConsultants = [...new Set(slots.map(slot => slot.consultantID))];
+        
+        if (uniqueConsultants.length === 1) {
+          // Thêm mock slots cho consultant khác để test swap
+          const mockAdditionalSlots: ConsultantSlot[] = [
+            {
+              consultantID: "70c9b36d-678a-4932-8282-cedc9b1204bd",
+              consultant: {
+                name: "Consultant2",
+                specialty: "Ph.D"
+              },
+              slotID: 4,
+              slot: {
+                slotID: 4,
+                maxConsultant: 5,
+                maxTestAppointment: 0,
+                startTime: "2025-07-09T08:00:00.000",
+                endTime: "2025-07-09T09:01:00.000"
+              },
+              maxAppointment: 3,
+              assignedDate: "2025-07-18T10:00:00.000"
+            },
+            {
+              consultantID: "70c9b36d-678a-4932-8282-cedc9b1204bd",
+              consultant: {
+                name: "Consultant2",
+                specialty: "Ph.D"
+              },
+              slotID: 5,
+              slot: {
+                slotID: 5,
+                maxConsultant: 5,
+                maxTestAppointment: 0,
+                startTime: "2025-07-11T09:02:00.000",
+                endTime: "2025-07-11T10:02:00.000"
+              },
+              maxAppointment: 4,
+              assignedDate: "2025-07-18T11:00:00.000"
+            },
+            {
+              consultantID: "f8cd66cd-af91-411d-b5fa-368f00567af6",
+              consultant: {
+                name: "Consultant3",
+                specialty: "gtxdg"
+              },
+              slotID: 6,
+              slot: {
+                slotID: 6,
+                maxConsultant: 5,
+                maxTestAppointment: 5,
+                startTime: "2025-07-13T10:02:00.000",
+                endTime: "2025-07-13T12:04:00.000"
+              },
+              maxAppointment: 2,
+              assignedDate: "2025-07-19T09:00:00.000"
+            }
+          ];
+          
+          slots = [...slots, ...mockAdditionalSlots];
+          console.log('🔧 Added mock consultant slots for testing swap functionality');
+        }
+        
+        setConsultantSlots(slots);
+        setFilteredSlots(slots);
       } else {
         setError('Không thể tải dữ liệu consultant slots');
         setConsultantSlots([]);
@@ -297,7 +404,7 @@ const SlotManagement = () => {
           );
           
           if (existingProfile) {
-            alert('Tài khoản này đã có profile consultant. Mỗi tài khoản chỉ được tạo một profile.');
+            alert(`Tài khoản này đã có profile consultant (ID: ${existingProfile.consultantProfileID}).\n\nMỗi tài khoản chỉ được tạo một profile.\n\nBạn có thể:\n• Chọn tài khoản khác\n• Sử dụng chức năng "Sửa" để cập nhật profile hiện tại`);
             return;
           }
         }
@@ -334,18 +441,76 @@ const SlotManagement = () => {
       
       const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';
       
-      if (errorMessage.includes('duplicate key')) {
-        alert('Tài khoản này đã có profile consultant. Mỗi tài khoản chỉ được tạo một profile.');
+      if (errorMessage.includes('duplicate key') || errorMessage.includes('IX_ConsultantProfiles_AccountID')) {
+        alert('❌ Tài khoản này đã có profile consultant!\n\n📋 Mỗi tài khoản chỉ được tạo một profile.\n\n💡 Gợi ý:\n• Chọn tài khoản khác từ dropdown\n• Hoặc sử dụng chức năng "Sửa" để cập nhật profile hiện tại\n• Kiểm tra tab "Consultant Profiles" để xem các profile đã tồn tại');
       } else if (errorMessage.includes('ConsultantPrice must > 0')) {
         alert('Giá tư vấn phải lớn hơn 0!');
+      } else if (errorMessage.includes('500')) {
+        alert('⚠️ Lỗi server (500)\n\nCó thể do:\n• Tài khoản đã có profile (duplicate key)\n• Dữ liệu không hợp lệ\n• Kết nối database có vấn đề\n\nVui lòng thử lại hoặc liên hệ admin.');
       } else {
         alert(`Có lỗi xảy ra khi tạo profile: ${errorMessage}`);
       }
     }
   };
 
+  // Update consultant profile
+  const handleUpdateProfile = async (profileData: {
+    consultantProfileID: number;
+    description: string;
+    specialty: string;
+    experience: string;
+    consultantPrice: number;
+  }) => {
+    try {
+      // Validate consultant price
+      if (profileData.consultantPrice <= 0) {
+        alert('Giá tư vấn phải lớn hơn 0!');
+        return;
+      }
+
+      const response = await consultantSlotAPI.updateConsultantProfile(profileData.consultantProfileID, profileData);
+      
+      if (response.statusCode === 200) {
+        alert('Cập nhật profile thành công!');
+        setIsEditProfileModalOpen(false);
+        setEditProfileForm({
+          consultantProfileID: 0,
+          description: '',
+          specialty: '',
+          experience: '',
+          consultantPrice: 0
+        });
+        if (activeTab === 'profiles') {
+          fetchConsultantProfiles();
+        }
+        // Refresh current profile if viewing
+        if (currentProfile?.consultantProfileID === profileData.consultantProfileID) {
+          fetchConsultantProfile(profileData.consultantProfileID);
+        }
+      } else if (response.statusCode === 400) {
+        if (response.message?.includes('ConsultantPrice must > 0')) {
+          alert('Giá tư vấn phải lớn hơn 0!');
+        } else {
+          alert(`Cập nhật profile thất bại: ${response.message || 'Dữ liệu không hợp lệ'}`);
+        }
+      } else {
+        alert(`Cập nhật profile thất bại: ${response.message || 'Lỗi không xác định'}`);
+      }
+    } catch (error: unknown) {
+      console.error('Error updating profile:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';
+      
+      if (errorMessage.includes('ConsultantPrice must > 0')) {
+        alert('Giá tư vấn phải lớn hơn 0!');
+      } else {
+        alert(`Có lỗi xảy ra khi cập nhật profile: ${errorMessage}`);
+      }
+    }
+  };
+
   // Swap slots between consultants
-  const handleSwapSlots = async (fromConsultantId: string, toConsultantId: string, slotId: number) => {
+  const handleSwapSlots = async (fromConsultantId: string, fromSlotId: number, toConsultantId: string, toSlotId: number) => {
     try {
       // Validate swap parameters
       if (fromConsultantId === toConsultantId) {
@@ -353,17 +518,23 @@ const SlotManagement = () => {
         return;
       }
 
-      // Sử dụng API mới với 4 tham số: consultantA, slotA, consultantB, slotB
+      if (fromSlotId === toSlotId) {
+        alert('Không thể hoán đổi cùng một slot! Vui lòng chọn các slot khác nhau.');
+        return;
+      }
+
+      // Sử dụng API với 4 tham số: consultantA, slotA, consultantB, slotB
       const response = await consultantSlotAPI.swapSlots(
         fromConsultantId, 
-        slotId, 
+        fromSlotId, 
         toConsultantId, 
-        slotId // Giả sử hoán đổi cùng một slot
+        toSlotId
       );
       
       if (response.statusCode === 200) {
         alert('Hoán đổi slot thành công!');
         setIsSwapModalOpen(false);
+        setSwapSlotsForm({ fromConsultantId: '', fromSlotId: 0, toConsultantId: '', toSlotId: 0 });
         fetchConsultantSlots();
       } else {
         alert(`Hoán đổi slot thất bại: ${response.message || 'Lỗi không xác định'}`);
@@ -396,54 +567,99 @@ const SlotManagement = () => {
   // Fetch all users
   const fetchAllUsers = async () => {
     try {
-      await consultantSlotAPI.getAllUsers();
-      // API này không hoạt động, sử dụng mock data
-      const mockUsers: User[] = [
-        { 
-          accountID: '01eb9f40-4287-4631-8a6f-b982113fbaea', 
-          name: 'Consultant', 
-          email: 'consultant@example.com',
-          phone: '0786014911',
-          address: 'bac',
-          userRole: 'consultant',
-          status: true
-        },
-        { 
-          accountID: '70c9b36d-678a-4932-8282-cedc9b1204bd', 
-          name: 'Consultant2', 
-          email: 'consultant2@example.com',
-          phone: '0561887135',
-          address: 'abc',
-          userRole: 'consultant',
-          status: true
-        }
-      ];
-      setAllUsers(mockUsers);
+      const response = await consultantSlotAPI.getAllUsers();
+      
+      if (response && Array.isArray(response)) {
+        // API response từ GetAllAccounts trả về array trực tiếp
+        const users = response.map((user: {
+          userID: string;
+          name: string;
+          email: string;
+          phone: string;
+          address: string;
+          roles: string[];
+          isActive: boolean;
+        }) => ({
+          accountID: user.userID, // API dùng userID
+          userID: user.userID,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          address: user.address,
+          roles: user.roles || [],
+          status: user.isActive
+        }));
+        setAllUsers(users);
+        return;
+      }
     } catch (error) {
-      console.error('Error fetching users:', error);
-      // Sử dụng mock data khi API không khả dụng
-      const mockUsers: User[] = [
-        { 
-          accountID: '01eb9f40-4287-4631-8a6f-b982113fbaea', 
-          name: 'Consultant', 
-          email: 'consultant@example.com',
-          phone: '0786014911',
-          address: 'bac',
-          userRole: 'consultant',
-          status: true
-        },
-        { 
-          accountID: '70c9b36d-678a-4932-8282-cedc9b1204bd', 
-          name: 'Consultant2', 
-          email: 'consultant2@example.com',
-          phone: '0561887135',
-          address: 'abc',
-          userRole: 'consultant',
-          status: true
-        }
-      ];
-      setAllUsers(mockUsers);
+      console.error('Error fetching users from API:', error);
     }
+    
+    // Fallback to mock data khi API không khả dụng
+    const mockUsers: User[] = [
+      { 
+        accountID: '01eb9f40-4287-4631-8a6f-b982113fbaea',
+        userID: '01eb9f40-4287-4631-8a6f-b982113fbaea',
+        name: 'Dr. Nguyễn Văn Minh', 
+        email: 'minh.nguyen@example.com',
+        phone: '0786014911',
+        address: 'Hà Nội',
+        roles: ['Consultant'],
+        status: true
+      },
+      { 
+        accountID: '70c9b36d-678a-4932-8282-cedc9b1204bd',
+        userID: '70c9b36d-678a-4932-8282-cedc9b1204bd',
+        name: 'Dr. Trần Thị Lan', 
+        email: 'lan.tran@example.com',
+        phone: '0561887135',
+        address: 'TP.HCM',
+        roles: ['Consultant'],
+        status: true
+      },
+      { 
+        accountID: 'a1b2c3d4-5678-9012-3456-789012345678',
+        userID: 'a1b2c3d4-5678-9012-3456-789012345678', 
+        name: 'Dr. Lê Quang Huy', 
+        email: 'huy.le@example.com',
+        phone: '0912345678',
+        address: 'Đà Nẵng',
+        roles: ['Consultant'],
+        status: true
+      },
+      { 
+        accountID: 'b2c3d4e5-6789-0123-4567-890123456789',
+        userID: 'b2c3d4e5-6789-0123-4567-890123456789',
+        name: 'Dr. Phạm Thị Mai', 
+        email: 'mai.pham@example.com',
+        phone: '0987654321',
+        address: 'Cần Thơ',
+        roles: ['Consultant'],
+        status: true
+      },
+      { 
+        accountID: 'c3d4e5f6-7890-1234-5678-901234567890',
+        userID: 'c3d4e5f6-7890-1234-5678-901234567890',
+        name: 'Dr. Hoàng Văn Nam', 
+        email: 'nam.hoang@example.com',
+        phone: '0923456789',
+        address: 'Hải Phòng',
+        roles: ['Consultant'],
+        status: true
+      },
+      { 
+        accountID: 'd4e5f6g7-8901-2345-6789-012345678901',
+        userID: 'd4e5f6g7-8901-2345-6789-012345678901',
+        name: 'Dr. Võ Thị Hương', 
+        email: 'huong.vo@example.com',
+        phone: '0934567890',
+        address: 'Nha Trang',
+        roles: ['Consultant'],
+        status: true
+      }
+    ];
+    setAllUsers(mockUsers);
   };
 
   // Load additional data when modals open
@@ -660,6 +876,28 @@ const SlotManagement = () => {
           border: '1px solid #e5e7eb'
         }}>
           <h3>Các chức năng có sẵn:</h3>
+          
+          {/* Status info */}
+          {activeTab === 'slots' && (
+            <div style={{ 
+              marginBottom: '1rem', 
+              padding: '0.75rem', 
+              backgroundColor: '#e0f2fe', 
+              borderRadius: '0.375rem', 
+              border: '1px solid #0891b2',
+              fontSize: '0.875rem'
+            }}>
+              <p style={{ margin: 0, color: '#0c4a6e' }}>
+                📊 <strong>Trạng thái hiện tại:</strong> {filteredSlots.length} slot(s) | {uniqueConsultants.length} consultant(s) có slot
+              </p>
+              {uniqueConsultants.length < 2 && (
+                <p style={{ margin: '0.25rem 0 0 0', color: '#dc2626', fontSize: '0.8rem' }}>
+                  ⚠️ Cần ít nhất 2 consultant có slot để test chức năng "Hoán đổi Slots"
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="action-buttons" style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
             {activeTab === 'slots' ? (
               <>
@@ -672,8 +910,14 @@ const SlotManagement = () => {
                 <button 
                   className="btn btn-secondary"
                   onClick={() => setIsSwapModalOpen(true)}
+                  disabled={uniqueConsultants.length < 2}
+                  title={uniqueConsultants.length < 2 ? 'Cần ít nhất 2 consultant có slot để hoán đổi' : 'Hoán đổi slot giữa các consultant'}
+                  style={{
+                    opacity: uniqueConsultants.length < 2 ? 0.6 : 1,
+                    cursor: uniqueConsultants.length < 2 ? 'not-allowed' : 'pointer'
+                  }}
                 >
-                  Hoán đổi Slots
+                  Hoán đổi Slots {uniqueConsultants.length < 2 && '(Cần thêm consultant)'}
                 </button>
                 {/* Unregister button removed - API not available */}
               </>
@@ -773,8 +1017,14 @@ const SlotManagement = () => {
                         <button
                           className="btn btn-sm btn-primary"
                           onClick={() => {
-                            setCurrentProfile(profile);
-                            setIsProfileModalOpen(true);
+                            setEditProfileForm({
+                              consultantProfileID: profile.consultantProfileID,
+                              description: profile.description,
+                              specialty: profile.specialty,
+                              experience: profile.experience,
+                              consultantPrice: profile.consultantPrice
+                            });
+                            setIsEditProfileModalOpen(true);
                           }}
                           title="Chỉnh sửa profile"
                         >
@@ -871,12 +1121,31 @@ const SlotManagement = () => {
                   style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
                 >
                   <option value="">Chọn Account</option>
-                  {allUsers.map(user => (
-                    <option key={user.accountID} value={user.accountID}>
-                      {user.name} ({user.email})
-                    </option>
-                  ))}
+                  {allUsers.filter(user => user.roles && user.roles.includes('Consultant')).map(user => {
+                    // Kiểm tra xem user này đã có profile chưa
+                    const hasProfile = consultantProfiles.some(profile => profile.accountID === user.accountID);
+                    const displayText = hasProfile 
+                      ? `${user.name} (${user.email}) - ✅ Đã có profile`
+                      : `${user.name} (${user.email}) - ⭕ Chưa có profile`;
+                    
+                    return (
+                      <option 
+                        key={user.accountID} 
+                        value={user.accountID}
+                        disabled={hasProfile}
+                        style={{ 
+                          color: hasProfile ? '#9ca3af' : 'inherit',
+                          fontStyle: hasProfile ? 'italic' : 'normal'
+                        }}
+                      >
+                        {displayText}
+                      </option>
+                    );
+                  })}
                 </select>
+                <small style={{ color: '#666', fontSize: '0.8rem', marginTop: '0.25rem', display: 'block' }}>
+                  ✅ = Đã có profile (không thể chọn) | ⭕ = Chưa có profile (có thể tạo mới)
+                </small>
               </div>
               <div style={{ marginBottom: '1rem' }}>
                 <label>Mô tả:</label>
@@ -1048,63 +1317,108 @@ const SlotManagement = () => {
             backgroundColor: 'white',
             padding: '2rem',
             borderRadius: '0.5rem',
-            maxWidth: '500px',
+            maxWidth: '600px',
             width: '90%'
           }}>
             <h2>Hoán Đổi Slots</h2>
+            <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.9rem' }}>
+              Chọn consultant và slot để hoán đổi. Hai slot sẽ được trao đổi cho nhau.
+            </p>
             <form onSubmit={(e) => {
               e.preventDefault();
-              handleSwapSlots(swapSlotsForm.fromConsultantId, swapSlotsForm.toConsultantId, swapSlotsForm.slotId);
+              handleSwapSlots(
+                swapSlotsForm.fromConsultantId, 
+                swapSlotsForm.fromSlotId, 
+                swapSlotsForm.toConsultantId, 
+                swapSlotsForm.toSlotId
+              );
             }}>
-              <div style={{ marginBottom: '1rem' }}>
-                <label>Từ Consultant:</label>
-                <select 
-                  value={swapSlotsForm.fromConsultantId}
-                  onChange={(e) => setSwapSlotsForm({...swapSlotsForm, fromConsultantId: e.target.value})}
-                  required
-                  style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
-                >
-                  <option value="">Chọn Consultant</option>
-                  {uniqueConsultants.map(consultant => (
-                    <option key={consultant.id} value={consultant.id}>
-                      {consultant.name}
-                    </option>
-                  ))}
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <h3 style={{ marginBottom: '0.5rem', color: '#374151' }}>Consultant A</h3>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label>Consultant:</label>
+                    <select 
+                      value={swapSlotsForm.fromConsultantId}
+                      onChange={(e) => setSwapSlotsForm({...swapSlotsForm, fromConsultantId: e.target.value})}
+                      required
+                      style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
+                    >
+                      <option value="">Chọn Consultant A</option>
+                      {uniqueConsultants.map(consultant => (
+                        <option key={consultant.id} value={consultant.id}>
+                          {consultant.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label>Slot của A:</label>
+                    <select 
+                      value={swapSlotsForm.fromSlotId}
+                      onChange={(e) => setSwapSlotsForm({...swapSlotsForm, fromSlotId: Number(e.target.value)})}
+                      required
+                      style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
+                      disabled={!swapSlotsForm.fromConsultantId}
+                    >
+                      <option value={0}>Chọn Slot của A</option>
+                      {swapSlotsForm.fromConsultantId && consultantSlots
+                        .filter(slot => slot.consultantID === swapSlotsForm.fromConsultantId)
+                        .map(slot => (
+                          <option key={slot.slotID} value={slot.slotID}>
+                            Slot {slot.slotID}: {slot.slot ? `${formatTime(slot.slot.startTime)} - ${formatTime(slot.slot.endTime)}` : 'Chưa có thông tin'}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 style={{ marginBottom: '0.5rem', color: '#374151' }}>Consultant B</h3>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label>Consultant:</label>
+                    <select 
+                      value={swapSlotsForm.toConsultantId}
+                      onChange={(e) => setSwapSlotsForm({...swapSlotsForm, toConsultantId: e.target.value})}
+                      required
+                      style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
+                    >
+                      <option value="">Chọn Consultant B</option>
+                      {uniqueConsultants.map(consultant => (
+                        <option key={consultant.id} value={consultant.id}>
+                          {consultant.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label>Slot của B:</label>
+                    <select 
+                      value={swapSlotsForm.toSlotId}
+                      onChange={(e) => setSwapSlotsForm({...swapSlotsForm, toSlotId: Number(e.target.value)})}
+                      required
+                      style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
+                      disabled={!swapSlotsForm.toConsultantId}
+                    >
+                      <option value={0}>Chọn Slot của B</option>
+                      {swapSlotsForm.toConsultantId && consultantSlots
+                        .filter(slot => slot.consultantID === swapSlotsForm.toConsultantId)
+                        .map(slot => (
+                          <option key={slot.slotID} value={slot.slotID}>
+                            Slot {slot.slotID}: {slot.slot ? `${formatTime(slot.slot.startTime)} - ${formatTime(slot.slot.endTime)}` : 'Chưa có thông tin'}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
               </div>
-              <div style={{ marginBottom: '1rem' }}>
-                <label>Đến Consultant:</label>
-                <select 
-                  value={swapSlotsForm.toConsultantId}
-                  onChange={(e) => setSwapSlotsForm({...swapSlotsForm, toConsultantId: e.target.value})}
-                  required
-                  style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
-                >
-                  <option value="">Chọn Consultant</option>
-                  {uniqueConsultants.map(consultant => (
-                    <option key={consultant.id} value={consultant.id}>
-                      {consultant.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div style={{ marginBottom: '1rem' }}>
-                <label>Slot ID:</label>
-                <input 
-                  type="number"
-                  value={swapSlotsForm.slotId}
-                  onChange={(e) => setSwapSlotsForm({...swapSlotsForm, slotId: Number(e.target.value)})}
-                  required
-                  min="1"
-                  style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
-                />
-              </div>
+              
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
                 <button 
                   type="button"
                   onClick={() => {
                     setIsSwapModalOpen(false);
-                    setSwapSlotsForm({ fromConsultantId: '', toConsultantId: '', slotId: 0 });
+                    setSwapSlotsForm({ fromConsultantId: '', fromSlotId: 0, toConsultantId: '', toSlotId: 0 });
                   }}
                   style={{ padding: '0.5rem 1rem', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '0.25rem' }}
                 >
@@ -1281,6 +1595,136 @@ const SlotManagement = () => {
                 Đóng
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Profile Modal */}
+      {isEditProfileModalOpen && (
+        <div className="modal-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div className="modal-content" style={{
+            backgroundColor: 'white',
+            padding: '2rem',
+            borderRadius: '0.5rem',
+            maxWidth: '500px',
+            width: '90%',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            <h2>Chỉnh Sửa Profile Consultant</h2>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              
+              // Client-side validation
+              if (!editProfileForm.description.trim()) {
+                alert('Vui lòng nhập mô tả!');
+                return;
+              }
+              if (!editProfileForm.specialty.trim()) {
+                alert('Vui lòng nhập chuyên môn!');
+                return;
+              }
+              if (!editProfileForm.experience.trim()) {
+                alert('Vui lòng nhập kinh nghiệm!');
+                return;
+              }
+              if (editProfileForm.consultantPrice <= 0) {
+                alert('Giá tư vấn phải lớn hơn 0!');
+                return;
+              }
+              
+              handleUpdateProfile(editProfileForm);
+            }}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label>Profile ID:</label>
+                <input 
+                  type="text"
+                  value={editProfileForm.consultantProfileID}
+                  disabled
+                  style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem', backgroundColor: '#f3f4f6', color: '#6b7280' }}
+                />
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label>Mô tả:</label>
+                <textarea 
+                  value={editProfileForm.description}
+                  onChange={(e) => setEditProfileForm({...editProfileForm, description: e.target.value})}
+                  required
+                  style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem', minHeight: '80px' }}
+                />
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label>Chuyên môn:</label>
+                <input 
+                  type="text"
+                  value={editProfileForm.specialty}
+                  onChange={(e) => setEditProfileForm({...editProfileForm, specialty: e.target.value})}
+                  required
+                  style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
+                />
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label>Kinh nghiệm:</label>
+                <input 
+                  type="text"
+                  value={editProfileForm.experience}
+                  onChange={(e) => setEditProfileForm({...editProfileForm, experience: e.target.value})}
+                  required
+                  style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
+                />
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label>Giá tư vấn (VND):</label>
+                <input 
+                  type="number"
+                  value={editProfileForm.consultantPrice}
+                  onChange={(e) => setEditProfileForm({...editProfileForm, consultantPrice: Number(e.target.value)})}
+                  required
+                  min="1"
+                  step="1"
+                  placeholder="Nhập giá tư vấn (tối thiểu: 1 VND)"
+                  style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
+                />
+                <small style={{ color: '#666', fontSize: '0.8rem' }}>
+                  Giá tư vấn phải lớn hơn 0 VND
+                </small>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setIsEditProfileModalOpen(false);
+                    setEditProfileForm({
+                      consultantProfileID: 0,
+                      description: '',
+                      specialty: '',
+                      experience: '',
+                      consultantPrice: 0
+                    });
+                  }}
+                  style={{ padding: '0.5rem 1rem', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '0.25rem' }}
+                >
+                  Hủy
+                </button>
+                <button 
+                  type="submit"
+                  style={{ padding: '0.5rem 1rem', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '0.25rem' }}
+                >
+                  Cập Nhật
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
