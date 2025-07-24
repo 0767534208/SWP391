@@ -542,34 +542,6 @@ const SlotManagement = () => {
         </p>
       </div>
 
-      {/* API Status Notice - Updated to reflect only working features */}
-      <div className="api-status-notice" style={{
-        margin: '1rem 0',
-        padding: '1rem',
-        backgroundColor: '#f0f9ff',
-        border: '1px solid #0ea5e9',
-        borderRadius: '0.5rem',
-        color: '#0c4a6e'
-      }}>
-        <h4 style={{ marginBottom: '0.5rem', color: '#0c4a6e' }}>✅ Chức năng khả dụng:</h4>
-        <ul style={{ margin: '0', paddingLeft: '1.5rem', fontSize: '0.9rem' }}>
-          <li><strong>Xem danh sách slots:</strong> Hoạt động bình thường ✅</li>
-          <li><strong>Xem danh sách profiles:</strong> Hoạt động bình thường ✅</li>
-          <li><strong>Đăng ký slot:</strong> Hoạt động bình thường ✅</li>
-          <li><strong>Tạo consultant profile:</strong> Hoạt động bình thường (cần giá &gt; 0) ✅</li>
-          <li><strong>Hoán đổi slot:</strong> Hoạt động với slot khác nhau ⚠️</li>
-        </ul>
-        <div style={{ 
-          marginTop: '0.75rem', 
-          padding: '0.5rem', 
-          backgroundColor: '#dcfce7', 
-          borderRadius: '0.25rem',
-          fontSize: '0.85rem'
-        }}>
-          <strong>✅ Giao diện đã được tối ưu:</strong> Chỉ hiển thị các chức năng hoạt động. Các tính năng không khả dụng đã được loại bỏ hoàn toàn.
-        </div>
-      </div>
-
       {/* Tab Navigation */}
       <div className="tab-navigation" style={{
         display: 'flex',
