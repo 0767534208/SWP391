@@ -32,7 +32,6 @@ import QnA from './pages/QnA/QnA';
 import Payment from './pages/Payment/Payment';
 import PaymentSuccess from './pages/Payment/PaymentSuccess';
 
-import Dashboard from './pages/Admin/Dashboard';
 import Users from './pages/Admin/User';
 import Appointments from './pages/Admin/Appointment';
 import Consultants from './pages/Admin/Consultant';
@@ -43,11 +42,11 @@ import BlogManagement from './pages/Manager/BlogManagement';
 import SlotManagement from './pages/Manager/SlotManagement';
 import SlotCreation from './pages/Manager/SlotCreation';
 import WeeklyCalendar from './pages/Manager/WeeklyCalendar';
+import Dashboard from './pages/Manager/Dashboard';
 import StaffAppointments from './pages/Staff/StaffAppointments';
 import TestResultView from './pages/Staff/TestResultView';
 import TestResultManagementStaff from './pages/Staff/TestResultManagementStaff';
 import TestResultEdit from './pages/Staff/TestResultEdit';
-import TestResultForm from './pages/Staff/TestResultForm';
 import StaffTransactions from './pages/Staff/StaffTransactions';
 import NewLabTest from './pages/Staff/NewLabTest';
 
@@ -185,7 +184,7 @@ function App() {
             <ManagerLayout />
           </ManagerRoute>
         }>
-          <Route index element={<ServiceManagement />} />
+          <Route index element={<Dashboard />} />
           <Route path="services" element={<ServiceManagement />} />
           <Route path="categories" element={<CategoryManagement />} />
           <Route path="blogs" element={<BlogManagement />} />
@@ -215,7 +214,7 @@ function App() {
             <AdminLayout />
           </AdminRoute>
         }>
-          <Route index element={<Dashboard />} />
+          <Route index element={<Users />} />
           <Route path="users" element={<Users />} />
           <Route path="appointments" element={<Appointments />} />
           <Route path="consultants" element={<Consultants />} />

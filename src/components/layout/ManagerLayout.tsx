@@ -25,9 +25,9 @@ const ManagerLayout = () => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
   
-  // Check if we're on the services page or main manager page
+  // Check if we're on the main manager page (dashboard)
   const isHomePage = () => {
-    return location.pathname === '/manager' || location.pathname === '/manager/' || location.pathname === '/manager/services';
+    return location.pathname === '/manager' || location.pathname === '/manager/';
   };
   
   // Handle logout
@@ -48,7 +48,14 @@ const ManagerLayout = () => {
         
         <nav className="manager-nav py-2">
           <div className="manager-nav-container px-2 space-y-1">
-            <Link to="/manager/services" className={`manager-nav-link flex items-center px-2 py-1.5 rounded-lg transition-colors ${isHomePage() ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800'}`}>
+            <Link to="/manager" className={`manager-nav-link flex items-center px-2 py-1.5 rounded-lg transition-colors ${isHomePage() ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800'}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="manager-sidebar-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+              </svg>
+              <span className="manager-nav-text text-xs font-medium">Trang chủ</span>
+            </Link>
+
+            <Link to="/manager/services" className={`manager-nav-link flex items-center px-2 py-1.5 rounded-lg transition-colors ${isActive('/manager/services') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800'}`}>
               <svg xmlns="http://www.w3.org/2000/svg" className="manager-sidebar-icon" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
               </svg>

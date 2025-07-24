@@ -204,7 +204,7 @@ export class ChatbotService {
   }
 
   // Dashboard APIs
-  static async getAdminDashboard() {
+  static async getManagerDashboard() {
     return await apiRequest('/dashboard/adminDashBoard/GetTotalAppointmentsTotalAppointmentsAmount');
   }
 
