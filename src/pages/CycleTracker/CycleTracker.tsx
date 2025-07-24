@@ -2,819 +2,872 @@ import React, { useState, useEffect } from 'react'
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 import './CycleTracker.css'
-import { FaCalendarAlt, FaChartLine, FaInfoCircle, FaBell, FaTimes, FaSave, FaRegCircle, FaCheckCircle, FaTrash, FaTint, FaHeart, FaSeedling, FaBan } from 'react-icons/fa'
+import './loading-indicator.css'
+import { FaSave, FaSpinner, FaSync, FaCheck, FaExclamationCircle, FaInfoCircle, FaTimes } from 'react-icons/fa'
+import { 
+  menstrualCycleAPI, 
+  cyclePredictionAPI,
+  type MenstrualCycleData, 
+  type CreateMenstrualCycleRequest, 
+  type UpdateMenstrualCycleRequest 
+} from '../../utils/api'
+import { authUtils } from '../../utils/auth'
+import type { CyclePredictionData, CyclePhases } from '../../types/cycleTracker'
+
+// Vietnamese day names for calendar formatting
+// Vietnamese day names for calendar formatting - must include all 7 days
+const viDaysOfWeek = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'] // Monday to Sunday
 
 // Status types for cycle tracking
-type CycleStatus = 'period' | 'fertile' | 'ovulation' | 'none'
+type CycleStatus = 'period' | 'fertile' | 'ovulation' | 'next-period' | 'none'
 
-// Data structure for storing cycle information
-interface CycleData {
-    date: string // ISO string format
-    status: CycleStatus
-    notes: string
-    symptoms: string[]
-    flow?: 'light' | 'medium' | 'heavy' | null
+// Notification types
+type NotificationType = 'success' | 'error' | 'info';
+
+interface NotificationProps {
+    type: NotificationType;
+    message: string;
+    onClose: () => void;
 }
 
+// Notification component to replace alerts
+const Notification: React.FC<NotificationProps> = ({ type, message, onClose }) => {
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            onClose();
+        }, 5000); // Auto dismiss after 5 seconds
+        
+        return () => clearTimeout(timer);
+    }, [onClose]);
+    
+    const getIcon = () => {
+        switch(type) {
+            case 'success':
+                return <FaCheck className="notification-icon" />;
+            case 'error':
+                return <FaExclamationCircle className="notification-icon" />;
+            case 'info':
+                return <FaInfoCircle className="notification-icon" />;
+        }
+    };
+    
+    return (
+        <div className={`notification notification-${type}`}>
+            {getIcon()}
+            <div className="notification-message">{message}</div>
+            <button className="notification-close" onClick={onClose}>
+                <FaTimes />
+            </button>
+        </div>
+    );
+};
+
 const CycleTracker: React.FC = () => {
-    const [selectedDate, setSelectedDate] = useState<Date | null>(null)
-    const [showModal, setShowModal] = useState(false)
-    const [cycleData, setCycleData] = useState<CycleData[]>([])
-    const [currentData, setCurrentData] = useState<CycleData>({
-        date: '',
-        status: 'none',
-        notes: '',
-        symptoms: [],
-        flow: null
-    })
-    const [activeTab, setActiveTab] = useState('calendar')
-    const [cycleLength, setCycleLength] = useState(28)
-    const [periodLength, setPeriodLength] = useState(5)
+    // Chỉ lưu states cần thiết - không có dữ liệu fix cứng
+    const [cycleLength, setCycleLength] = useState<number | ''>('')
+    const [periodLength, setPeriodLength] = useState<number | ''>('')
     const [lastPeriodStart, setLastPeriodStart] = useState<Date | null>(null)
+    const [error, setError] = useState<string | null>(null)
+    
+    // API related states
+    const [menstrualCycleFromDB, setMenstrualCycleFromDB] = useState<MenstrualCycleData | null>(null)
+    const [cyclePrediction, setCyclePrediction] = useState<any | null>(null)
+    const [isLoading, setIsLoading] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
+    const [isPredictionLoading, setIsPredictionLoading] = useState(false)
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+    
+    // Notification system
+    interface NotificationData {
+        id: number;
+        type: NotificationType;
+        message: string;
+    }
+    const [notifications, setNotifications] = useState<NotificationData[]>([])
+    
+    // Helper function to show notifications
+    const showNotification = (type: NotificationType, message: string) => {
+        const id = Date.now();
+        setNotifications(prev => [...prev, { id, type, message }]);
+        return id;
+    }
+    
+    // Helper function to remove a notification
+    const removeNotification = (id: number) => {
+        setNotifications(prev => prev.filter(notification => notification.id !== id));
+    }
+    
+    // Status message in the form
+    const [formStatus, setFormStatus] = useState<{message: string, type: 'success' | 'error' | 'info' | null}>({
+        message: '',
+        type: null
+    });
+    
+    // Store processed cycle prediction dates
+    const [cyclePhases, setCyclePhases] = useState<{
+        periodDates: Date[];
+        fertileDates: Date[];
+        ovulationDates: Date[];
+        nextPeriodDates: Date[];
+    }>({
+        periodDates: [],
+        fertileDates: [],
+        ovulationDates: [],
+        nextPeriodDates: []
+    })
 
-    // Common symptoms list
-    const commonSymptoms = [
-        'Đau bụng', 'Đau đầu', 'Đầy hơi', 'Mệt mỏi', 
-        'Thay đổi tâm trạng', 'Đau ngực', 'Đau lưng', 'Mụn'
-    ]
+    // Debug logging for state changes
+    useEffect(() => {
+        console.log('State changed - cycleLength:', cycleLength);
+    }, [cycleLength]);
 
-    // Generate sample data for demonstration
-    const generateSampleData = () => {
-        // Tạo dữ liệu mẫu hợp lý hơn
-        // Tính toán ngày bắt đầu chu kỳ gần nhất để hiển thị trên lịch hiện tại
-        const today = new Date();
-        const currentMonth = today.getMonth();
-        const currentYear = today.getFullYear();
-        
-        // Chu kỳ gần nhất (đang diễn ra hoặc vừa kết thúc)
-        const lastPeriodDate = new Date(currentYear, currentMonth, 3); // Ngày 3 của tháng hiện tại
-        
-        // Chu kỳ trước đó
-        const previousPeriodDate = new Date(lastPeriodDate);
-        previousPeriodDate.setDate(previousPeriodDate.getDate() - 28);
-        
-        // Chu kỳ trước nữa
-        const olderPeriodDate = new Date(previousPeriodDate);
-        olderPeriodDate.setDate(olderPeriodDate.getDate() - 28);
-        
-        // Sample data array
-        const sampleData: CycleData[] = [];
-        
-        // Thêm dữ liệu cho chu kỳ cũ nhất (đã hoàn thành)
-        for (let i = 0; i < 5; i++) {
-            const currentDate = new Date(olderPeriodDate);
-            currentDate.setDate(olderPeriodDate.getDate() + i);
-            
-            // Cường độ kinh nguyệt theo ngày
-            let flow: 'light' | 'medium' | 'heavy' | null = 'medium';
-            if (i === 0) flow = 'light';
-            if (i === 1 || i === 2) flow = 'heavy';
-            if (i === 4) flow = 'light';
-            
-            // Triệu chứng phù hợp với từng ngày
-            const daySymptoms = [];
-            if (i < 3) daySymptoms.push('Đau bụng');
-            if (i === 1 || i === 2) daySymptoms.push('Đau đầu');
-            if (i > 0 && i < 4) daySymptoms.push('Đầy hơi');
-            if (i < 3) daySymptoms.push('Mệt mỏi');
-            
-            sampleData.push({
-                date: currentDate.toISOString(),
-                status: 'period',
-                notes: i === 0 ? 'Chu kỳ bắt đầu. Đau bụng nhẹ.' : 
-                      i === 1 ? 'Đau bụng nhiều, uống thuốc giảm đau.' :
-                      i === 2 ? 'Vẫn đau bụng và đau đầu.' : '',
-                symptoms: daySymptoms,
-                flow
-            });
+    useEffect(() => {
+        console.log('State changed - periodLength:', periodLength);
+    }, [periodLength]);
+
+    useEffect(() => {
+        console.log('State changed - lastPeriodStart:', lastPeriodStart);
+    }, [lastPeriodStart]);
+
+    useEffect(() => {
+        console.log('State changed - currentUserId:', currentUserId);
+        // Load cycle prediction data when user ID changes
+        if (currentUserId) {
+            loadCyclePredictionData(currentUserId);
         }
-        
-        // Thêm dữ liệu cho chu kỳ trước (đã hoàn thành)
-        for (let i = 0; i < 5; i++) {
-            const currentDate = new Date(previousPeriodDate);
-            currentDate.setDate(previousPeriodDate.getDate() + i);
+    }, [currentUserId]);
+    
+    // Load cycle prediction data from API
+    const loadCyclePredictionData = async (userId: string) => {
+        try {
+            setIsPredictionLoading(true);
+            console.log('Đang tải dữ liệu dự đoán chu kỳ cho user:', userId);
+            const response = await cyclePredictionAPI.getCyclePredictionByCustomer(userId);
+            console.log('Response dự đoán từ API:', response);
             
-            // Cường độ kinh nguyệt
-            let flow: 'light' | 'medium' | 'heavy' | null = 'medium';
-            if (i === 0) flow = 'light';
-            if (i === 1 || i === 2) flow = 'heavy';
-            if (i === 4) flow = 'light';
-            
-            // Triệu chứng
-            const daySymptoms = [];
-            if (i < 2) daySymptoms.push('Đau bụng');
-            if (i === 1) daySymptoms.push('Đau đầu');
-            if (i > 0 && i < 4) daySymptoms.push('Đầy hơi');
-            if (i < 2) daySymptoms.push('Thay đổi tâm trạng');
-            
-            sampleData.push({
-                date: currentDate.toISOString(),
-                status: 'period',
-                notes: i === 0 ? 'Chu kỳ bắt đầu, nhẹ hơn tháng trước.' : 
-                      i === 1 ? 'Đau bụng nhiều, khó tập trung làm việc.' : '',
-                symptoms: daySymptoms,
-                flow
+            if (response.statusCode === 200 && response.data) {
+                // Handle both single object and array response
+                let predictionData = response.data;
+                
+                // If data is an array, take the first item
+                if (Array.isArray(predictionData) && predictionData.length > 0) {
+                    // Sort by most recent prediction
+                    predictionData.sort((a, b) => {
+                        return new Date(b.cycleStartDate).getTime() - new Date(a.cycleStartDate).getTime();
+                    });
+                    predictionData = predictionData[0]; // Use most recent prediction
+                } else if (Array.isArray(predictionData) && predictionData.length === 0) {
+                    console.log('Không có dữ liệu dự đoán chu kỳ');
+                    setCyclePrediction(null);
+                    setCyclePhases({
+                        periodDates: [],
+                        fertileDates: [],
+                        ovulationDates: [],
+                        nextPeriodDates: []
+                    });
+                    return;
+                }
+                
+                setCyclePrediction(predictionData);
+                console.log('Đã tải dữ liệu dự đoán từ API:', predictionData);
+                
+                // Process prediction dates
+                const processedDates = processPredictionDates(predictionData);
+                setCyclePhases(processedDates);
+            } else {
+                console.log('Không có dữ liệu dự đoán chu kỳ');
+                setCyclePrediction(null);
+                setCyclePhases({
+                    periodDates: [],
+                    fertileDates: [],
+                    ovulationDates: [],
+                    nextPeriodDates: []
+                });
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải dữ liệu dự đoán chu kỳ:', error);
+            setCyclePrediction(null);
+            setCyclePhases({
+                periodDates: [],
+                fertileDates: [],
+                ovulationDates: [],
+                nextPeriodDates: []
             });
+        } finally {
+            setIsPredictionLoading(false);
         }
+    };
+    
+    // Process the prediction dates from API to array of Date objects
+    const processPredictionDates = (prediction: any): { periodDates: Date[], fertileDates: Date[], ovulationDates: Date[], nextPeriodDates: Date[] } => {
+        const result = {
+            periodDates: [],
+            fertileDates: [],
+            ovulationDates: [],
+            nextPeriodDates: []
+        } as { periodDates: Date[], fertileDates: Date[], ovulationDates: Date[], nextPeriodDates: Date[] };
         
-        // Thêm dữ liệu cho chu kỳ hiện tại (đang diễn ra)
-        const currentPeriodLength = Math.min(today.getDate() - lastPeriodDate.getDate() + 1, 5);
-        for (let i = 0; i < currentPeriodLength; i++) {
-            const currentDate = new Date(lastPeriodDate);
-            currentDate.setDate(lastPeriodDate.getDate() + i);
+        if (!prediction) return result;
+        
+        try {
+            // Process period dates (from cycle start date to period length)
+            const cycleStartDate = new Date(prediction.cycleStartDate);
+            const periodLength = menstrualCycleFromDB?.periodLength || 5; // Default to 5 if not available
             
-            // Cường độ kinh nguyệt
-            let flow: 'light' | 'medium' | 'heavy' | null = 'medium';
-            if (i === 0) flow = 'light';
-            if (i === 1) flow = 'heavy';
-            if (i >= 3) flow = 'light';
+            for (let i = 0; i < periodLength; i++) {
+                const periodDate = new Date(cycleStartDate);
+                periodDate.setDate(cycleStartDate.getDate() + i);
+                result.periodDates.push(periodDate);
+            }
             
-            // Triệu chứng
-            const daySymptoms = [];
-            if (i < 2) daySymptoms.push('Đau bụng');
-            if (i === 1) daySymptoms.push('Mệt mỏi');
-            if (i === 1) daySymptoms.push('Đầy hơi');
-            if (i === 0) daySymptoms.push('Thay đổi tâm trạng');
+            // Process fertile dates
+            if (prediction.fertileStartDate && prediction.fertileEndDate) {
+                const fertileStartDate = new Date(prediction.fertileStartDate);
+                const fertileEndDate = new Date(prediction.fertileEndDate);
+                
+                // Loop through all dates in the fertile window
+                let currentDate = new Date(fertileStartDate);
+                while (currentDate <= fertileEndDate) {
+                    result.fertileDates.push(new Date(currentDate));
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+            }
             
-            sampleData.push({
-                date: currentDate.toISOString(),
-                status: 'period',
-                notes: i === 0 ? 'Chu kỳ bắt đầu. Cảm thấy mệt mỏi và thay đổi tâm trạng.' : 
-                      i === 1 ? 'Đau bụng dữ dội, cần nghỉ ngơi nhiều hơn.' : '',
-                symptoms: daySymptoms,
-                flow
+            // Process ovulation date - chỉ hiển thị đúng 1 ngày rụng trứng
+            if (prediction.ovulationDate) {
+                const ovulationDate = new Date(prediction.ovulationDate);
+                result.ovulationDates.push(ovulationDate);
+                // Không thêm ngày trước và sau nữa
+            }
+            
+            // Process next period date - chỉ hiển thị đúng 1 ngày bắt đầu kỳ kinh nguyệt tiếp theo
+            if (prediction.nextPeriodStartDate) {
+                const nextPeriodStartDate = new Date(prediction.nextPeriodStartDate);
+                result.nextPeriodDates.push(nextPeriodStartDate);
+                // Không thêm các ngày tiếp theo nữa
+            }
+            
+            console.log('Processed cycle phases:', result);
+            return result;
+        } catch (error) {
+            console.error('Error processing prediction dates:', error);
+            return result;
+        }
+    };
+
+    // Load menstrual cycle data from API only
+    const loadMenstrualCycleFromAPI = async (userId: string) => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            console.log('Đang tải dữ liệu chu kỳ cho user:', userId);
+            const response = await menstrualCycleAPI.getMenstrualCycleByCustomer(userId);
+            console.log('Response từ API:', response);
+            
+            if (response.statusCode === 200 && response.data) {
+                // Handle both single object and array response
+                let dbData = response.data;
+                
+                // If data is an array, take the first item
+                if (Array.isArray(dbData) && dbData.length > 0) {
+                    dbData = dbData[0];
+                } else if (Array.isArray(dbData) && dbData.length === 0) {
+                    // Empty array - no data
+                    console.log('Mảng dữ liệu rỗng - không có chu kỳ nào');
+                    setMenstrualCycleFromDB(null);
+                    setCycleLength('');
+                    setPeriodLength('');
+                    setLastPeriodStart(null);
+                    return;
+                }
+                
+                setMenstrualCycleFromDB(dbData);
+                console.log('Đã tải dữ liệu từ DB:', dbData);
+                
+                // Update local states with data from API only
+                console.log('Setting cycleLength:', dbData.cycleLength);
+                console.log('Setting periodLength:', dbData.periodLength);
+                console.log('Setting startDate:', dbData.startDate);
+                
+                setCycleLength(dbData.cycleLength);
+                setPeriodLength(dbData.periodLength);
+                
+                // Safely parse the start date
+                try {
+                    // Handle ISO datetime string from API
+                    let dateString = dbData.startDate;
+                    if (dateString.includes('T')) {
+                        // Extract just the date part if it's a full datetime
+                        dateString = dateString.split('T')[0];
+                    }
+                    const startDate = new Date(dateString);
+                    console.log('Parsed date:', startDate);
+                    
+                    if (isNaN(startDate.getTime())) {
+                        console.error('Invalid date from API:', dbData.startDate);
+                        setLastPeriodStart(null);
+                    } else {
+                        setLastPeriodStart(startDate);
+                    }
+                } catch (error) {
+                    console.error('Error parsing date:', error);
+                    setLastPeriodStart(null);
+                }
+            } else {
+                console.log('Không có dữ liệu chu kỳ trong DB - form trống');
+                // Clear all form data - no fallback to default values
+                setMenstrualCycleFromDB(null);
+                setCycleLength('');
+                setPeriodLength('');
+                setLastPeriodStart(null);
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải dữ liệu chu kỳ từ API:', error);
+            setError('Không thể tải dữ liệu chu kỳ. Vui lòng thử lại sau.');
+            // Clear all data on error - no fallback
+            setMenstrualCycleFromDB(null);
+            setCycleLength('');
+            setPeriodLength('');
+            setLastPeriodStart(null);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Save menstrual cycle data to API
+    const saveMenstrualCycleToAPI = async () => {
+        if (!currentUserId || !lastPeriodStart || !cycleLength || !periodLength) {
+            console.log('Thiếu thông tin: Vui lòng điền đầy đủ thông tin trước khi lưu.');
+            showNotification('error', 'Vui lòng điền đầy đủ thông tin trước khi lưu');
+            setFormStatus({
+                message: 'Vui lòng điền đầy đủ thông tin trước khi lưu',
+                type: 'error'
             });
+            return;
         }
-        
-        // Thêm dữ liệu về thời kỳ rụng trứng của chu kỳ trước
-        const ovulationDate = new Date(previousPeriodDate);
-        ovulationDate.setDate(previousPeriodDate.getDate() + 14);
-        
-        sampleData.push({
-            date: ovulationDate.toISOString(),
-            status: 'ovulation',
-            notes: 'Ngày rụng trứng. Cảm thấy đau nhẹ ở bụng dưới bên phải.',
-            symptoms: ['Cramps'],
-            flow: null
+
+        // Validate date
+        if (isNaN(lastPeriodStart.getTime())) {
+            console.log('Lỗi: Ngày bắt đầu kỳ kinh không hợp lệ.');
+            showNotification('error', 'Ngày bắt đầu kỳ kinh không hợp lệ');
+            setFormStatus({
+                message: 'Ngày bắt đầu kỳ kinh không hợp lệ',
+                type: 'error'
+            });
+            return;
+        }
+
+        try {
+            setIsSaving(true);
+            setFormStatus({
+                message: 'Đang lưu cài đặt...',
+                type: 'info'
+            });
+            
+            const cycleData = {
+                customerID: currentUserId,
+                startDate: lastPeriodStart.toISOString().split('T')[0],
+                periodLength: typeof periodLength === 'number' ? periodLength : parseInt(String(periodLength)),
+                cycleLength: typeof cycleLength === 'number' ? cycleLength : parseInt(String(cycleLength))
+            };
+
+            console.log('Đang lưu dữ liệu chu kỳ:', cycleData);
+
+            let response;
+            
+            if (menstrualCycleFromDB?.menstrualCycleID) {
+                // Update existing cycle
+                const updateData: UpdateMenstrualCycleRequest = {
+                    menstrualCycleID: menstrualCycleFromDB.menstrualCycleID,
+                    ...cycleData
+                };
+                response = await menstrualCycleAPI.updateMenstrualCycle(updateData);
+            } else {
+                // Create new cycle
+                const createData: CreateMenstrualCycleRequest = cycleData;
+                response = await menstrualCycleAPI.createMenstrualCycle(createData);
+            }
+
+            if (response.statusCode === 200) {
+                if (response.data) {
+                    setMenstrualCycleFromDB(response.data);
+                    console.log('Đã lưu cài đặt thành công!', response.data);
+                    showNotification('success', 'Đã lưu cài đặt chu kỳ thành công!');
+                    setFormStatus({
+                        message: 'Đã lưu cài đặt chu kỳ thành công!',
+                        type: 'success'
+                    });
+                } else {
+                    console.log('Đã lưu cài đặt thành công!');
+                    showNotification('success', 'Đã lưu cài đặt chu kỳ thành công!');
+                    setFormStatus({
+                        message: 'Đã lưu cài đặt chu kỳ thành công!',
+                        type: 'success'
+                    });
+                }
+            } else {
+                console.error('Có lỗi xảy ra khi lưu dữ liệu:', response);
+                showNotification('error', 'Có lỗi xảy ra khi lưu dữ liệu. Vui lòng thử lại.');
+                setFormStatus({
+                    message: 'Có lỗi xảy ra khi lưu dữ liệu. Vui lòng thử lại.',
+                    type: 'error'
+                });
+            }
+        } catch (error) {
+            console.error('Lỗi khi lưu dữ liệu chu kỳ:', error);
+            showNotification('error', 'Có lỗi xảy ra khi lưu dữ liệu. Vui lòng thử lại.');
+            setFormStatus({
+                message: 'Có lỗi xảy ra khi lưu dữ liệu. Vui lòng thử lại.',
+                type: 'error'
+            });
+        } finally {
+            setIsSaving(false);
+            
+            // Clear form status after 5 seconds
+            setTimeout(() => {
+                setFormStatus({
+                    message: '',
+                    type: null
+                });
+            }, 5000);
+        }
+    };
+
+    // Reset to database data only
+    const resetToDBData = async () => {
+        if (!currentUserId) {
+            console.log('Không thể tải dữ liệu: Không tìm thấy thông tin người dùng.');
+            showNotification('error', 'Không thể tải dữ liệu: Không tìm thấy thông tin người dùng');
+            setFormStatus({
+                message: 'Không thể tải dữ liệu: Không tìm thấy thông tin người dùng',
+                type: 'error'
+            });
+            return;
+        }
+
+        console.log('Đang tải lại dữ liệu từ cơ sở dữ liệu...');
+        showNotification('info', 'Đang tải lại dữ liệu từ cơ sở dữ liệu...');
+        setFormStatus({
+            message: 'Đang tải lại dữ liệu từ cơ sở dữ liệu...',
+            type: 'info'
         });
         
-        // Thêm dữ liệu về cửa sổ thụ thai xung quanh ngày rụng trứng
-        for (let i = -2; i <= 2; i++) {
-            if (i === 0) continue; // Bỏ qua ngày rụng trứng vì đã thêm ở trên
-            
-            const fertileDate = new Date(ovulationDate);
-            fertileDate.setDate(ovulationDate.getDate() + i);
-            
-            sampleData.push({
-                date: fertileDate.toISOString(),
-                status: 'fertile',
-                notes: i < 0 ? 'Thời kỳ dễ thụ thai trước rụng trứng.' : 'Thời kỳ dễ thụ thai sau rụng trứng.',
-                symptoms: [],
-                flow: null
+        try {
+            await loadMenstrualCycleFromAPI(currentUserId);
+            await loadCyclePredictionData(currentUserId);
+            console.log('Đã tải lại dữ liệu từ cơ sở dữ liệu thành công.');
+            showNotification('success', 'Đã tải lại dữ liệu từ cơ sở dữ liệu thành công');
+            setFormStatus({
+                message: 'Đã tải lại dữ liệu từ cơ sở dữ liệu thành công',
+                type: 'success'
+            });
+        } catch (error) {
+            console.error('Lỗi khi tải dữ liệu:', error);
+            showNotification('error', 'Có lỗi xảy ra khi tải dữ liệu');
+            setFormStatus({
+                message: 'Có lỗi xảy ra khi tải dữ liệu',
+                type: 'error'
             });
         }
         
-        return {
-            data: sampleData,
-            lastPeriod: lastPeriodDate
-        };
+        // Clear form status after 5 seconds
+        setTimeout(() => {
+            setFormStatus({
+                message: '',
+                type: null
+            });
+        }, 5000);
     };
 
     useEffect(() => {
         window.scrollTo(0, 0);
         
-        // Try to load data from localStorage first
-        const savedData = localStorage.getItem('cycleData');
-        const savedCycleLength = localStorage.getItem('cycleLength');
-        const savedPeriodLength = localStorage.getItem('periodLength');
-        const savedLastPeriod = localStorage.getItem('lastPeriodStart');
+        // Get current user ID from auth system only
+        let userId = authUtils.getCurrentUserId();
         
-        // If we have saved data, use it
-        if (savedData && savedCycleLength && savedPeriodLength && savedLastPeriod) {
-            setCycleData(JSON.parse(savedData));
-            setCycleLength(parseInt(savedCycleLength));
-            setPeriodLength(parseInt(savedPeriodLength));
-            setLastPeriodStart(new Date(savedLastPeriod));
+        if (userId) {
+            setCurrentUserId(userId);
+            // Only load from API - no default/sample data
+            loadMenstrualCycleFromAPI(userId);
+            // Note: loadCyclePredictionData is now called when currentUserId changes
         } else {
-            // Otherwise, initialize with sample data
-            const { data, lastPeriod } = generateSampleData();
-            setCycleData(data);
-            setLastPeriodStart(lastPeriod);
+            console.log('Không có user ID - không thể tải dữ liệu');
+            // Clear everything if no user
+            setCurrentUserId(null);
+            setCycleLength('');
+            setPeriodLength('');
+            setLastPeriodStart(null);
+            setCyclePrediction(null);
+            setCyclePhases({
+                periodDates: [],
+                fertileDates: [],
+                ovulationDates: [],
+                nextPeriodDates: []
+            });
         }
     }, [])
 
-    // Save data to localStorage whenever it changes
-    useEffect(() => {
-        if (cycleData.length > 0) {
-            localStorage.setItem('cycleData', JSON.stringify(cycleData))
+    // Function to get cycle status for a date based on API prediction data
+    const getPredictedStatus = (date: Date): CycleStatus => {
+        // Compare dates without time
+        const compareDate = (date1: Date, date2: Date): boolean => {
+            return date1.getFullYear() === date2.getFullYear() &&
+                   date1.getMonth() === date2.getMonth() &&
+                   date1.getDate() === date2.getDate();
+        };
+        
+        // First check if date is in any of the API-based phases
+        // Check if date is an ovulation day
+        if (cyclePhases.ovulationDates.some(d => compareDate(d, date))) {
+            return 'ovulation';
         }
         
-        if (cycleLength) {
-            localStorage.setItem('cycleLength', cycleLength.toString())
+        // Check if date is a period day
+        if (cyclePhases.periodDates.some(d => compareDate(d, date))) {
+            return 'period';
         }
         
-        if (periodLength) {
-            localStorage.setItem('periodLength', periodLength.toString())
+        // Check if date is a fertile day (excluding ovulation days which take precedence)
+        if (cyclePhases.fertileDates.some(d => compareDate(d, date))) {
+            return 'fertile';
         }
         
-        if (lastPeriodStart) {
-            localStorage.setItem('lastPeriodStart', lastPeriodStart.toISOString())
-        }
-    }, [cycleData, cycleLength, periodLength, lastPeriodStart])
-
-    const handleDayClick = (date: Date) => {
-        setSelectedDate(date)
-        
-        // Check if we already have data for this date
-        const dateString = date.toISOString().split('T')[0]
-        const existingData = cycleData.find(data => data.date.startsWith(dateString))
-        
-        if (existingData) {
-            setCurrentData(existingData)
-        } else {
-            setCurrentData({
-                date: date.toISOString(),
-                status: 'none',
-                notes: '',
-                symptoms: [],
-                flow: null
-            })
+        // Check if date is a next period day
+        if (cyclePhases.nextPeriodDates.some(d => compareDate(d, date))) {
+            return 'next-period';
         }
         
-        setShowModal(true)
-    }
-
-    const handleCloseModal = () => {
-        setShowModal(false)
-        setSelectedDate(null)
-    }
-
-    const handleSave = () => {
-        if (!selectedDate) return
-        
-        // Update or add the current data
-        const dateString = selectedDate.toISOString().split('T')[0]
-        const updatedData = cycleData.filter(data => !data.date.startsWith(dateString))
-        
-        // Only save if there's actual data
-        if (currentData.status !== 'none' || currentData.notes || currentData.symptoms.length > 0 || currentData.flow) {
-            updatedData.push(currentData)
-            setCycleData(updatedData)
+        // If we don't have API prediction data, fall back to calculation based on user input
+        if (cyclePhases.periodDates.length === 0 && lastPeriodStart && cycleLength && periodLength) {
+            // Validate date objects
+            if (isNaN(date.getTime()) || isNaN(lastPeriodStart.getTime())) {
+                return 'none';
+            }
             
-            // If this is a period start, update the last period start date
-            if (currentData.status === 'period' && currentData.flow) {
-                setLastPeriodStart(selectedDate)
+            const cycleLen = typeof cycleLength === 'number' ? cycleLength : parseInt(String(cycleLength));
+            const periodLen = typeof periodLength === 'number' ? periodLength : parseInt(String(periodLength));
+            
+            // Validate parsed numbers
+            if (isNaN(cycleLen) || isNaN(periodLen) || cycleLen <= 0 || periodLen <= 0) {
+                return 'none';
+            }
+
+            // Calculate days since period start
+            const daysSincePeriodStart = Math.floor((date.getTime() - lastPeriodStart.getTime()) / (1000 * 60 * 60 * 24));
+            
+            // For multiple cycles, find which cycle we're in
+            const cycleNumber = Math.floor(daysSincePeriodStart / cycleLen);
+            const dayInCurrentCycle = daysSincePeriodStart - (cycleNumber * cycleLen);
+            
+            // Handle future cycles too
+            let adjustedDayInCycle = dayInCurrentCycle;
+            if (adjustedDayInCycle < 0) {
+                // For past dates
+                adjustedDayInCycle = cycleLen + (daysSincePeriodStart % cycleLen);
+            }
+            
+            // Period days (days 0 to periodLen-1)
+            if (adjustedDayInCycle >= 0 && adjustedDayInCycle < periodLen) {
+                return 'period';
+            }
+            
+            // Ovulation typically occurs 14 days before next period
+            const ovulationDay = cycleLen - 14;
+            if (adjustedDayInCycle >= ovulationDay - 1 && adjustedDayInCycle <= ovulationDay + 1) {
+                return 'ovulation';
+            }
+            
+            // Fertile window: 5 days before ovulation through 1 day after
+            const fertileStart = Math.max(0, ovulationDay - 5);
+            const fertileEnd = ovulationDay + 1;
+            if (adjustedDayInCycle >= fertileStart && adjustedDayInCycle <= fertileEnd) {
+                return 'fertile';
             }
         }
         
-        setShowModal(false)
-        setSelectedDate(null)
+        return 'none';
     }
 
-    const handleDeleteData = () => {
-        if (!selectedDate) return
-        
-        // Xác nhận trước khi xóa
-        if (window.confirm('Bạn có chắc chắn muốn xóa dữ liệu cho ngày này không?')) {
-            const dateString = selectedDate.toISOString().split('T')[0]
-            
-            // Lọc ra dữ liệu không thuộc ngày đang chọn
-            const updatedData = cycleData.filter(data => !data.date.startsWith(dateString))
-            setCycleData(updatedData)
-            
-            // Lưu vào localStorage
-            localStorage.setItem('cycleData', JSON.stringify(updatedData))
-            
-            // Đóng modal
-            setShowModal(false)
-            setSelectedDate(null)
-        }
-    }
-
-    const handleResetToSampleData = () => {
-        // Reset to sample data
-        const { data, lastPeriod } = generateSampleData();
-        setCycleData(data);
-        setLastPeriodStart(lastPeriod);
-        
-        // Save to localStorage
-        localStorage.setItem('cycleData', JSON.stringify(data));
-        localStorage.setItem('cycleLength', cycleLength.toString());
-        localStorage.setItem('periodLength', periodLength.toString());
-        localStorage.setItem('lastPeriodStart', lastPeriod.toISOString());
-        
-        // Show confirmation
-        alert('Dữ liệu đã được đặt lại về dữ liệu mẫu để minh họa.');
-    };
-
-    const toggleSymptom = (symptom: string) => {
-        if (currentData.symptoms.includes(symptom)) {
-            setCurrentData({
-                ...currentData,
-                symptoms: currentData.symptoms.filter(s => s !== symptom)
-            })
-        } else {
-            setCurrentData({
-                ...currentData,
-                symptoms: [...currentData.symptoms, symptom]
-            })
-        }
-    }
-
-    // Function to predict cycle phases based on last period
-    const getPredictedStatus = (date: Date): CycleStatus => {
-        if (!lastPeriodStart) return 'none'
-        
-        const dayDiff = Math.floor((date.getTime() - lastPeriodStart.getTime()) / (1000 * 60 * 60 * 24))
-        const dayInCycle = ((dayDiff % cycleLength) + cycleLength) % cycleLength
-        
-        if (dayInCycle < periodLength) {
-            return 'period'
-        } else if (dayInCycle >= cycleLength - 14 - 2 && dayInCycle <= cycleLength - 14 + 2) {
-            return 'ovulation'
-        } else if (dayInCycle >= cycleLength - 19 && dayInCycle <= cycleLength - 9) {
-            return 'fertile'
-        }
-        
-        return 'none'
-    }
-
-    // Custom tile content for the calendar
+    // Custom tile content for the calendar - prioritizes API data, falls back to calculations
     const tileContent = ({ date, view }: { date: Date; view: string }) => {
         if (view !== 'month') return null
         
-        const dateString = date.toISOString().split('T')[0]
-        const existingData = cycleData.find(data => data.date.startsWith(dateString))
-        const predictedStatus = getPredictedStatus(date)
+        // Always return a minimal div for empty days to ensure layout consistency
+        const emptyContent = <div className="tile-content empty-day"></div>
         
-        // If we have actual data, show that, otherwise show prediction
-        const status = existingData?.status || predictedStatus
+        // Get prediction status (this now handles both API data and manual calculations)
+        const predictedStatus = getPredictedStatus(date);
+        
+        // Return empty content if no prediction is available
+        if (predictedStatus === 'none') {
+            return emptyContent;
+        }
         
         let className = ''
-        switch (status) {
+        let content = ''
+        
+        switch (predictedStatus) {
             case 'period':
                 className = 'period-day'
-                break
-            case 'fertile':
-                className = 'fertile-day'
+                content = '🩸'
                 break
             case 'ovulation':
                 className = 'ovulation-day'
+                content = '⭐'
+                break
+            case 'fertile':
+                className = 'fertile-day'
+                content = '🌿'
+                break
+            case 'next-period':
+                className = 'next-period-day'
+                content = '�'
                 break
             default:
-                className = ''
+                return emptyContent;
         }
         
         return (
-            <div className={`day-marker ${className} ${existingData ? 'has-data' : ''}`}>
-                {existingData?.symptoms.length ? <div className="symptom-indicator"></div> : null}
-                {existingData && <div className="data-indicator"></div>}
+            <div className={`tile-content ${className}`}>
+                <span className="status-icon">{content}</span>
             </div>
         )
     }
 
-    // Generate next predicted periods
-    const getNextPeriods = () => {
-        if (!lastPeriodStart) return []
-        
-        const periods = []
-        const today = new Date()
-        
-        for (let i = 0; i < 3; i++) {
-            const nextPeriod = new Date(lastPeriodStart)
-            nextPeriod.setDate(nextPeriod.getDate() + cycleLength * (i + 1))
-            
-            if (nextPeriod > today) {
-                periods.push({
-                    start: new Date(nextPeriod),
-                    end: new Date(new Date(nextPeriod).setDate(nextPeriod.getDate() + periodLength - 1))
-                })
-            }
-        }
-        
-        return periods
-    }
-
     return (
-        <div className="cycle-tracker-container">
-            <h1 className="cycle-tracker-title">Theo Dõi Chu Kỳ Sinh Sản</h1>
-            
-            <div className="cycle-tracker-tabs">
-                <button 
-                    className={`tab-button ${activeTab === 'calendar' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('calendar')}
-                >
-                    <FaCalendarAlt /> Lịch
-                </button>
-                <button 
-                    className={`tab-button ${activeTab === 'insights' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('insights')}
-                >
-                    <FaChartLine /> Phân Tích
-                </button>
-                <button 
-                    className={`tab-button ${activeTab === 'predictions' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('predictions')}
-                >
-                    <FaBell /> Dự Đoán
-                </button>
-                <button 
-                    className={`tab-button ${activeTab === 'settings' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('settings')}
-                >
-                    <FaInfoCircle /> Cài Đặt
-                </button>
+        <div className="cycle-tracker">
+            {/* Notification system */}
+            <div className="notification-container">
+                {notifications.map(notification => (
+                    <Notification
+                        key={notification.id}
+                        type={notification.type}
+                        message={notification.message}
+                        onClose={() => removeNotification(notification.id)}
+                    />
+                ))}
             </div>
             
-            <div className="cycle-tracker-content">
-                {activeTab === 'calendar' && (
-                    <div className="calendar-section">
-                        <div className="calendar-guide">
-                            <h4>Hướng dẫn sử dụng:</h4>
-                            <ul>
-                                <li><span className="guide-color period-color-sample"></span> Dự đoán ngày có kinh nguyệt</li>
-                                <li><span className="guide-color fertile-color-sample"></span> Dự đoán thời kỳ dễ thụ thai</li>
-                                <li><span className="guide-color ovulation-color-sample"></span> Dự đoán ngày rụng trứng</li>
-                            
-                                <li>
-                                    <div className="guide-indicator-wrapper">
-                                        <div className="guide-indicator">
-                                            <div className="data-indicator"></div>
-                                        </div> 
-                                        Ngày đã có dữ liệu
-                                    </div>
-                                </li>
-                                <li>
-                                    <div className="guide-indicator-wrapper">
-                                        <div className="guide-indicator">
-                                            <div className="symptom-indicator"></div>
-                                        </div> 
-                                        Ngày có ghi nhận triệu chứng
-                                    </div>
-                                </li>
-                            </ul>
-                            <p className="guide-tip">Nhấp vào bất kỳ ngày nào để thêm hoặc chỉnh sửa thông tin.</p>
-                        </div>
-                        
-            <div className="calendar-wrapper">
-                            <Calendar 
-                                onClickDay={handleDayClick} 
-                                className="large-calendar" 
-                                tileContent={tileContent}
-                            />
-                        </div>
-                    </div>
-                )}
+            <div className="cycle-tracker-container">
+                <h1 className="cycle-tracker-title">Theo Dõi Chu Kỳ Kinh Nguyệt</h1>
                 
-                {activeTab === 'insights' && (
-                    <div className="insights-section">
-                        <h3>Phân Tích Chu Kỳ</h3>
-                        {cycleData.length > 0 ? (
-                            <div className="insights-content">
-                                <div className="insights-stats">
-                                    <div className="stat-card">
-                                        <h4>Độ Dài Chu Kỳ Trung Bình</h4>
-                                        <p className="stat-value">{cycleLength} ngày</p>
-                                    </div>
-                                    <div className="stat-card">
-                                        <h4>Thời Gian Hành Kinh Trung Bình</h4>
-                                        <p className="stat-value">{periodLength} ngày</p>
-                                    </div>
+                <div className="main-layout">
+                    {/* Phần bên trái - CHỈ Cài đặt thông tin từ API */}
+                    <div className="settings-panel">
+                        <h3>Cài Đặt Theo Dõi Chu Kỳ</h3>
+                        
+                        {isLoading && (
+                            <div className="loading-indicator">
+                                <FaSpinner className="spinner" />
+                                <span>Đang tải dữ liệu từ API...</span>
+                            </div>
+                        )}
+                        
+                        {error && (
+                            <div className="error-message" style={{ 
+                                backgroundColor: '#fef2f2', 
+                                border: '1px solid #fecaca', 
+                                color: '#dc2626', 
+                                padding: '12px', 
+                                borderRadius: '8px', 
+                                marginBottom: '16px' 
+                            }}>
+                                <p>{error}</p>
+                            </div>
+                        )}
+                        
+                        {!currentUserId && !isLoading && (
+                            <div className="no-user-message">
+                                <p>Vui lòng đăng nhập để sử dụng tính năng theo dõi chu kỳ.</p>
+                            </div>
+                        )}
+                        
+                        {currentUserId && (
+                            <>
+                                <div className="form-group">
+                                    <label htmlFor="cycleLength">Độ dài chu kỳ (ngày):</label>
+                                    <input
+                                        type="number"
+                                        id="cycleLength"
+                                        min="21"
+                                        max="35"
+                                        value={cycleLength}
+                                        placeholder="Nhập độ dài chu kỳ (21-35 ngày)"
+                                        onChange={(e) => setCycleLength(e.target.value ? parseInt(e.target.value) : '')}
+                                        disabled={isLoading || isSaving}
+                                    />
                                 </div>
                                 
-                                <div className="insights-history">
-                                    <h4>Lịch Sử Gần Đây</h4>
-                                    <div className="history-list">
-                                        {cycleData
-                                            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                                            .slice(0, 5)
-                                            .map((data, index) => {
-                                                // Dịch trạng thái sang tiếng Việt
-                                                let statusText = '';
-                                                switch(data.status) {
-                                                    case 'period':
-                                                        statusText = 'Kinh nguyệt';
-                                                        break;
-                                                    case 'fertile':
-                                                        statusText = 'Dễ thụ thai';
-                                                        break;
-                                                    case 'ovulation':
-                                                        statusText = 'Rụng trứng';
-                                                        break;
-                                                    default:
-                                                        statusText = 'Không xác định';
-                                                }
-                                                
-                                                // Dịch cường độ kinh nguyệt
-                                                let flowText = '';
-                                                if (data.flow) {
-                                                    switch(data.flow) {
-                                                        case 'light':
-                                                            flowText = 'nhẹ';
-                                                            break;
-                                                        case 'medium':
-                                                            flowText = 'vừa';
-                                                            break;
-                                                        case 'heavy':
-                                                            flowText = 'nặng';
-                                                            break;
-                                                    }
-                                                }
-                                                
-                                                return (
-                                                    <div key={index} className="history-item">
-                                                        <div className="history-date">
-                                                            {new Date(data.date).toLocaleDateString()}
-                                                        </div>
-                                                        <div className="history-details">
-                                                            <div className="history-status">
-                                                                {statusText}
-                                                                {data.flow ? ` (mức độ ${flowText})` : ''}
-                                                            </div>
-                                                            {data.symptoms.length > 0 && (
-                                                                <div className="history-symptoms">
-                                                                    Triệu chứng: {data.symptoms.join(', ')}
-                                                                </div>
-                                                            )}
-                                                            {data.notes && (
-                                                                <div className="history-notes">
-                                                                    Ghi chú: {data.notes}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )
-                                            })}
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <p className="no-data-message">
-                                Bắt đầu theo dõi chu kỳ của bạn để xem phân tích tại đây.
-                            </p>
-                        )}
-                    </div>
-                )}
-                
-                {activeTab === 'predictions' && (
-                    <div className="predictions-section">
-                        <h3>Dự Đoán Chu Kỳ</h3>
-                        {lastPeriodStart ? (
-                            <div className="predictions-content">
-                                <div className="next-periods">
-                                    <h4>Chu Kỳ Sắp Tới</h4>
-                                    {getNextPeriods().map((period, index) => (
-                                        <div key={index} className="prediction-card period-prediction">
-                                            <div className="prediction-icon period-icon"></div>
-                                            <div className="prediction-details">
-                                                <div className="prediction-title">Chu kỳ #{index + 1}</div>
-                                                <div className="prediction-dates">
-                                                    {period.start.toLocaleDateString()} - {period.end.toLocaleDateString()}
-                                                </div>
-                                                <div className="days-away">
-                                                    {Math.ceil((period.start.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} ngày nữa
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
+                                <div className="form-group">
+                                    <label htmlFor="periodLength">Độ dài kinh nguyệt (ngày):</label>
+                                    <input
+                                        type="number"
+                                        id="periodLength"
+                                        min="3"
+                                        max="7"
+                                        value={periodLength}
+                                        placeholder="Nhập độ dài kinh nguyệt (3-7 ngày)"
+                                        onChange={(e) => setPeriodLength(e.target.value ? parseInt(e.target.value) : '')}
+                                        disabled={isLoading || isSaving}
+                                    />
                                 </div>
                                 
-                                <div className="fertility-window">
-                                    <h4>Thời Kỳ Dễ Thụ Thai</h4>
-                                    {getNextPeriods().map((period, index) => {
-                                        const ovulationDate = new Date(period.start)
-                                        ovulationDate.setDate(ovulationDate.getDate() - 14)
-                                        
-                                        const fertileStart = new Date(ovulationDate)
-                                        fertileStart.setDate(fertileStart.getDate() - 5)
-                                        
-                                        const fertileEnd = new Date(ovulationDate)
-                                        fertileEnd.setDate(fertileEnd.getDate() + 5)
-                                        
-                                        return (
-                                            <div key={index} className="prediction-card fertile-prediction">
-                                                <div className="prediction-icon fertile-icon"></div>
-                                                <div className="prediction-details">
-                                                    <div className="prediction-title">Thời kỳ dễ thụ thai #{index + 1}</div>
-                                                    <div className="prediction-dates">
-                                                        {fertileStart.toLocaleDateString()} - {fertileEnd.toLocaleDateString()}
-                                                    </div>
-                                                    <div className="ovulation-date">
-                                                        Rụng trứng khoảng: {ovulationDate.toLocaleDateString()}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
+                                <div className="form-group">
+                                    <label htmlFor="lastPeriodStart">Ngày bắt đầu kỳ kinh cuối:</label>
+                                    <input
+                                        type="date"
+                                        id="lastPeriodStart"
+                                        value={lastPeriodStart ? lastPeriodStart.toISOString().split('T')[0] : ''}
+                                        onChange={(e) => setLastPeriodStart(e.target.value ? new Date(e.target.value) : null)}
+                                        disabled={isLoading || isSaving}
+                                    />
                                 </div>
-                            </div>
-                        ) : (
-                            <p className="no-data-message">
-                                Vui lòng thiết lập ngày bắt đầu chu kỳ gần nhất trong phần Cài Đặt để xem dự đoán.
-                            </p>
-                        )}
-                    </div>
-                )}
-                
-                {activeTab === 'settings' && (
-                    <div className="settings-section">
-                        <h3>Cài Đặt Theo Dõi</h3>
-                        
-                        <div className="settings-form">
-                            <div className="form-group">
-                                <label>Độ Dài Chu Kỳ Trung Bình (ngày)</label>
-                                <input 
-                                    type="number" 
-                                    min="21" 
-                                    max="35"
-                                    value={cycleLength}
-                                    onChange={(e) => setCycleLength(parseInt(e.target.value))}
-                                    className="settings-input"
-                                />
-                            </div>
-                            
-                            <div className="form-group">
-                                <label>Thời Gian Hành Kinh Trung Bình (ngày)</label>
-                                <input 
-                                    type="number" 
-                                    min="2" 
-                                    max="10"
-                                    value={periodLength}
-                                    onChange={(e) => setPeriodLength(parseInt(e.target.value))}
-                                    className="settings-input"
-                                />
-                            </div>
-                            
-                            <div className="form-group">
-                                <label>Ngày Bắt Đầu Chu Kỳ Gần Nhất</label>
-                                <input 
-                                    type="date" 
-                                    value={lastPeriodStart ? lastPeriodStart.toISOString().split('T')[0] : ''}
-                                    onChange={(e) => setLastPeriodStart(new Date(e.target.value))}
-                                    className="settings-input"
-                                />
-                            </div>
-                            
-                            <button 
-                                className="save-settings-btn"
-                                onClick={() => {
-                                    localStorage.setItem('cycleLength', cycleLength.toString());
-                                    localStorage.setItem('periodLength', periodLength.toString());
-                                    if (lastPeriodStart) {
-                                        localStorage.setItem('lastPeriodStart', lastPeriodStart.toISOString());
-                                    }
-                                    alert('Đã lưu cài đặt thành công!');
-                                }}
-                            >
-                                <FaSave /> Lưu Cài Đặt
-                            </button>
-                            
-                            <button 
-                                className="reset-data-btn"
-                                onClick={handleResetToSampleData}
-                                style={{
-                                    background: '#f87171',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    padding: '10px 20px',
-                                    marginTop: '20px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    cursor: 'pointer',
-                                    fontWeight: 'bold'
-                                }}
-                            >
-                                <FaTrash /> Đặt lại dữ liệu mẫu
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </div>
-            
-            {showModal && selectedDate && (
-                <div className="cycle-modal-overlay">
-                    <div className={`cycle-modal ${cycleData.find(data => data.date.startsWith(selectedDate.toISOString().split('T')[0])) ? 'has-existing-data' : ''}`}>
-                        <div className="modal-header">
-                            <h3>Ghi Lại Chu Kỳ</h3>
-                            <button className="close-btn" onClick={handleCloseModal}>
-                                <FaTimes />
-                            </button>
-                        </div>
-                        
-                        <div className="modal-date">
-                            {selectedDate.toLocaleDateString(undefined, { 
-                                weekday: 'long', 
-                                year: 'numeric', 
-                                month: 'long', 
-                                day: 'numeric' 
-                            })}
-                            {cycleData.find(data => data.date.startsWith(selectedDate.toISOString().split('T')[0])) && 
-                                <div className="existing-data-badge">Dữ liệu đã ghi</div>
-                            }
-                        </div>
-                        
-                        <div className="modal-content">
-                            <div className="status-selector">
-                                <h4>Chọn Trạng Thái:</h4>
-                                <div className="status-options">
-                                    <button 
-                                        className={`status-btn period-btn ${currentData.status === 'period' ? 'active' : ''}`}
-                                        onClick={() => setCurrentData({...currentData, status: 'period'})}
-                                    >
-                                        <FaTint className="status-icon" />
-                                        <span className="status-text">Kinh Nguyệt</span>
-                                    </button>
-                                    <button 
-                                        className={`status-btn fertile-btn ${currentData.status === 'fertile' ? 'active' : ''}`}
-                                        onClick={() => setCurrentData({...currentData, status: 'fertile'})}
-                                    >
-                                        <FaSeedling className="status-icon" />
-                                        <span className="status-text">Dễ Thụ Thai</span>
-                                    </button>
-                                    <button 
-                                        className={`status-btn ovulation-btn ${currentData.status === 'ovulation' ? 'active' : ''}`}
-                                        onClick={() => setCurrentData({...currentData, status: 'ovulation'})}
-                                    >
-                                        <FaHeart className="status-icon" />
-                                        <span className="status-text">Rụng Trứng</span>
-                                    </button>
-                                    <button 
-                                        className={`status-btn none-btn ${currentData.status === 'none' ? 'active' : ''}`}
-                                        onClick={() => setCurrentData({...currentData, status: 'none'})}
-                                    >
-                                        <FaBan className="status-icon" />
-                                        <span className="status-text">Không</span>
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            {currentData.status === 'period' && (
-                                <div className="flow-selector">
-                                    <h4>Mức Độ:</h4>
-                                    <div className="flow-options">
+                                
+                                {/* Form status message */}
+                                {formStatus.type && formStatus.message && (
+                                    <div className={`form-status form-status-${formStatus.type}`}>
+                                        {formStatus.type === 'success' && <FaCheck />}
+                                        {formStatus.type === 'error' && <FaExclamationCircle />}
+                                        {formStatus.type === 'info' && <FaInfoCircle />}
+                                        <span>{formStatus.message}</span>
+                                    </div>
+                                )}
+                                
+                                <div className="form-actions">
+                                    <div className="settings-buttons">
                                         <button 
-                                            className={`flow-btn light ${currentData.flow === 'light' ? 'active' : ''}`}
-                                            onClick={() => setCurrentData({...currentData, flow: 'light'})}
+                                            className={`btn ${!lastPeriodStart || !cycleLength || !periodLength || isLoading || isSaving ? 'btn-disabled' : 'btn-save'}`}
+                                            onClick={saveMenstrualCycleToAPI}
+                                            disabled={!lastPeriodStart || !cycleLength || !periodLength || isLoading || isSaving}
                                         >
-                                            Nhẹ
+                                            {isSaving ? (
+                                                <>
+                                                    <FaSpinner className="spinner" />
+                                                    Đang lưu...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <FaSave />
+                                                    Lưu Cài Đặt Chu Kỳ
+                                                </>
+                                            )}
                                         </button>
+                                        
                                         <button 
-                                            className={`flow-btn medium ${currentData.flow === 'medium' ? 'active' : ''}`}
-                                            onClick={() => setCurrentData({...currentData, flow: 'medium'})}
+                                            className={`btn ${!currentUserId || isLoading || isSaving ? 'btn-disabled' : 'btn-reset'}`}
+                                            onClick={resetToDBData}
+                                            disabled={!currentUserId || isLoading || isSaving}
                                         >
-                                            Vừa
-                                        </button>
-                                        <button 
-                                            className={`flow-btn heavy ${currentData.flow === 'heavy' ? 'active' : ''}`}
-                                            onClick={() => setCurrentData({...currentData, flow: 'heavy'})}
-                                        >
-                                            Nặng
+                                            <FaSync />
+                                            Tải Lại Dữ Liệu
                                         </button>
                                     </div>
                                 </div>
-                            )}
-                            
-                            <div className="symptoms-selector">
-                                <h4>Triệu Chứng:</h4>
-                                <div className="symptoms-grid">
-                                    {commonSymptoms.map((symptom, index) => (
-                                        <div 
-                                            key={index}
-                                            className={`symptom-item ${currentData.symptoms.includes(symptom) ? 'active' : ''}`}
-                                            onClick={() => toggleSymptom(symptom)}
-                                        >
-                                            {currentData.symptoms.includes(symptom) ? <FaCheckCircle /> : <FaRegCircle />}
-                                            <span>{symptom}</span>
+                            </>
+                        )}
+                    </div>
+                    
+                    {/* Phần bên phải - Lịch và Hướng dẫn cạnh nhau */}
+                    <div className="calendar-panel">
+                        <div className="calendar-main-content">
+                            {/* Lịch theo dõi chu kỳ - bên TRÁI */}
+                            <div className="calendar-section">
+                                <h2>Lịch Theo Dõi Chu Kỳ</h2>
+                                {currentUserId ? (
+                                    <>
+                                        {cyclePhases.periodDates.length > 0 ? (
+                                            <div className="calendar-info">
+                                                <p>Hiển thị dự đoán từ API dựa trên dữ liệu đã lưu</p>
+                                                {isPredictionLoading && (
+                                                    <div className="loading-indicator-inline">
+                                                        <FaSpinner className="fa-spin" style={{fontSize: '14px'}} /> 
+                                                        <span>Đang tải dữ liệu dự đoán...</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : lastPeriodStart && cycleLength && periodLength ? (
+                                            <div className="calendar-info">
+                                                <p>Hiển thị dự đoán dựa trên dữ liệu nhập</p>
+                                                <small>(Lưu cài đặt để tạo dự đoán từ API)</small>
+                                            </div>
+                                        ) : (
+                                            <div className="calendar-info">
+                                                <p>Vui lòng nhập đầy đủ thông tin để xem dự đoán chu kỳ</p>
+                                            </div>
+                                        )}
+                                        <div className="calendar-wrapper">
+                                            <Calendar
+                                                tileContent={tileContent}
+                                                className="large-calendar"
+                                                locale="vi-VN"
+                                                calendarType="iso8601"
+                                                showNeighboringMonth={true}
+                                                showFixedNumberOfWeeks={true}
+                                                formatShortWeekday={(_, date) => {
+                                                    // Return Vietnamese day abbreviation (T2-CN)
+                                                    return viDaysOfWeek[date.getDay() === 0 ? 6 : date.getDay() - 1];
+                                                }}
+                                                view="month"
+                                            />
                                         </div>
-                                    ))}
+                                    </>
+                                ) : (
+                                    <div className="calendar-placeholder">
+                                        <p>Đăng nhập để xem lịch theo dõi chu kỳ</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Hướng dẫn sử dụng - bên PHẢI của lịch */}
+                            <div className="calendar-guide">
+                                <h4>Hướng dẫn sử dụng:</h4>
+                                <ul>
+                                    <li>
+                                        <div className="guide-indicator-wrapper">
+                                            <div className="guide-color period-color-sample">
+                                                <span className="status-icon">🩸</span>
+                                            </div>
+                                            <span>Kỳ kinh nguyệt hiện tại</span>
+                                        </div>
+                                    </li>
+                                    <li>
+                                        <div className="guide-indicator-wrapper">
+                                            <div className="guide-color ovulation-color-sample">
+                                                <span className="status-icon">⭐</span>
+                                            </div>
+                                            <span>Ngày rụng trứng</span>
+                                        </div>
+                                    </li>
+                                    <li>
+                                        <div className="guide-indicator-wrapper">
+                                            <div className="guide-color fertile-color-sample">
+                                                <span className="status-icon">🌿</span>
+                                            </div>
+                                            <span>Thời kỳ dễ thụ thai</span>
+                                        </div>
+                                    </li>
+                                    <li>
+                                        <div className="guide-indicator-wrapper">
+                                            <div className="guide-color next-period-color-sample">
+                                                <span className="status-icon">�</span>
+                                            </div>
+                                            <span>Kỳ kinh nguyệt tiếp theo</span>
+                                        </div>
+                                    </li>
+                                </ul>
+                                <div className="guide-note">
+                                    <p><strong>Lưu ý:</strong></p>
+                                    <ul>
+                                        <li>Dự đoán dựa trên dữ liệu cá nhân</li>
+                                        <li>Chỉ mang tính chất tham khảo</li>
+                                        <li>Nên tham khảo ý kiến bác sĩ</li>
+                                    </ul>
                                 </div>
                             </div>
-                            
-                            <div className="notes-input">
-                                <h4>Ghi Chú:</h4>
-                                <textarea
-                                    value={currentData.notes}
-                                    onChange={(e) => setCurrentData({...currentData, notes: e.target.value})}
-                                    placeholder="Thêm ghi chú ở đây..."
-                                    rows={3}
-                                />
-                            </div>
-                        </div>
-                        
-                        <div className="modal-footer">
-                            {cycleData.find(data => data.date.startsWith(selectedDate.toISOString().split('T')[0])) && (
-                                <button className="delete-btn" onClick={handleDeleteData}>
-                                    <FaTrash /> Xóa
-                                </button>
-                            )}
-                            <button className="cancel-btn" onClick={handleCloseModal}>Đóng</button>
-                            <button className="save-btn" onClick={handleSave}>Lưu</button>
                         </div>
                     </div>
                 </div>
-            )}
+            </div>
         </div>
     )
 }
