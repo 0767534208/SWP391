@@ -1801,4 +1801,56 @@ export const qnaAPI = {
   updateQuestionStatus: async (questionId: number, data: any): Promise<ApiResponse<any>> => {
     return apiRequest<any>(API.QNA.UPDATE_STATUS(questionId), 'PUT', data);
   }
+};
+
+// Menstrual Cycle API interfaces
+export interface MenstrualCycleData {
+  menstrualCycleID?: number;
+  customerID: string;
+  startDate: string;
+  periodLength: number;
+  cycleLength: number;
+  estimatedEndDate?: string;
+  estimatedNextCycleDate?: string;
+}
+
+export interface CreateMenstrualCycleRequest {
+  customerID: string;
+  startDate: string;
+  periodLength: number;
+  cycleLength: number;
+}
+
+export interface UpdateMenstrualCycleRequest {
+  menstrualCycleID: number;
+  customerID: string;
+  startDate: string;
+  periodLength: number;
+  cycleLength: number;
+}
+
+/**
+ * Menstrual Cycle API endpoints
+ */
+export const menstrualCycleAPI = {
+  /**
+   * Create new menstrual cycle
+   */
+  createMenstrualCycle: async (cycleData: CreateMenstrualCycleRequest): Promise<ApiResponse<MenstrualCycleData>> => {
+    return apiRequest<MenstrualCycleData>('/api/MenstrualCycle', 'POST', cycleData);
+  },
+
+  /**
+   * Update existing menstrual cycle
+   */
+  updateMenstrualCycle: async (cycleData: UpdateMenstrualCycleRequest): Promise<ApiResponse<MenstrualCycleData>> => {
+    return apiRequest<MenstrualCycleData>('/api/MenstrualCycle', 'PUT', cycleData);
+  },
+
+  /**
+   * Get menstrual cycle by customer ID
+   */
+  getMenstrualCycleByCustomer: async (customerId: string): Promise<ApiResponse<MenstrualCycleData>> => {
+    return apiRequest<MenstrualCycleData>(`/api/MenstrualCycle/customer/${customerId}`, 'GET');
+  }
 }; 

@@ -1,7 +1,7 @@
 /* Main container */
 .cycle-tracker-container {
   padding: 40px 20px;
-  max-width: 1000px;
+  max-width: 1400px;
   margin: 0 auto;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   color: #333;
@@ -16,131 +16,418 @@
   font-weight: 700;
 }
 
-/* Tabs Navigation */
-.cycle-tracker-tabs {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 30px;
-  flex-wrap: wrap;
+/* Main layout - Thiết kế cân đối và hợp lý */
+.main-layout {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 30px;
 }
 
-.tab-button {
-  background-color: #f5f7fa;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  color: #64748b;
-  transition: all 0.3s ease;
+/* Notification system - Replacement for alerts */
+.notification-container {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 450px;
+  width: 90%;
+  z-index: 1000;
+}
+
+.notification {
+  margin-bottom: 12px;
+  padding: 16px 20px;
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  animation: slideIn 0.4s ease-out forwards;
   display: flex;
   align-items: center;
-  gap: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  font-size: 16px;
+  font-weight: 500;
 }
 
-.tab-button:hover {
-  background-color: #e9ecef;
-  color: #4f46e5;
-}
-
-.tab-button.active {
-  background-color: #4f46e5;
+.notification-success {
+  background-color: #10b981;
+  border-left: 6px solid #047857;
   color: white;
 }
 
-.tab-button svg {
-  font-size: 1.1rem;
+.notification-error {
+  background-color: #ef4444;
+  border-left: 6px solid #b91c1c;
+  color: white;
 }
 
-/* Calendar section */
-.calendar-section {
-  background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  padding: 24px;
-  margin-bottom: 30px;
+.notification-info {
+  background-color: #3b82f6;
+  border-left: 6px solid #1d4ed8;
+  color: white;
 }
 
-/* Hướng dẫn sử dụng */
-.calendar-guide {
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
+.notification-icon {
+  margin-right: 12px;
+  font-size: 22px;
+}
+
+.notification-message {
+  flex-grow: 1;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.8;
+  font-size: 20px;
+  transition: all 0.2s;
+  padding: 5px;
+}
+
+.notification-close:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+}
+
+/* Form Buttons */
+.settings-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 20px;
+  width: 100%;
+}
+
+.btn {
+  padding: 12px 15px;
   border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 20px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  font-size: 16px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.btn-save {
+  background-color: #4f46e5;
+  color: white;
+  font-size: 18px;
+}
+
+.btn-save:hover {
+  background-color: #4338ca;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
+}
+
+.btn-reset {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  font-size: 16px;
+}
+
+.btn-reset:hover {
+  background-color: #e5e7eb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-disabled {
+  background-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Spinner for loading states */
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Status indicators for buttons */
+.status-text {
+  font-size: 13px;
+  margin-left: 10px;
+  display: inline-block;
+  animation: fadeIn 0.3s;
+}
+
+.status-success {
+  color: #10b981;
+}
+
+.status-error {
+  color: #ef4444;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Input fields with better styling */
+.input-group {
+  margin-bottom: 15px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: border-color 0.2s;
+}
+
+.input-group input:focus {
+  border-color: #4f46e5;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+.input-error {
+  color: #ef4444;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+/* Form status message */
+.form-status {
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 15px;
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: fadeIn 0.5s;
+}
+
+.form-status-success {
+  background-color: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: #047857;
+}
+
+.form-status-error {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #b91c1c;
+}
+
+.form-status-info {
+  background-color: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  color: #1d4ed8;
+}
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 32px;
+  margin-top: 20px;
+  align-items: start;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Settings panel - left side - được tối ưu */
+.settings-panel {
+  background-color: #fff;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  padding: 24px;
+  height: fit-content;
+  position: sticky;
+  top: 20px;
+  max-width: 350px;
+  border: 1px solid #e2e8f0;
+}
+
+/* Calendar panel - right side - được mở rộng và cân đối */
+.calendar-panel {
+  background-color: #fff;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  padding: 32px;
+  min-height: 700px;
+  width: 100%;
+  border: 1px solid #e2e8f0;
+}
+
+/* Layout chính trong calendar panel - lịch chiếm nhiều không gian hơn */
+.calendar-main-content {
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* Calendar section - được tối ưu layout */
+.calendar-section {
+  background-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  margin-bottom: 0;
+}
+
+.calendar-section h2 {
+  text-align: center;
+  color: #1e293b;
+  margin-bottom: 16px;
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.calendar-info {
+  text-align: center;
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+/* Hướng dẫn sử dụng - bên phải của lịch */
+.calendar-guide {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  height: fit-content;
+  position: sticky;
+  top: 20px;
 }
 
 .calendar-guide h4 {
   color: #1e293b;
   margin-top: 0;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   font-size: 1.1rem;
+  font-weight: 600;
+  text-align: center;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
 }
 
 .calendar-guide ul {
-  padding-left: 20px;
-  margin-bottom: 12px;
+  padding-left: 0;
+  margin-bottom: 16px;
   list-style-type: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .calendar-guide li {
-  margin-bottom: 10px;
+  margin-bottom: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   color: #64748b;
+  font-size: 0.9rem;
+  padding: 8px 12px;
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  border: 1px solid rgba(203, 213, 225, 0.5);
+}
+
+.guide-note {
+  margin-top: 16px;
+  padding: 12px;
+  background-color: rgba(79, 70, 229, 0.05);
+  border-radius: 8px;
+  border-left: 4px solid #4f46e5;
+}
+
+.guide-note p {
+  margin: 0 0 8px 0;
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.9rem;
+}
+
+.guide-note ul {
+  padding-left: 16px;
+  margin: 0;
+  list-style-type: disc;
+}
+
+.guide-note li {
+  padding: 2px 0;
+  background: none;
+  border: none;
+  margin-bottom: 4px;
+  font-size: 0.85rem;
 }
 
 /* Cập nhật biểu tượng hướng dẫn để giống với hiển thị trong lịch */
 .guide-color {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border-radius: 6px;
-  display: inline-block;
-  position: relative;
-}
-
-/* Biểu tượng chỉ báo cho hướng dẫn */
-.guide-indicator-wrapper {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.guide-indicator {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
+  justify-content: center;
   position: relative;
+  font-size: 1rem;
 }
 
-.guide-indicator .data-indicator {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 8px;
-  height: 8px;
-  background-color: #4f46e5;
-  border-radius: 50%;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
-}
-
-.guide-indicator .symptom-indicator {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 8px;
-  height: 8px;
-  background-color: #f97316;
-  border-radius: 50%;
-}
-
-/* Hiển thị ví dụ cho các loại ngày */
+/* Hiển thị ví dụ cho các loại ngày với emoji như trong lịch */
 .period-color-sample {
   background-color: rgba(248, 113, 113, 0.15);
   border: 2px solid rgba(248, 113, 113, 0.5);
@@ -156,36 +443,23 @@
   border: 2px solid rgba(167, 139, 250, 0.5);
 }
 
-.has-data-sample {
-  border: 2px dashed rgba(79, 70, 229, 0.5);
-  background-color: transparent;
+.next-period-color-sample {
+  background-color: rgba(249, 115, 22, 0.15);
+  border: 2px solid rgba(249, 115, 22, 0.5);
 }
 
-/* Biểu tượng chấm */
-.guide-dot {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.data-dot {
-  top: 4px;
-  left: 4px;
-  background-color: #4f46e5;
-}
-
-.symptom-dot {
-  top: 4px;
-  right: 4px;
-  background-color: #f97316;
+/* Biểu tượng chỉ báo cho hướng dẫn */
+.guide-indicator-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .guide-tip {
   color: #64748b;
   font-style: italic;
-  margin: 8px 0 0;
-  font-size: 0.95rem;
+  margin: 6px 0 0;
+  font-size: 0.8rem;
 }
 
 .calendar-legend {
@@ -222,61 +496,180 @@
   background-color: #a78bfa;
 }
 
+.next-period-color {
+  background-color: #f97316;
+}
+
+.tile-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+}
+
+.tile-content.period-day {
+  background-color: rgba(248, 113, 113, 0.15);
+}
+
+.tile-content.fertile-day {
+  background-color: rgba(96, 165, 250, 0.15);
+}
+
+.tile-content.ovulation-day {
+  background-color: rgba(167, 139, 250, 0.15);
+}
+
+.tile-content.next-period-day {
+  background-color: rgba(249, 115, 22, 0.15);
+}
+
 .calendar-wrapper {
   display: flex;
   justify-content: center;
-  margin-bottom: 30px;
+  margin-bottom: 0;
+  padding: 20px;
+  background-color: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  width: 100%;
 }
 
 .large-calendar {
-  width: 100%;
-  max-width: 800px;
-  font-size: 1rem;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 600px;
+  font-size: 1.1rem;
   border: none !important;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background-color: white;
+  overflow: visible !important; /* Ensure calendar content doesn't get cut off */
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Fix specific react-calendar issues */
+.react-calendar {
+  width: 100% !important;
+}
+
+/* Fix for days grid */
+.react-calendar__month-view__days {
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+  grid-auto-rows: 1fr;
+}
+
+/* Fix row layout issues */
+.react-calendar__month-view__days__day {
+  flex-basis: calc(100% / 7) !important;
+  box-sizing: border-box !important;
 }
 
 .large-calendar .react-calendar__tile {
-  height: 60px !important;
-  font-size: 1rem;
+  height: 70px !important;
+  font-size: 1.1rem;
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   border-radius: 8px;
+  border: 1px solid #f1f5f9;
+  transition: all 0.2s ease;
+  cursor: default;
+  margin: 2px;
+  width: auto !important;
+  min-width: 0 !important; /* Remove min-width constraint */
+  flex: 1 1 0 !important; /* Ensure all tiles take equal space */
+}
+
+.large-calendar .react-calendar__navigation {
+  margin-bottom: 20px;
+  padding: 0 10px;
 }
 
 .large-calendar .react-calendar__navigation button {
-  font-size: 1rem;
-  padding: 12px 0;
+  font-size: 1.2rem;
+  padding: 14px 20px;
   background: transparent;
-  border-radius: 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  color: #1e293b;
+  min-width: 44px;
 }
 
 .large-calendar .react-calendar__navigation button:hover {
   background-color: #f1f5f9;
 }
 
+.large-calendar .react-calendar__month-view__weekdays {
+  padding: 0 10px;
+}
+
+.large-calendar .react-calendar__month-view__weekdays__weekday {
+  padding: 12px 4px;
+  font-weight: 600;
+  color: #64748b;
+  font-size: 1rem;
+  flex: 1 0 14.2857%; /* Ensure each day takes equal width (7 days) */
+  text-align: center;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.large-calendar .react-calendar__month-view__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr); /* Force exactly 7 columns */
+  width: 100%;
+}
+
+.large-calendar .react-calendar__month-view__days {
+  padding: 0 10px;
+  display: grid !important; 
+  grid-template-columns: repeat(7, 1fr) !important; /* Force exactly 7 equal columns */
+  width: 100%;
+}
+
+/* Fix for days display */
+.large-calendar .react-calendar__month-view__days button {
+  max-width: none !important;
+  margin: 2px;
+}
+
 .large-calendar .react-calendar__month-view__days__day {
   color: #1e293b;
+  font-weight: 500;
 }
 
 .large-calendar .react-calendar__month-view__days__day--weekend {
   color: #f87171;
+  font-weight: 600;
+}
+
+/* Ensure Saturday is visible with specific styling */
+.large-calendar .react-calendar__month-view__days__day:nth-child(7n) {
+  border-right: none;
+  color: #f87171; /* Match weekend color */
 }
 
 .large-calendar .react-calendar__month-view__days__day--neighboringMonth {
   color: #cbd5e1;
 }
 
+/* Bỏ hover effect - lịch chỉ để xem */
 .large-calendar .react-calendar__tile:hover {
-  background-color: #f1f5f9 !important;
+  background-color: inherit !important;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 .large-calendar .react-calendar__tile--now {
   background-color: #e0f2fe !important;
   color: #0284c7 !important;
+  font-weight: 700;
 }
 
 .large-calendar .react-calendar__tile--active {
@@ -285,6 +678,7 @@
   box-shadow: 0 0 0 2px #3b82f6 !important;
   z-index: 2;
   position: relative;
+  font-weight: 700;
 }
 
 /* Custom day markers for the calendar */
@@ -317,6 +711,11 @@
 .day-marker.ovulation-day {
   background-color: rgba(167, 139, 250, 0.15);
   border: 2px solid rgba(167, 139, 250, 0.5);
+}
+
+.day-marker.next-period-day {
+  background-color: rgba(249, 115, 22, 0.15);
+  border: 2px solid rgba(249, 115, 22, 0.5);
 }
 
 .symptom-indicator {
@@ -560,26 +959,139 @@
   box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
 }
 
+/* Settings panel - form styles - được cải thiện */
+.settings-panel h3 {
+  color: #1e293b;
+  margin-bottom: 20px;
+  font-size: 1.3rem;
+  text-align: center;
+  font-weight: 600;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.settings-panel .form-group {
+  margin-bottom: 18px;
+}
+
+.settings-panel .form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #1e293b;
+  font-size: 0.9rem;
+}
+
+.settings-panel .settings-input,
+.settings-panel input[type="number"],
+.settings-panel input[type="date"] {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #1e293b;
+  background-color: #f8fafc;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.settings-panel .settings-input:focus,
+.settings-panel input[type="number"]:focus,
+.settings-panel input[type="date"]:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  background-color: white;
+}
+
+.settings-panel .form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.settings-form {
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: #1e293b;
+  font-size: 0.9rem;
+}
+
+.settings-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #1e293b;
+  background-color: #f8fafc;
+  transition: border-color 0.3s ease;
+  box-sizing: border-box;
+}
+
+.settings-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
 .save-settings-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background-color: #4f46e5;
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
   color: white;
   border: none;
-  border-radius: 8px;
-  padding: 12px 24px;
+  border-radius: 10px;
+  padding: 14px 20px;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
   width: 100%;
-  margin-top: 12px;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
 
-.save-settings-btn:hover {
-  background-color: #4338ca;
+.save-settings-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+}
+
+.reset-demo-btn {
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.reset-demo-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
 }
 
 /* Demo section styles */
@@ -993,25 +1505,92 @@
   background-color: #4338ca;
 }
 
-/* Responsive styles */
+/* Responsive styles - được tối ưu */
+@media (max-width: 1200px) {
+  .main-layout {
+    grid-template-columns: 320px 1fr;
+    gap: 24px;
+  }
+  
+  .settings-panel {
+    padding: 20px;
+    max-width: 320px;
+  }
+  
+  .calendar-panel {
+    padding: 24px;
+  }
+  
+  .calendar-main-content {
+    grid-template-columns: 2.5fr 1fr;
+    gap: 16px;
+  }
+  
+  .large-calendar {
+    min-width: 500px;
+  }
+  
+  .large-calendar .react-calendar__tile {
+    height: 60px !important;
+    font-size: 1rem;
+    min-width: 70px;
+  }
+}
+
 @media (max-width: 768px) {
   .cycle-tracker-container {
-    padding: 20px 16px;
+    padding: 16px 12px;
   }
   
   .cycle-tracker-title {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
+    margin-bottom: 20px;
   }
   
-  .tab-button {
-    padding: 10px 14px;
-    font-size: 0.9rem;
+  .main-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    max-width: 100%;
+  }
+  
+  .settings-panel {
+    position: static;
+    order: 1;
+    padding: 20px;
+    max-width: 100%;
+  }
+  
+  .calendar-panel {
+    order: 2;
+    padding: 16px;
+  }
+  
+  /* Mobile: lịch trên, hướng dẫn dưới */
+  .calendar-main-content {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .calendar-guide {
+    position: static;
+    margin-top: 16px;
+  }
+  
+  .large-calendar {
+    min-width: unset;
   }
   
   .large-calendar .react-calendar__tile {
     height: 50px !important;
     font-size: 0.9rem;
+    margin: 1px;
+    min-width: unset;
   }
+  
+  .calendar-guide ul {
+    gap: 8px;
+  }
+}
   
   .history-item {
     flex-direction: column;
@@ -1044,23 +1623,17 @@
 }
 
 @media (max-width: 480px) {
-  .cycle-tracker-tabs {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .tab-button {
-    width: 100%;
-    justify-content: center;
-  }
-  
   .large-calendar .react-calendar__tile {
-    height: 40px !important;
-    font-size: 0.85rem;
+    height: 45px !important;
+    font-size: 0.9rem;
   }
   
-  .stat-card {
-    width: 100%;
+  .settings-panel {
+    padding: 14px;
+  }
+  
+  .calendar-panel {
+    padding: 16px;
   }
   
   .symptoms-grid {
@@ -1098,4 +1671,72 @@
     font-size: 0.85rem;
     text-align: center;
   }
+}
+
+/* Loading spinner animation */
+.fa-spin {
+  animation: fa-spin 1s infinite linear;
+}
+
+@keyframes fa-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(359deg);
+  }
+}
+
+/* Fix calendar display */
+.react-calendar__month-view table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 2px;
+}
+
+.react-calendar__month-view__weekdays__weekday abbr {
+  text-decoration: none;
+}
+
+/* Fix for month view */
+.react-calendar__viewContainer,
+.react-calendar__month-view, 
+.react-calendar__month-view > div,
+.react-calendar__month-view > div > div {
+  width: 100% !important;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Style for empty days */
+.empty-day {
+  min-height: 10px;
+}
+
+/* Make all rows equal height */
+.react-calendar__month-view__days {
+  height: auto !important;
+}
+
+@keyframes fa-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Disabled button styles */
+.save-settings-btn:disabled,
+.reset-data-btn:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
+}
+
+.save-settings-btn:disabled:hover,
+.reset-data-btn:disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
 }

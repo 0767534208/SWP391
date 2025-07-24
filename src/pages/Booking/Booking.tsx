@@ -341,13 +341,19 @@ const Booking = () => {
         maxAppointments: item.slot.maxAppointments
       }));
       
-      // Filter out slots that are booked or have reached maximum appointments
-      setFilteredSlots(availableSlots.filter(slot => 
-        !slot.isBooked && 
-        (slot.appointmentCount === undefined || 
-         slot.maxAppointments === undefined || 
-         slot.appointmentCount < slot.maxAppointments)
-      ));
+      // Filter out slots that are booked, have reached maximum appointments, or have already passed
+      setFilteredSlots(availableSlots.filter(slot => {
+        // Check if the slot is not booked and has not reached max appointments
+        const isAvailable = !slot.isBooked && 
+          (slot.appointmentCount === undefined || 
+           slot.maxAppointments === undefined || 
+           slot.appointmentCount < slot.maxAppointments);
+           
+        // Check if the slot is in the past or too close to current time
+        const isPastOrTooClose = isSlotInPast(selectedDateStr, slot.startTime);
+        
+        return isAvailable && !isPastOrTooClose;
+      }));
       
       // For non-consultant services, still set consultantID to the first available one
       // This will help us track the slot but won't be sent to the API for test services
@@ -365,6 +371,14 @@ const Booking = () => {
              item.slot.maxAppointments !== undefined && 
              item.slot.appointmentCount >= item.slot.maxAppointments)) {
           return;
+        }
+        
+        // Skip slots that have already passed or are too close to current time
+        const slotStartTime = new Date(item.slot.startTime);
+        const formattedTime = slotStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        if (isSlotInPast(selectedDateStr, formattedTime)) {
+          return; // Skip this slot
         }
         
         const startTime = new Date(item.slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -456,13 +470,19 @@ const Booking = () => {
       maxAppointments: item.slot.maxAppointments
     }));
     
-    // Filter out slots that are booked or have reached maximum appointments
-    setFilteredSlots(slots.filter(slot => 
-      !slot.isBooked && 
-      (slot.appointmentCount === undefined || 
-       slot.maxAppointments === undefined || 
-       slot.appointmentCount < slot.maxAppointments)
-    ));
+    // Filter out slots that are booked, have reached maximum appointments, or have already passed
+    setFilteredSlots(slots.filter(slot => {
+      // Check if the slot is not booked and has not reached max appointments
+      const isAvailable = !slot.isBooked && 
+        (slot.appointmentCount === undefined || 
+         slot.maxAppointments === undefined || 
+         slot.appointmentCount < slot.maxAppointments);
+         
+      // Check if the slot is in the past or too close to current time
+      const isPastOrTooClose = isSlotInPast(selectedDate, slot.startTime);
+      
+      return isAvailable && !isPastOrTooClose;
+    }));
   }, [selectedConsultant, selectedDate, consultantSlotData]);
 
   // Check if selected service requires consultant
@@ -470,6 +490,41 @@ const Booking = () => {
     if (!selectedService) return false;
     const service = services.find(s => s.id === selectedService);
     return service ? service.requiresConsultant : false;
+  };
+  
+  // Utility function to check if a time slot is in the past or too close to book
+  const isSlotInPast = (slotDate: string, slotTimeStr: string): boolean => {
+    const currentDateTime = new Date();
+    const slotDateObj = new Date(slotDate);
+    
+    // Create copies for comparison to avoid modifying the original dates
+    const todayDate = new Date(currentDateTime);
+    todayDate.setHours(0, 0, 0, 0);
+    
+    const slotOnlyDate = new Date(slotDateObj);
+    slotOnlyDate.setHours(0, 0, 0, 0);
+    
+    // If the date is in the past, the slot is in the past
+    if (slotOnlyDate < todayDate) {
+      return true;
+    }
+    
+    // If it's today, check the time
+    if (slotOnlyDate.getTime() === todayDate.getTime()) {
+      // Parse the time string (e.g., "09:00" or "09:00 - 10:00")
+      const timeStart = slotTimeStr.split(' - ')[0];
+      const [hours, minutes] = timeStart.split(':').map(num => parseInt(num));
+      
+      const slotTime = new Date();
+      slotTime.setHours(hours, minutes, 0, 0);
+      
+      // Add a buffer (e.g., 30 minutes) to only show slots that are reasonably bookable
+      const bufferTime = new Date(currentDateTime.getTime() + 30 * 60000);
+      
+      return slotTime <= bufferTime;
+    }
+    
+    return false;
   };
 
   const handlePersonalDetails = (
@@ -920,7 +975,11 @@ const Booking = () => {
                       ))
                     )
                   ) : (
-                    <p className="no-slots-message">Không có lịch trống vào ngày này</p>
+                    <p className="no-slots-message">
+                      {selectedDate === new Date().toISOString().split('T')[0] 
+                        ? "Không còn lịch trống vào hôm nay hoặc các khung giờ đã qua" 
+                        : "Không có lịch trống vào ngày này"}
+                    </p>
                   )}
                 </div>
               </div>
