@@ -777,7 +777,7 @@ const CycleTracker: React.FC = () => {
                                     <>
                                         {cyclePhases.periodDates.length > 0 ? (
                                             <div className="calendar-info">
-                                                <p>Hiển thị dự đoán từ API dựa trên dữ liệu đã lưu</p>
+                                                <p>Hiển thị dự đoán dựa trên dữ liệu</p>
                                                 {isPredictionLoading && (
                                                     <div className="loading-indicator-inline">
                                                         <FaSpinner className="fa-spin" style={{fontSize: '14px'}} /> 
