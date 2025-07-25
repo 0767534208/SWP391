@@ -2,9 +2,7 @@
  * SlotManagement.tsx - Manager Slot & Profile Management
  * 
  * RECENT UPDATES:
- * 1. ✅ Added mock consultant slots for testing swap functionality
- *    - Auto-detects when only 1 consultant has slots
- *    - Adds mock slots for Consultant2 & Consultant3 for swap testing
+ * 1. (Đã xóa) Mock consultant slots cho test swap functionality
  * 
  * 2. ✅ Improved duplicate key error handling for profile creation
  *    - Better error messages for duplicate account profiles
@@ -24,7 +22,7 @@
  * - Slot Management: Register, view, swap consultant slots
  * - Profile Management: Create, edit, view consultant profiles
  * - Smart validation and error handling
- * - Mock data fallbacks for testing
+ * - (Đã xóa) Mock data fallbacks for testing
  */
 
 import { useState, useEffect } from 'react';
@@ -157,74 +155,9 @@ const SlotManagement = () => {
       const response = await consultantSlotAPI.getAllConsultantSlots();
       
       if (response.statusCode === 200 && response.data) {
-        // API trả về data thật
-        let slots = response.data;
-        
-        // Nếu chỉ có 1 consultant, thêm mock data cho consultant khác để test swap
-        const uniqueConsultants = [...new Set(slots.map(slot => slot.consultantID))];
-        
-        if (uniqueConsultants.length === 1) {
-          // Thêm mock slots cho consultant khác để test swap
-          const mockAdditionalSlots: ConsultantSlot[] = [
-            {
-              consultantID: "70c9b36d-678a-4932-8282-cedc9b1204bd",
-              consultant: {
-                name: "Consultant2",
-                specialty: "Ph.D"
-              },
-              slotID: 4,
-              slot: {
-                slotID: 4,
-                maxConsultant: 5,
-                maxTestAppointment: 0,
-                startTime: "2025-07-09T08:00:00.000",
-                endTime: "2025-07-09T09:01:00.000"
-              },
-              maxAppointment: 3,
-              assignedDate: "2025-07-18T10:00:00.000"
-            },
-            {
-              consultantID: "70c9b36d-678a-4932-8282-cedc9b1204bd",
-              consultant: {
-                name: "Consultant2",
-                specialty: "Ph.D"
-              },
-              slotID: 5,
-              slot: {
-                slotID: 5,
-                maxConsultant: 5,
-                maxTestAppointment: 0,
-                startTime: "2025-07-11T09:02:00.000",
-                endTime: "2025-07-11T10:02:00.000"
-              },
-              maxAppointment: 4,
-              assignedDate: "2025-07-18T11:00:00.000"
-            },
-            {
-              consultantID: "f8cd66cd-af91-411d-b5fa-368f00567af6",
-              consultant: {
-                name: "Consultant3",
-                specialty: "gtxdg"
-              },
-              slotID: 6,
-              slot: {
-                slotID: 6,
-                maxConsultant: 5,
-                maxTestAppointment: 5,
-                startTime: "2025-07-13T10:02:00.000",
-                endTime: "2025-07-13T12:04:00.000"
-              },
-              maxAppointment: 2,
-              assignedDate: "2025-07-19T09:00:00.000"
-            }
-          ];
-          
-          slots = [...slots, ...mockAdditionalSlots];
-          console.log('🔧 Added mock consultant slots for testing swap functionality');
-        }
-        
-        setConsultantSlots(slots);
-        setFilteredSlots(slots);
+        // Chỉ dùng dữ liệu trả về từ API, không thêm mock
+        setConsultantSlots(response.data);
+        setFilteredSlots(response.data);
       } else {
         setError('Không thể tải dữ liệu consultant slots');
         setConsultantSlots([]);
@@ -370,7 +303,7 @@ const SlotManagement = () => {
       console.error('Error registering slot:', error);
       const errorMessage = (error as Error).message;
       if (errorMessage.includes('403')) {
-        alert('Lỗi 403: Không có quyền truy cập.\n\nCách khắc phục:\n• Đảm bảo đã đăng nhập với quyền Manager\n• Tạo consultant profile trước khi đăng ký slot\n• Kiểm tra slot chưa đầy consultant\n• Đăng xuất và đăng nhập lại nếu token hết hạn');
+        alert('Lỗi 403: Không thể đăng ký slot này.\n\nNguyên nhân có thể:\n• Bạn chưa tạo consultant profile\n• Slot đã đủ số lượng consultant\n• Bạn không có quyền hoặc token đã hết hạn\n\nVui lòng kiểm tra lại hoặc liên hệ quản trị viên.');
       } else if (errorMessage.includes('401')) {
         alert('Lỗi xác thực: Vui lòng đăng nhập lại');
       } else {
@@ -413,8 +346,11 @@ const SlotManagement = () => {
       }
 
       const response = await consultantSlotAPI.createConsultantProfile(profileData);
-      
-      if (response.statusCode === 200) {
+      const message = response.message?.toLowerCase() || '';
+      if (
+        response.statusCode === 200 ||
+        message.includes('success')
+      ) {
         alert('Tạo profile thành công!');
         setIsCreateProfileModalOpen(false);
         setCreateProfileForm({
@@ -441,7 +377,11 @@ const SlotManagement = () => {
       
       const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';
       
-      if (errorMessage.includes('duplicate key') || errorMessage.includes('IX_ConsultantProfiles_AccountID')) {
+      if (
+        errorMessage.includes('duplicate key') ||
+        errorMessage.includes('IX_ConsultantProfiles_AccountID') ||
+        errorMessage.includes('Cannot insert duplicate key row')
+      ) {
         alert('❌ Tài khoản này đã có profile consultant!\n\n📋 Mỗi tài khoản chỉ được tạo một profile.\n\n💡 Gợi ý:\n• Chọn tài khoản khác từ dropdown\n• Hoặc sử dụng chức năng "Sửa" để cập nhật profile hiện tại\n• Kiểm tra tab "Consultant Profiles" để xem các profile đã tồn tại');
       } else if (errorMessage.includes('ConsultantPrice must > 0')) {
         alert('Giá tư vấn phải lớn hơn 0!');
@@ -468,7 +408,15 @@ const SlotManagement = () => {
         return;
       }
 
-      const response = await consultantSlotAPI.updateConsultantProfile(profileData.consultantProfileID, profileData);
+      const response = await consultantSlotAPI.updateConsultantProfile(
+        profileData.consultantProfileID,
+        {
+          description: profileData.description,
+          specialty: profileData.specialty,
+          experience: profileData.experience,
+          consultantPrice: profileData.consultantPrice
+        }
+      );
       
       if (response.statusCode === 200) {
         alert('Cập nhật profile thành công!');
@@ -596,70 +544,7 @@ const SlotManagement = () => {
       console.error('Error fetching users from API:', error);
     }
     
-    // Fallback to mock data khi API không khả dụng
-    const mockUsers: User[] = [
-      { 
-        accountID: '01eb9f40-4287-4631-8a6f-b982113fbaea',
-        userID: '01eb9f40-4287-4631-8a6f-b982113fbaea',
-        name: 'Dr. Nguyễn Văn Minh', 
-        email: 'minh.nguyen@example.com',
-        phone: '0786014911',
-        address: 'Hà Nội',
-        roles: ['Consultant'],
-        status: true
-      },
-      { 
-        accountID: '70c9b36d-678a-4932-8282-cedc9b1204bd',
-        userID: '70c9b36d-678a-4932-8282-cedc9b1204bd',
-        name: 'Dr. Trần Thị Lan', 
-        email: 'lan.tran@example.com',
-        phone: '0561887135',
-        address: 'TP.HCM',
-        roles: ['Consultant'],
-        status: true
-      },
-      { 
-        accountID: 'a1b2c3d4-5678-9012-3456-789012345678',
-        userID: 'a1b2c3d4-5678-9012-3456-789012345678', 
-        name: 'Dr. Lê Quang Huy', 
-        email: 'huy.le@example.com',
-        phone: '0912345678',
-        address: 'Đà Nẵng',
-        roles: ['Consultant'],
-        status: true
-      },
-      { 
-        accountID: 'b2c3d4e5-6789-0123-4567-890123456789',
-        userID: 'b2c3d4e5-6789-0123-4567-890123456789',
-        name: 'Dr. Phạm Thị Mai', 
-        email: 'mai.pham@example.com',
-        phone: '0987654321',
-        address: 'Cần Thơ',
-        roles: ['Consultant'],
-        status: true
-      },
-      { 
-        accountID: 'c3d4e5f6-7890-1234-5678-901234567890',
-        userID: 'c3d4e5f6-7890-1234-5678-901234567890',
-        name: 'Dr. Hoàng Văn Nam', 
-        email: 'nam.hoang@example.com',
-        phone: '0923456789',
-        address: 'Hải Phòng',
-        roles: ['Consultant'],
-        status: true
-      },
-      { 
-        accountID: 'd4e5f6g7-8901-2345-6789-012345678901',
-        userID: 'd4e5f6g7-8901-2345-6789-012345678901',
-        name: 'Dr. Võ Thị Hương', 
-        email: 'huong.vo@example.com',
-        phone: '0934567890',
-        address: 'Nha Trang',
-        roles: ['Consultant'],
-        status: true
-      }
-    ];
-    setAllUsers(mockUsers);
+    // Không còn fallback mock user, chỉ dùng dữ liệu từ API
   };
 
   // Load additional data when modals open
@@ -1114,34 +999,28 @@ const SlotManagement = () => {
             }}>
               <div style={{ marginBottom: '1rem' }}>
                 <label>Account ID:</label>
-                <select 
+                <select
                   value={createProfileForm.accountId}
-                  onChange={(e) => setCreateProfileForm({...createProfileForm, accountId: e.target.value})}
+                  onChange={e => setCreateProfileForm({ ...createProfileForm, accountId: e.target.value })}
                   required
                   style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
                 >
                   <option value="">Chọn Account</option>
-                  {allUsers.filter(user => user.roles && user.roles.includes('Consultant')).map(user => {
-                    // Kiểm tra xem user này đã có profile chưa
-                    const hasProfile = consultantProfiles.some(profile => profile.accountID === user.accountID);
-                    const displayText = hasProfile 
-                      ? `${user.name} (${user.email}) - ✅ Đã có profile`
-                      : `${user.name} (${user.email}) - ⭕ Chưa có profile`;
-                    
-                    return (
-                      <option 
-                        key={user.accountID} 
-                        value={user.accountID}
-                        disabled={hasProfile}
-                        style={{ 
-                          color: hasProfile ? '#9ca3af' : 'inherit',
-                          fontStyle: hasProfile ? 'italic' : 'normal'
-                        }}
-                      >
-                        {displayText}
-                      </option>
-                    );
-                  })}
+                  {allUsers
+                    .filter(user => user.roles && user.roles.includes('Consultant'))
+                    .map(user => {
+                      const hasProfile = consultantProfiles.some(profile => profile.accountID === user.accountID);
+                      return (
+                        <option
+                          key={user.accountID}
+                          value={user.accountID}
+                          disabled={hasProfile}
+                          style={{ color: hasProfile ? '#9ca3af' : 'inherit', fontStyle: hasProfile ? 'italic' : 'normal' }}
+                        >
+                          {user.name} ({user.email}) - {hasProfile ? '✅ Đã có profile' : '⭕ Chưa có profile'}
+                        </option>
+                      );
+                    })}
                 </select>
                 <small style={{ color: '#666', fontSize: '0.8rem', marginTop: '0.25rem', display: 'block' }}>
                   ✅ = Đã có profile (không thể chọn) | ⭕ = Chưa có profile (có thể tạo mới)
@@ -1257,11 +1136,21 @@ const SlotManagement = () => {
                   style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
                 >
                   <option value={0}>Chọn Slot</option>
-                  {availableSlots.map(slot => (
-                    <option key={slot.slotID} value={slot.slotID}>
-                      Slot {slot.slotID}: {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-                    </option>
-                  ))}
+                  {availableSlots.map(slot => {
+                    // Đếm số lượng consultant đã đăng ký slot này
+                    const count = consultantSlots.filter(cs => cs.slotID === slot.slotID).length;
+                    const isFull = count >= slot.maxConsultant;
+                    return (
+                      <option
+                        key={slot.slotID}
+                        value={slot.slotID}
+                        disabled={isFull}
+                        style={{ color: isFull ? '#9ca3af' : 'inherit', fontStyle: isFull ? 'italic' : 'normal' }}
+                      >
+                        Slot {slot.slotID}: {formatTime(slot.startTime)} - {formatTime(slot.endTime)}{isFull ? ' (Đã đầy)' : ''}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
               <div style={{ marginBottom: '1rem' }}>
@@ -1733,4 +1622,4 @@ const SlotManagement = () => {
   );
 };
 
-export default SlotManagement; 
+export default SlotManagement;

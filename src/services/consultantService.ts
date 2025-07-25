@@ -207,19 +207,17 @@ const consultantService = {
     
     // Transform the data to match the API's expected format based on swagger
     const apiRequestData = {
+      consultantProfileID: consultantProfileID,
       description: profileData.description,
       specialty: profileData.specialty,
       experience: profileData.experience,
       consultantPrice: profileData.consultantPrice || 0
     };
-    
+
     console.log('Sending update request to API:', apiRequestData);
-    
-    // Use the correct endpoint with consultantProfileID as query parameter
-    const endpoint = `/api/consultantSlot/UpdateConsultantProfile?consultantProfileID=${consultantProfileID}`;
-    
-    console.log('Calling API endpoint:', endpoint);
-    
+
+    const endpoint = `/api/consultantSlot/UpdateConsultantProfile`;
+
     try {
       const response = await api.put<ConsultantProfile>(endpoint, apiRequestData);
       console.log('Update profile response:', response);
