@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './TestResultManagementStaff.css';
 import { Link } from 'react-router-dom';
-import { FaSearch, FaTimes, FaEye, FaEdit, FaPlus } from 'react-icons/fa';
+import { FaSearch, FaTimes, FaEye, FaEdit, FaPlus, FaTrash } from 'react-icons/fa';
 import testResultService from '../../services/testResultService';
 import type { LabTestData } from '../../utils/api';
 
@@ -108,13 +108,55 @@ const TestResultManagementStaff: React.FC = () => {
     return test.staffName || `Nhân viên ${test.staffID || 'N/A'}`;
   };
 
+  // Xóa kết quả xét nghiệm
+  const handleDelete = async (testId: number | string) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa kết quả xét nghiệm này?')) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const idNum = typeof testId === 'string' ? parseInt(testId, 10) : testId;
+      if (isNaN(idNum)) throw new Error('ID không hợp lệ');
+      await testResultService.deleteTestResult(idNum);
+      await fetchTestResults();
+    } catch {
+      setError('Không thể xóa kết quả xét nghiệm. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Modal functions
   const handleViewDetails = async (testId: number | string) => {
     setModalLoading(true);
     try {
-      const response = await testResultService.getTestResult(testId.toString());
+      const idNum = typeof testId === 'string' ? parseInt(testId, 10) : testId;
+      if (isNaN(idNum)) throw new Error('ID không hợp lệ');
+      const response = await testResultService.getTestResult(idNum);
       if (response && response.data) {
-        setSelectedTest(response.data);
+        // Map về TestResult nếu cần
+        const result = response.data as any;
+        const mappedResult: TestResult = {
+          labTestID: result.labTestID,
+          id: result.id || result.labTestID,
+          customerID: result.customerID || undefined,
+          customerName: result.customerName,
+          patientId: result.patientId,
+          patientName: result.patientName,
+          staffName: result.staffName,
+          testName: result.testName,
+          testType: result.testType,
+          result: result.result,
+          referenceRange: result.referenceRange,
+          unit: result.unit,
+          isPositive: result.isPositive,
+          testDate: result.testDate,
+          resultDate: result.resultDate,
+          staffID: result.staffID,
+          treatmentID: result.treatmentID,
+          status: result.status,
+          notes: result.notes
+        };
+        setSelectedTest(mappedResult);
         setShowModal(true);
       }
     } catch (err) {
@@ -185,11 +227,14 @@ const TestResultManagementStaff: React.FC = () => {
           <table className="results-table">
             <thead>
               <tr>
-                <th>Tên bệnh nhân</th>
+                <th>ID</th>
+                <th>Bệnh nhân</th>
                 <th>Nhân viên xét nghiệm</th>
                 <th>Loại xét nghiệm</th>
-                <th>Kết quả</th>
                 <th>Ngày xét nghiệm</th>
+                <th>Kết quả</th>
+                <th>Phạm vi tham chiếu</th>
+                <th>Kết luận</th>
                 <th>Thao tác</th>
               </tr>
             </thead>
@@ -197,11 +242,20 @@ const TestResultManagementStaff: React.FC = () => {
               {filteredTestResults.length > 0 ? (
                 filteredTestResults.map((test) => (
                   <tr key={test.labTestID || test.id}>
+                    <td>{test.labTestID || test.id}</td>
                     <td>{getPatientName(test)}</td>
                     <td>{getStaffName(test)}</td>
                     <td>{test.testName || test.testType || 'N/A'}</td>
-                    <td>{test.result || 'N/A'}</td>
                     <td>{formatDate(test.testDate || test.resultDate)}</td>
+                    <td>{test.result || 'N/A'}</td>
+                    <td>{test.referenceRange || 'N/A'}</td>
+                    <td>
+                      {test.isPositive !== undefined ? (
+                        <span style={{ color: test.isPositive ? 'red' : 'green', fontWeight: 'bold' }}>
+                          {test.isPositive ? 'Dương tính' : 'Âm tính'}
+                        </span>
+                      ) : 'N/A'}
+                    </td>
                     <td>
                       <div className="action-buttons">
                         <button
@@ -218,13 +272,21 @@ const TestResultManagementStaff: React.FC = () => {
                         >
                           <FaEdit />
                         </Link>
+                        <button
+                          onClick={() => handleDelete(test.labTestID || test.id || '')}
+                          className="action-btn delete-btn"
+                          title="Xóa"
+                          style={{ color: 'red' }}
+                        >
+                          <FaTrash />
+                        </button>
                       </div>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="no-data">
+                  <td colSpan={9} className="no-data">
                     {searchQuery ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có kết quả xét nghiệm nào'}
                   </td>
                 </tr>
@@ -254,10 +316,6 @@ const TestResultManagementStaff: React.FC = () => {
                   <span>{selectedTest.labTestID || selectedTest.id}</span>
                 </div>
                 <div className="modal-info-item">
-                  <label>Mã điều trị:</label>
-                  <span>{selectedTest.treatmentID ? `APT-${selectedTest.treatmentID}` : 'N/A'}</span>
-                </div>
-                <div className="modal-info-item">
                   <label>Bệnh nhân:</label>
                   <span>{getPatientName(selectedTest)}</span>
                 </div>
@@ -282,12 +340,12 @@ const TestResultManagementStaff: React.FC = () => {
                   <span>{selectedTest.referenceRange || 'N/A'}</span>
                 </div>
                 <div className="modal-info-item">
-                  <label>Đơn vị đo:</label>
-                  <span>{selectedTest.unit || 'N/A'}</span>
-                </div>
-                <div className="modal-info-item">
-                  <label>Tính chất:</label>
-                  <span>{selectedTest.isPositive !== undefined ? (selectedTest.isPositive ? 'Dương tính' : 'Âm tính') : 'N/A'}</span>
+                  <label>Kết luận:</label>
+                  {selectedTest.isPositive !== undefined ? (
+                    <span style={{ color: selectedTest.isPositive ? 'red' : 'green', fontWeight: 'bold' }}>
+                      {selectedTest.isPositive ? 'Dương tính' : 'Âm tính'}
+                    </span>
+                  ) : 'N/A'}
                 </div>
                 {selectedTest.notes && (
                   <div className="modal-info-item full-width">

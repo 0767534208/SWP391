@@ -28,41 +28,6 @@ const TEST_TYPES = [
     normalRange: 'Âm tính (< 1.0)'
   },
   {
-    id: 'hiv_rna',
-    name: 'Xét nghiệm RNA HIV (HIV RNA Quantitative)',
-    referenceRange: '< 20 copies/mL',
-    unit: 'copies/mL',
-    normalRange: 'Không phát hiện (< 20)'
-  },
-  {
-    id: 'chlamydia_pcr',
-    name: 'Xét nghiệm Chlamydia trachomatis (PCR)',
-    referenceRange: 'Âm tính',
-    unit: 'định tính',
-    normalRange: 'Âm tính'
-  },
-  {
-    id: 'gonorrhea_pcr',
-    name: 'Xét nghiệm Neisseria gonorrhoeae (PCR)',
-    referenceRange: 'Âm tính',
-    unit: 'định tính',
-    normalRange: 'Âm tính'
-  },
-  {
-    id: 'syphilis_rpr',
-    name: 'Xét nghiệm giang mai RPR (Syphilis RPR)',
-    referenceRange: 'Non-reactive',
-    unit: 'định tính',
-    normalRange: 'Non-reactive'
-  },
-  {
-    id: 'syphilis_tpha',
-    name: 'Xét nghiệm giang mai TPHA (Syphilis TPHA)',
-    referenceRange: 'Non-reactive',
-    unit: 'định tính',
-    normalRange: 'Non-reactive'
-  },
-  {
     id: 'hepatitis_b_surface',
     name: 'Kháng nguyên bề mặt viêm gan B (HBsAg)',
     referenceRange: '< 0.05 IU/mL',
@@ -84,11 +49,11 @@ const TEST_TYPES = [
     normalRange: 'Âm tính (< 1.0)'
   },
   {
-    id: 'hepatitis_c_rna',
-    name: 'Xét nghiệm RNA viêm gan C (HCV RNA)',
-    referenceRange: 'Không phát hiện',
-    unit: 'IU/mL',
-    normalRange: 'Không phát hiện'
+    id: 'ureaplasma',
+    name: 'Xét nghiệm Ureaplasma urealyticum',
+    referenceRange: '< 10^4 CFU/mL',
+    unit: 'CFU/mL',
+    normalRange: '< 10^4 CFU/mL'
   },
   {
     id: 'hsv1_igg',
@@ -103,34 +68,6 @@ const TEST_TYPES = [
     referenceRange: '< 0.9 index',
     unit: 'index',
     normalRange: 'Âm tính (< 0.9)'
-  },
-  {
-    id: 'hpv_dna',
-    name: 'Xét nghiệm DNA Human Papillomavirus (HPV)',
-    referenceRange: 'Âm tính',
-    unit: 'định tính',
-    normalRange: 'Âm tính'
-  },
-  {
-    id: 'trichomonas',
-    name: 'Xét nghiệm Trichomonas vaginalis',
-    referenceRange: 'Âm tính',
-    unit: 'định tính',
-    normalRange: 'Âm tính'
-  },
-  {
-    id: 'mycoplasma',
-    name: 'Xét nghiệm Mycoplasma genitalium',
-    referenceRange: 'Âm tính',
-    unit: 'định tính',
-    normalRange: 'Âm tính'
-  },
-  {
-    id: 'ureaplasma',
-    name: 'Xét nghiệm Ureaplasma urealyticum',
-    referenceRange: '< 10^4 CFU/mL',
-    unit: 'CFU/mL',
-    normalRange: '< 10^4 CFU/mL'
   }
 ];
 
@@ -170,6 +107,9 @@ const TestResultForm = ({
       testDate: getCurrentDate()
     }
   );
+
+  // Kết luận tự động
+  const [autoConclusion, setAutoConclusion] = useState<string>('');
 
   const [appointmentCode, setAppointmentCode] = useState('');
   const [customerInfo, setCustomerInfo] = useState<{name: string, phone: string} | null>(null);
@@ -290,22 +230,25 @@ const TestResultForm = ({
   const handleTestTypeChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const testTypeId = e.target.value;
     const testType = TEST_TYPES.find(t => t.id === testTypeId);
-    
     setSelectedTestType(testType || null);
-    
+    setAutoConclusion('');
     if (testType) {
       setFormData(prev => ({
         ...prev,
         testName: testType.name,
         referenceRange: testType.referenceRange,
-        unit: testType.unit
+        unit: testType.unit,
+        result: '',
+        isPositive: false
       }));
     } else {
       setFormData(prev => ({
         ...prev,
         testName: '',
         referenceRange: '',
-        unit: ''
+        unit: '',
+        result: '',
+        isPositive: false
       }));
     }
   };
@@ -313,7 +256,6 @@ const TestResultForm = ({
   // Handle input changes
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    
     // Handle checkbox inputs
     if (type === 'checkbox') {
       const checkbox = e.target as HTMLInputElement;
@@ -331,12 +273,62 @@ const TestResultForm = ({
         [name]: numValue
       });
     }
+    // Handle result input for auto conclusion
+    else if (name === 'result') {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+      // Auto conclusion logic
+      if (selectedTestType && value) {
+        let conclusion = '';
+        let isPositive = false;
+        // Only for numeric referenceRange
+        const ref = selectedTestType.referenceRange;
+        const match = ref.match(/([<>]=?)\s*([\d.,eE+-]+)/);
+        if (match) {
+          const op = match[1];
+          const refVal = parseFloat(match[2].replace(',', '.'));
+          const resultVal = parseFloat(value.replace(',', '.'));
+          if (!isNaN(resultVal)) {
+            if (op === '<') {
+              isPositive = !(resultVal < refVal);
+            } else if (op === '>') {
+              isPositive = !(resultVal > refVal);
+            } else if (op === '<=') {
+              isPositive = !(resultVal <= refVal);
+            } else if (op === '>=') {
+              isPositive = !(resultVal >= refVal);
+            }
+            conclusion = isPositive ? 'Dương tính' : 'Âm tính';
+          } else {
+            conclusion = '';
+          }
+        } else {
+          // For qualitative referenceRange
+          if (ref.toLowerCase().includes('âm tính')) {
+            isPositive = value.toLowerCase().includes('dương') || value.toLowerCase().includes('positive');
+            conclusion = isPositive ? 'Dương tính' : 'Âm tính';
+          } else if (ref.toLowerCase().includes('non-reactive')) {
+            isPositive = !value.toLowerCase().includes('non-reactive');
+            conclusion = isPositive ? 'Dương tính' : 'Âm tính';
+          } else {
+            conclusion = '';
+          }
+        }
+        setAutoConclusion(conclusion);
+        setFormData(prev => ({ ...prev, isPositive }));
+      } else {
+        setAutoConclusion('');
+        setFormData(prev => ({ ...prev, isPositive: false }));
+      }
+    }
     // Handle other inputs
     else {
-    setFormData({
-      ...formData,
-      [name]: value
-    });
+      setFormData({
+        ...formData,
+        [name]: value
+      });
     }
   };
 
@@ -607,77 +599,62 @@ const TestResultForm = ({
               />
             </div>
 
-            {/* Test Result */}
-            <div className="form-group">
-              <label htmlFor="result">Kết quả xét nghiệm <span className="required">*</span></label>
-              <textarea
-                id="result"
-                name="result"
-                rows={4}
-                value={formData.result}
-                onChange={handleInputChange}
-                placeholder="Nhập kết quả xét nghiệm chi tiết"
-                required
-              ></textarea>
-            </div>
-
-            {/* Reference Range and Unit */}
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="referenceRange">Phạm vi tham chiếu</label>
-                <input
-                  type="text"
-                  id="referenceRange"
-                  name="referenceRange"
-                  value={formData.referenceRange || ''}
-                  onChange={handleInputChange}
-                  placeholder="Được tự động điền từ loại xét nghiệm"
-                  style={{ backgroundColor: selectedTestType ? '#f5f5f5' : 'white' }}
-                  readOnly={!!selectedTestType}
-                />
-                {selectedTestType && (
-                  <div className="field-note">Giá trị bình thường: {selectedTestType.normalRange}</div>
-                )}
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="unit">Đơn vị đo</label>
-                <input
-                  type="text"
-                  id="unit"
-                  name="unit"
-                  value={formData.unit || ''}
-                  onChange={handleInputChange}
-                  placeholder="Được tự động điền từ loại xét nghiệm"
-                  style={{ backgroundColor: selectedTestType ? '#f5f5f5' : 'white' }}
-                  readOnly={!!selectedTestType}
-                />
-              </div>
-            </div>
-            
-            {/* Positive Result Toggle - Enhanced UI */}
-            <div className="form-group checkbox-group">
-              <div className="checkbox-wrapper">
-                <input
-                  type="checkbox"
-                  id="isPositive"
-                  name="isPositive"
-                  checked={formData.isPositive || false}
-                  onChange={handleInputChange}
-                  className="positive-checkbox"
-                />
-                <label htmlFor="isPositive" className="positive-label">
-                  <span className={`positive-indicator ${formData.isPositive ? 'positive' : 'negative'}`}>
-                    {formData.isPositive ? '●' : '○'}
-                  </span>
-                  Kết quả dương tính
-                </label>
-              </div>
-              <div className="field-note">
-                {formData.isPositive 
-                  ? "⚠️ Kết quả dương tính - cần theo dõi và điều trị" 
-                  : "✓ Kết quả âm tính - bình thường"
-                }
+            {/* Test Result - grouped compact block */}
+            <div className="test-result-group-block" style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4,
+              border: '1px solid #e0e0e0',
+              borderRadius: 8,
+              background: '#f8fafc',
+              padding: 12,
+              marginBottom: 16,
+              maxWidth: 500,
+              marginLeft: 'auto',
+              marginRight: 'auto',
+              marginTop: 16
+            }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                <div style={{ minWidth: 160, flex: 1 }}>
+                  <div style={{ fontSize: 13, color: '#666' }}>Phạm vi tham chiếu</div>
+                  <div style={{ fontWeight: 500 }}>{formData.referenceRange || '-'}</div>
+                  {selectedTestType && (
+                    <div style={{ fontSize: 12, color: '#888' }}>Giá trị bình thường: {selectedTestType.normalRange}</div>
+                  )}
+                </div>
+                <div style={{ minWidth: 100, flex: 1 }}>
+                  <div style={{ fontSize: 13, color: '#666' }}>Đơn vị đo</div>
+                  <div style={{ fontWeight: 500 }}>{formData.unit || '-'}</div>
+                </div>
+                <div style={{ minWidth: 120, flex: 1 }}>
+                  <div style={{ fontSize: 13, color: '#666' }}>Kết quả xét nghiệm *</div>
+                  <input
+                    type="text"
+                    id="result"
+                    name="result"
+                    value={formData.result}
+                    onChange={handleInputChange}
+                    placeholder="Nhập kết quả"
+                    required
+                    style={{ width: '100%', minWidth: 80, maxWidth: 120, padding: '2px 6px', fontWeight: 500 }}
+                  />
+                </div>
+                <div style={{ minWidth: 100, flex: 1 }}>
+                  <div style={{ fontSize: 13, color: '#666' }}>Kết luận</div>
+                  <div style={{
+                    fontWeight: 'bold',
+                    color: autoConclusion === 'Dương tính' ? 'red' : autoConclusion === 'Âm tính' ? 'green' : '#333',
+                    minHeight: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid #eee',
+                    borderRadius: 4,
+                    background: '#fafbfc',
+                    padding: '2px 6px',
+                    fontSize: 15
+                  }}>{autoConclusion || '-'}</div>
+                </div>
               </div>
             </div>
 
