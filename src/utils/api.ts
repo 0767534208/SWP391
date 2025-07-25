@@ -578,6 +578,14 @@ export const authAPI = {
   updateAccountStatus: (userEmail: string, statusData: any): Promise<ApiResponse<void>> => {
     return apiRequest<void>(`/api/account/Update-Account-Status?userEmail=${userEmail}`, 'PUT', statusData);
   },
+  
+  /**
+   * Lấy danh sách tất cả tài khoản (dành cho admin)
+   * @returns Danh sách tất cả tài khoản trong hệ thống
+   */
+  getAllAccounts: async (): Promise<ApiResponse<UserData[]>> => {
+    return apiRequest<UserData[]>(`/api/account/GetAllAccounts`, 'GET');
+  },
 };
 
 // User API endpoints

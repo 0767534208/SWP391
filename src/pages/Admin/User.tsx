@@ -1,14 +1,19 @@
-import React, { useState, type ChangeEvent } from 'react';
+import { useState, useEffect, type ChangeEvent } from 'react';
+import { authAPI } from '../../utils/api';
 import './User.css';
 
 interface UserType {
-  id: number;
+  userID?: string;
   name: string;
   email: string;
   phone: string;
   role: string;
   status: string;
   lastLogin: string;
+  isActive?: boolean;
+  userName?: string;
+  address?: string;
+  roles?: string[];
 }
 
 interface UserFormData {
@@ -26,13 +31,10 @@ const User = () => {
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<UserType | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 10;
 
-  // Form states for add/edit user
+  // Form states for adding user
   const [formData, setFormData] = useState<UserFormData>({
     name: '',
     email: '',
@@ -43,21 +45,50 @@ const User = () => {
     confirmPassword: ''
   });
 
-  // Mock data
-  const [users, setUsers] = useState<UserType[]>([
-    { id: 1, name: "John Smith", email: "johnsmith@example.com", phone: "0912345678", role: "user", status: "active", lastLogin: "10/05/2023 08:15" },
-    { id: 2, name: "Sarah Johnson", email: "sarahjohnson@example.com", phone: "0923456789", role: "user", status: "active", lastLogin: "11/05/2023 14:20" },
-    { id: 3, name: "Michael Brown", email: "michaelbrown@example.com", phone: "0934567890", role: "admin", status: "active", lastLogin: "12/05/2023 09:30" },
-    { id: 4, name: "Emily Davis", email: "emilydavis@example.com", phone: "0945678901", role: "consultant", status: "inactive", lastLogin: "08/05/2023 16:45" },
-    { id: 5, name: "David Wilson", email: "davidwilson@example.com", phone: "0956789012", role: "user", status: "active", lastLogin: "13/05/2023 10:10" },
-    { id: 6, name: "Jennifer Taylor", email: "jennifertaylor@example.com", phone: "0967890123", role: "user", status: "blocked", lastLogin: "05/05/2023 11:25" },
-    { id: 7, name: "Robert Martinez", email: "robertmartinez@example.com", phone: "0978901234", role: "consultant", status: "active", lastLogin: "14/05/2023 08:50" },
-    { id: 8, name: "Lisa Anderson", email: "lisaanderson@example.com", phone: "0989012345", role: "user", status: "inactive", lastLogin: "07/05/2023 15:30" },
-    { id: 9, name: "James Thomas", email: "jamesthomas@example.com", phone: "0990123456", role: "user", status: "active", lastLogin: "15/05/2023 12:40" },
-    { id: 10, name: "Patricia White", email: "patriciawhite@example.com", phone: "0901234567", role: "admin", status: "active", lastLogin: "16/05/2023 09:15" },
-    { id: 11, name: "Richard Harris", email: "richardharris@example.com", phone: "0912345670", role: "user", status: "active", lastLogin: "17/05/2023 14:20" },
-    { id: 12, name: "Elizabeth Clark", email: "elizabethclark@example.com", phone: "0923456781", role: "user", status: "blocked", lastLogin: "02/05/2023 10:35" },
-  ]);
+  // State variables for API data
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Fetch users data from API
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        const response = await authAPI.getAllAccounts();
+        
+        console.log('API Response:', response);
+        
+        if (response && Array.isArray(response)) {
+          // Transform the array response to match our UserType interface
+          const transformedUsers = response.map(user => ({
+            userID: user.userID || '',
+            name: user.name || '',
+            email: user.email || '',
+            phone: user.phone || '',
+            role: Array.isArray(user.roles) && user.roles.length > 0 ? user.roles[0] : 'Customer',
+            status: user.isActive ? 'active' : 'inactive',
+            lastLogin: user.lastLogin || 'N/A',
+            isActive: user.isActive,
+            userName: user.userName,
+            address: user.address,
+            roles: user.roles
+          }));
+          
+          setUsers(transformedUsers);
+        } else {
+          setError('Failed to fetch users data');
+        }
+      } catch (err) {
+        console.error('Error fetching users:', err);
+        setError('An error occurred while fetching users');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchUsers();
+  }, []);
 
   // Filter users
   const filteredUsers = users.filter(user => {
@@ -78,20 +109,6 @@ const User = () => {
   const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-
-  // Status badge color mapping
-  const getBadgeClass = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'status-badge status-badge-success';
-      case 'inactive':
-        return 'status-badge status-badge-warning';
-      case 'blocked':
-        return 'status-badge status-badge-danger';
-      default:
-        return 'status-badge status-badge-info';
-    }
-  };
 
   // Role badge color mapping
   const getRoleBadgeClass = (role: string) => {
@@ -116,29 +133,30 @@ const User = () => {
     });
   };
 
-  // Handle user actions
-  const handleEdit = (userId: number) => {
-    const userToEdit = users.find(user => user.id === userId);
-    if (userToEdit) {
-      setCurrentUser(userToEdit);
-      setFormData({
-        name: userToEdit.name,
-        email: userToEdit.email,
-        phone: userToEdit.phone,
-        role: userToEdit.role,
-        status: userToEdit.status,
-        password: '',
-        confirmPassword: ''
-      });
-      setIsEditModalOpen(true);
-    }
-  };
-
-  const handleDelete = (userId: number) => {
-    const userToDelete = users.find(user => user.id === userId);
-    if (userToDelete) {
-      setCurrentUser(userToDelete);
-      setIsDeleteModalOpen(true);
+  // No longer need handleEdit and handleDelete functions since we're only toggling status
+  
+  // Toggle user status (active/inactive)
+  const toggleUserStatus = async (userEmail: string) => {
+    try {
+      const user = users.find(u => u.email === userEmail);
+      if (!user) return;
+      
+      const newStatus = !user.isActive;
+      const response = await authAPI.updateAccountStatus(userEmail, { status: newStatus });
+      
+      if (response.statusCode === 200) {
+        // Update the local state
+        setUsers(users.map(u => 
+          u.email === userEmail 
+            ? { ...u, isActive: newStatus, status: newStatus ? 'active' : 'inactive' }
+            : u
+        ));
+      } else {
+        alert('Failed to update user status');
+      }
+    } catch (err) {
+      console.error('Error toggling user status:', err);
+      alert('An error occurred while updating user status');
     }
   };
 
@@ -157,7 +175,7 @@ const User = () => {
   };
 
   // CRUD operations
-  const addUser = () => {
+  const addUser = async () => {
     // Validate form
     if (!formData.name || !formData.email || !formData.phone || !formData.password) {
       alert('Vui lòng điền đầy đủ thông tin');
@@ -169,63 +187,56 @@ const User = () => {
       return;
     }
 
-    // Create new user object
-    const newUser: UserType = {
-      id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      role: formData.role,
-      status: formData.status,
-      lastLogin: 'Chưa đăng nhập'
-    };
-
-    // Add new user to the list
-    setUsers([...users, newUser]);
-    setIsAddModalOpen(false);
-  };
-
-  const updateUser = () => {
-    // Validate form
-    if (!formData.name || !formData.email || !formData.phone) {
-      alert('Vui lòng điền đầy đủ thông tin');
-      return;
-    }
-
-    // Check password if provided
-    if (formData.password && formData.password !== formData.confirmPassword) {
-      alert('Mật khẩu xác nhận không khớp');
-      return;
-    }
-
-    if (currentUser) {
-      // Update user
-      const updatedUsers = users.map(user => {
-        if (user.id === currentUser.id) {
-          return {
-            ...user,
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            role: formData.role,
-            status: formData.status
-          };
+    try {
+      // Create account using the API - match format from screenshot
+      const accountData = {
+        userName: formData.email, // Using email as username
+        email: formData.email,
+        name: formData.name,
+        password: formData.password,
+        address: formData.role, // Using role as address temporarily
+        phone: formData.phone,
+        role: formData.role,
+        dateOfBirth: new Date().toISOString().split('T')[0] // Use current date as default
+      };
+      
+      const response = await authAPI.createAccount(accountData);
+      
+      if (response.statusCode === 200) {
+        // Refresh the user list after successful creation
+        alert('Tạo người dùng thành công');
+        
+        // Fetch users again to refresh the list
+        const updatedResponse = await authAPI.getAllAccounts();
+        if (updatedResponse && Array.isArray(updatedResponse)) {
+          const transformedUsers = updatedResponse.map(user => ({
+            userID: user.userID || '',
+            name: user.name || '',
+            email: user.email || '',
+            phone: user.phone || '',
+            role: Array.isArray(user.roles) && user.roles.length > 0 ? user.roles[0] : 'Customer',
+            status: user.isActive ? 'active' : 'inactive',
+            lastLogin: user.lastLogin || 'N/A',
+            isActive: user.isActive,
+            userName: user.userName,
+            address: user.address,
+            roles: user.roles
+          }));
+          
+          setUsers(transformedUsers);
         }
-        return user;
-      });
-
-      setUsers(updatedUsers);
-      setIsEditModalOpen(false);
+        
+        setIsAddModalOpen(false);
+      } else {
+        throw new Error(response.message || 'Failed to create user');
+      }
+    } catch (err) {
+      console.error('Error creating user:', err);
+      alert('An error occurred while creating the user');
     }
   };
 
-  const deleteUser = () => {
-    if (currentUser) {
-      const updatedUsers = users.filter(user => user.id !== currentUser.id);
-      setUsers(updatedUsers);
-      setIsDeleteModalOpen(false);
-    }
-  };
+  // We're not updating users, only toggling their status
 
   return (
     <div className="users-container">
@@ -295,63 +306,80 @@ const User = () => {
 
       {/* Users Table */}
       <div className="users-card mb-4 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="users-table w-full">
-            <thead>
-              <tr>
-                <th className="w-12">ID</th>
-                <th>Tên</th>
-                <th>Email</th>
-                <th>Số Điện Thoại</th>
-                <th>Vai Trò</th>
-                <th>Trạng Thái</th>
-                <th>Đăng Nhập Cuối</th>
-                <th className="w-20">Thao Tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentUsers.length > 0 ? (
-                currentUsers.map(user => (
-                  <tr key={user.id}>
-                    <td>{user.id}</td>
-                    <td>{user.name}</td>
-                    <td>{user.email}</td>
-                    <td>{user.phone}</td>
-                    <td>
-                      <span className={getRoleBadgeClass(user.role)}>
-                        {user.role === 'admin' ? 'Quản Trị Viên' : 
-                         user.role === 'consultant' ? 'Tư Vấn Viên' : 'Người Dùng'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={getBadgeClass(user.status)}>
-                        {user.status === 'active' ? 'Hoạt Động' : 
-                         user.status === 'inactive' ? 'Không Hoạt Động' : 'Đã Khóa'}
-                      </span>
-                    </td>
-                    <td>{user.lastLogin}</td>
-                    <td>
-                      <div className="flex space-x-1">
+        {loading ? (
+          <div className="p-4 text-center">
+            <div className="loading-spinner mx-auto mb-2"></div>
+            <p>Đang tải dữ liệu người dùng...</p>
+          </div>
+        ) : error ? (
+          <div className="p-4 text-center text-red-600">
+            <p>{error}</p>
+            <button 
+              className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" 
+              onClick={() => window.location.reload()}
+            >
+              Thử lại
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="users-table w-full">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Tên</th>
+                  <th>Email</th>
+                  <th>Số Điện Thoại</th>
+                  <th>Vai Trò</th>
+                  <th>Trạng Thái</th>
+                  <th>Đăng Nhập Cuối</th>
+                  <th className="w-16">Thay Đổi Trạng Thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentUsers.length > 0 ? (
+                  currentUsers.map((user, index) => (
+                    <tr key={user.email || index}>
+                      <td>{user.userID?.substring(0, 6) || index+1}</td>
+                      <td>{user.name || 'N/A'}</td>
+                      <td>{user.email}</td>
+                      <td>{user.phone || 'N/A'}</td>
+                      <td>
+                        <span className={getRoleBadgeClass(user.role)}>
+                          {user.role === 'Admin' ? 'Quản Trị Viên' : 
+                           user.role === 'Consultant' ? 'Tư Vấn Viên' : 
+                           user.role === 'Staff' ? 'Nhân Viên' : 'Người Dùng'}
+                        </span>
+                      </td>
+                      <td>
                         <button 
-                          className="action-button action-button-edit" 
-                          onClick={() => handleEdit(user.id)}
-                          title="Chỉnh sửa"
+                          className={`status-toggle status-${user.status}`} 
+                          onClick={() => toggleUserStatus(user.email)}
+                          title="Click để thay đổi trạng thái"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                          </svg>
+                          {user.status === 'active' ? 'Hoạt Động' : 
+                           user.status === 'inactive' ? 'Không Hoạt Động' : 'Đã Khóa'}
                         </button>
+                      </td>
+                      <td>{user.lastLogin}</td>
+                      <td>
                         <button 
-                          className="action-button action-button-delete" 
-                          onClick={() => handleDelete(user.id)}
-                          title="Xóa"
+                          className="action-button action-button-toggle" 
+                          style={{ backgroundColor: user.status === 'active' ? '#fee2e2' : '#d1fae5', border: '1px solid', borderColor: user.status === 'active' ? '#fecaca' : '#a7f3d0' }}
+                          onClick={() => toggleUserStatus(user.email)}
+                          title={user.status === 'active' ? 'Vô hiệu hóa người dùng' : 'Kích hoạt người dùng'}
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                          </svg>
+                          {user.status === 'active' ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="#dc2626" style={{ display: 'block', visibility: 'visible' }}>
+                              <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
+                            </svg>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="#059669" style={{ display: 'block', visibility: 'visible' }}>
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          )}
                         </button>
-                      </div>
-                    </td>
+                      </td>
                   </tr>
                 ))
               ) : (
@@ -362,9 +390,10 @@ const User = () => {
             </tbody>
           </table>
         </div>
+        )}
         
         {/* Pagination */}
-        {filteredUsers.length > 0 && (
+        {!loading && !error && filteredUsers.length > 0 && (
           <div className="pagination">
             <button 
               className="pagination-button"
@@ -545,172 +574,9 @@ const User = () => {
         </div>
       )}
 
-      {/* Edit User Modal */}
-      {isEditModalOpen && currentUser && (
-        <div className="fixed inset-0 z-50 overflow-auto bg-gray-800 bg-opacity-75 flex items-center justify-center">
-          <div className="bg-white rounded-lg w-full max-w-md mx-3 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900">Chỉnh Sửa Người Dùng</h3>
-              <button 
-                className="text-gray-400 hover:text-gray-600"
-                onClick={() => setIsEditModalOpen(false)}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
-            </div>
-            <div className="p-4">
-              <form>
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Họ và Tên</label>
-                    <input 
-                      type="text" 
-                      name="name"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="Nhập họ tên đầy đủ"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                    />
-                  </div>
+      {/* Edit User Modal removed since we no longer need it */}
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <input 
-                      type="email" 
-                      name="email"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="Nhập địa chỉ email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Số Điện Thoại</label>
-                    <input 
-                      type="tel" 
-                      name="phone"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="Nhập số điện thoại"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Vai Trò</label>
-                    <select 
-                      name="role"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      value={formData.role}
-                      onChange={handleInputChange}
-                    >
-                      <option value="user">Người Dùng</option>
-                      <option value="consultant">Tư Vấn Viên</option>
-                      <option value="admin">Quản Trị Viên</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Trạng Thái</label>
-                    <select 
-                      name="status"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      value={formData.status}
-                      onChange={handleInputChange}
-                    >
-                      <option value="active">Hoạt Động</option>
-                      <option value="inactive">Không Hoạt Động</option>
-                      <option value="blocked">Đã Khóa</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Mật Khẩu Mới (để trống nếu không thay đổi)</label>
-                    <input 
-                      type="password" 
-                      name="password"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="Nhập mật khẩu mới"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Xác Nhận Mật Khẩu</label>
-                    <input 
-                      type="password" 
-                      name="confirmPassword"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="Xác nhận mật khẩu mới"
-                      value={formData.confirmPassword}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-              </form>
-            </div>
-            <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
-              <button 
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
-                onClick={() => setIsEditModalOpen(false)}
-              >
-                Hủy
-              </button>
-              <button 
-                className="px-4 py-2 bg-indigo-600 border border-indigo-600 rounded-md text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none"
-                onClick={updateUser}
-              >
-                Cập Nhật
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {isDeleteModalOpen && currentUser && (
-        <div className="fixed inset-0 z-50 overflow-auto bg-gray-800 bg-opacity-75 flex items-center justify-center">
-          <div className="bg-white rounded-lg w-full max-w-md mx-3 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900">Xác Nhận Xóa</h3>
-              <button 
-                className="text-gray-400 hover:text-gray-600"
-                onClick={() => setIsDeleteModalOpen(false)}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
-            </div>
-            <div className="p-4">
-              <p className="text-gray-700">
-                Bạn có chắc chắn muốn xóa người dùng <span className="font-semibold">{currentUser.name}</span>?
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                Hành động này không thể hoàn tác.
-              </p>
-            </div>
-            <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
-              <button 
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
-                onClick={() => setIsDeleteModalOpen(false)}
-              >
-                Hủy
-              </button>
-              <button 
-                className="px-4 py-2 bg-red-600 border border-red-600 rounded-md text-sm font-medium text-white hover:bg-red-700 focus:outline-none"
-                onClick={deleteUser}
-              >
-                Xác Nhận Xóa
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Delete Confirmation Modal removed since we no longer need it */}
     </div>
   );
 };

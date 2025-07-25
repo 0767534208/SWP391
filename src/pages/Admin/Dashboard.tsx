@@ -1,7 +1,8 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title, BarElement } from 'chart.js';
 import { Doughnut, Line } from 'react-chartjs-2';
 import './Dashboard.css';
+import { adminDashboardAPI } from '../../services';
 
 // Register Chart.js components
 ChartJS.register(
@@ -17,20 +18,93 @@ ChartJS.register(
 );
 
 const Dashboard = () => {
-  // Mock data - In a real application, this data would come from an API
+  // State for dashboard data
+  const [accountStats, setAccountStats] = useState({
+    totalAccount: 0,
+    managersAccount: 0,
+    customersAccount: 0,
+    staffsAccount: 0,
+    consultantAccount: 0,
+  });
+  const [appointmentStats, setAppointmentStats] = useState({
+    totalAppointments: 0,
+    totalAppointmentsAmount: 0,
+  });
+  const [weeklyRevenue, setWeeklyRevenue] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [timeSpanType, setTimeSpanType] = useState<'day' | 'week' | 'month'>('month');
+  const [periodData, setPeriodData] = useState<any[]>([]);
+  
+  // Fetch data from APIs
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Fetch account statistics
+        const accountsResponse = await adminDashboardAPI.getTotalAccounts();
+        if (accountsResponse.statusCode === 200 && accountsResponse.data) {
+          setAccountStats(accountsResponse.data);
+        }
+        
+        // Fetch appointment statistics
+        const appointmentsResponse = await adminDashboardAPI.getTotalAppointmentsAndAmount();
+        if (appointmentsResponse.statusCode === 200 && appointmentsResponse.data) {
+          setAppointmentStats(appointmentsResponse.data);
+        }
+        
+        // Fetch weekly revenue
+        const weeklyRevenueResponse = await adminDashboardAPI.getCurrentWeekRevenue();
+        if (weeklyRevenueResponse.statusCode === 200 && weeklyRevenueResponse.data) {
+          setWeeklyRevenue(weeklyRevenueResponse.data);
+        }
+        
+        // Get period data with month timespan
+        const now = new Date();
+        const startDate = new Date(now);
+        startDate.setMonth(now.getMonth() - 1);
+        
+        const startDateStr = startDate.toISOString().split('T')[0];
+        const endDateStr = now.toISOString().split('T')[0];
+        
+        const periodResponse = await adminDashboardAPI.getPeriodRevenue(
+          startDateStr, 
+          endDateStr, 
+          timeSpanType
+        );
+        
+        if (periodResponse.statusCode === 200 && periodResponse.data) {
+          setPeriodData(periodResponse.data);
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchDashboardData();
+  }, [timeSpanType]);
+  
+  // Calculate stats for display
   const stats = {
-    totalUsers: 1245,
-    activeConsultations: 28,
-    pendingBookings: 37,
-    totalRevenue: 52500000,
+    totalUsers: accountStats.totalAccount,
+    activeConsultations: appointmentStats.totalAppointments,
+    pendingBookings: accountStats.consultantAccount || 0, // Using consultant count as placeholder
+    totalRevenue: appointmentStats.totalAppointmentsAmount,
   };
 
+  // Prepare weekly revenue data for chart
   const visitData = {
-    labels: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
+    labels: weeklyRevenue?.map(item => {
+      if (!item?.date) return '';
+      const date = new Date(item.date);
+      return `T${date.getDay() === 0 ? 'CN' : date.getDay() + 1}`;
+    }) || [],
     datasets: [
       {
-        label: 'Số lượt truy cập',
-        data: [65, 59, 80, 81, 56, 55, 72],
+        label: 'Doanh thu (VND)',
+        data: weeklyRevenue?.map(item => item?.totalAppointmentsAmount || 0) || [],
         borderColor: '#4f46e5',
         backgroundColor: 'rgba(79, 70, 229, 0.1)',
         tension: 0.3,
@@ -39,22 +113,29 @@ const Dashboard = () => {
     ],
   };
 
-  // Data for pie chart
-  const genderData = {
-    labels: ['Nam', 'Nữ'],
+  // Data for pie chart - showing account distribution
+  const accountData = {
+    labels: ['Quản lý', 'Khách hàng', 'Nhân viên', 'Tư vấn viên'],
     datasets: [
       {
         label: 'Người dùng',
-        data: [450, 750],
+        data: [
+          accountStats?.managersAccount || 0,
+          accountStats?.customersAccount || 0,
+          accountStats?.staffsAccount || 0,
+          accountStats?.consultantAccount || 0
+        ],
         backgroundColor: [
           'rgba(59, 130, 246, 0.7)',
           'rgba(236, 72, 153, 0.7)',
-        
+          'rgba(34, 197, 94, 0.7)',
+          'rgba(249, 115, 22, 0.7)'
         ],
         borderColor: [
           'rgb(59, 130, 246)',
           'rgb(236, 72, 153)',
-         
+          'rgb(34, 197, 94)',
+          'rgb(249, 115, 22)'
         ],
         borderWidth: 1,
       },
@@ -135,8 +216,22 @@ const Dashboard = () => {
   return (
     <div className="dashboard">
       <div className="page-header">
-        <h1 className="page-title">Quản trị hệ thống</h1>
-        <p className="page-subtitle">Xem tổng quan về dữ liệu và hoạt động của hệ thống</p>
+        <div className="header-content">
+          <h1 className="page-title">Quản trị hệ thống</h1>
+          <p className="page-subtitle">Xem tổng quan về dữ liệu và hoạt động của hệ thống</p>
+        </div>
+        <div className="time-span-selector">
+          <label htmlFor="timeSpanType">Xem theo: </label>
+          <select 
+            id="timeSpanType" 
+            value={timeSpanType} 
+            onChange={(e) => setTimeSpanType(e.target.value as 'day' | 'week' | 'month')}
+          >
+            <option value="day">Ngày</option>
+            <option value="week">Tuần</option>
+            <option value="month">Tháng</option>
+          </select>
+        </div>
       </div>
 
       <div className="stats-grid">
@@ -186,21 +281,32 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="charts-container">
-        <div className="chart-card visits-chart">
-          <h3>Lượt truy cập gần đây</h3>
-          <div className="chart-container">
-            <Line options={lineOptions} data={visitData} height={200} />
-          </div>
+      {isLoading ? (
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Đang tải dữ liệu...</p>
         </div>
+      ) : (
+        <div className="charts-container">
+          <div className="chart-card visits-chart">
+            <h3>Doanh thu theo ngày</h3>
+            <div className="chart-container">
+              {weeklyRevenue.length > 0 ? (
+                <Line options={lineOptions} data={visitData} height={200} />
+              ) : (
+                <p className="no-data">Không có dữ liệu</p>
+              )}
+            </div>
+          </div>
 
-        <div className="chart-card gender-chart">
-          <h3>Phân bổ theo giới tính</h3>
-          <div className="chart-container doughnut-container">
-            <Doughnut options={doughnutOptions} data={genderData} />
+          <div className="chart-card gender-chart">
+            <h3>Phân bổ người dùng</h3>
+            <div className="chart-container doughnut-container">
+              <Doughnut options={doughnutOptions} data={accountData} />
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
