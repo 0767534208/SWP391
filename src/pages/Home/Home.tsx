@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Home.css';
 import { serviceAPI, categoryAPI, blogAPI } from '../../utils/api';
+import Chat from '../../components/Chat/Chat';
 
 interface ServiceData {
   servicesID: number;
@@ -265,6 +266,9 @@ const Home = () => {
           <Link to="/profile" className="tool-button">Kết quả xét nghiệm</Link>
         </div>
       </section> */}
+      
+      {/* Chat component for customer support */}
+      <Chat />
     </main>
   );
 };

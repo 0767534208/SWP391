@@ -420,7 +420,7 @@ const Profile = () => {
   const [stiServices, setSTIServices] = useState<any[]>([]);
   const [selectedService, setSelectedService] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [updatedAppointmentId, setUpdatedAppointmentId] = useState<string | null>(null);
+  const [updatedAppointmentCode, setUpdatedAppointmentCode] = useState<string | null>(null);
   
   // State for cancel appointment modal
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -457,8 +457,8 @@ const Profile = () => {
       // Clear any previous error
       setErrorMessage(null);
       
-      if (!updatedAppointmentId) {
-        console.error('Missing appointment ID for payment');
+      if (!updatedAppointmentCode) {
+        console.error('Missing appointment code for payment');
         setErrorMessage('Không tìm thấy mã lịch hẹn. Vui lòng thử lại.');
         return;
       }
@@ -466,7 +466,7 @@ const Profile = () => {
       setIsLoading(true);
       
       // Get the payment URL using the imported function from api.ts
-      const response: any = await getAppointmentPaymentUrl(updatedAppointmentId);
+      const response: any = await getAppointmentPaymentUrl(updatedAppointmentCode);
       
       console.log('📡 Payment URL response:', response);
       
@@ -510,7 +510,7 @@ const Profile = () => {
     try {
       // Log appointment details for debugging
       console.log('📋 Opening STI modal for appointment:', {
-        id: appointment.appointmentID,
+        code: appointment.appointmentCode,
         status: appointment.status,
         hasTestServices: hasTestServices(appointment),
         services: appointment.appointmentDetails?.map(d => d.service?.servicesName) || []
@@ -592,7 +592,7 @@ const Profile = () => {
       setIsLoading(true);
       
       // Create the request payload based on the API endpoint format
-      // The API expects appointmentID as a query parameter
+      // The API expects appointmentCode as a query parameter
       const requestData = {
         appointmentDetails: [
           {
@@ -603,16 +603,16 @@ const Profile = () => {
       };
       
       // Call the API to update appointment with STI request
-      // Using the URL format: /api/appointment/UpdateAppointmentWithSTIRequest?appointmentID=1
-      const appointmentId = selectedAppointment.appointmentID;
-      console.log(`📡 Making API call to UpdateAppointmentWithSTIRequest for appointment ID: ${appointmentId}`);
+      // Using the URL format: /api/appointment/UpdateAppointmentWithSTIRequest?appointmentCode=ABC123
+      const appointmentCode = selectedAppointment.appointmentCode;
+      console.log(`📡 Making API call to UpdateAppointmentWithSTIRequest for appointment code: ${appointmentCode}`);
       console.log('📡 Request data:', JSON.stringify(requestData, null, 2));
       
-      const response = await appointmentAPI.updateAppointmentWithSTIRequest(appointmentId, requestData);
+      const response = await appointmentAPI.updateAppointmentWithSTIRequest(appointmentCode, requestData);
       
       if (response.statusCode === 200) {
-        // Save the appointmentId for payment
-        setUpdatedAppointmentId(appointmentId);
+        // Save the appointmentCode for payment
+        setUpdatedAppointmentCode(appointmentCode);
         
         // Hide the service selection modal
         setShowSTIModal(false);
@@ -694,7 +694,7 @@ const Profile = () => {
     
     // Only return true if it has consultation services and NO test services
     const result = hasConsultationService && !hasTestService;
-    console.log(`🔍 Appointment ${appointment.appointmentID} is ${result ? 'ONLY consultation' : 'not only consultation'}`);
+    console.log(`🔍 Appointment ${appointment.appointmentCode} is ${result ? 'ONLY consultation' : 'not only consultation'}`);
     return result;
   };
   
@@ -705,12 +705,15 @@ const Profile = () => {
       setSelectedAppointment(appointment);
       
       // Make API call to get detailed appointment information
-      // Using the endpoint from the screenshot: /api/appointment/GetAppointmentByID/{id}
-      const appointmentId = appointment.appointmentID;
-      console.log(`📡 Fetching appointment details for ID: ${appointmentId}`);
+      // Using the endpoint from the screenshot: /api/appointment/GetAppointmentByCode/{code}
+      const appointmentCode = appointment.appointmentCode;
+      if (!appointmentCode) {
+        throw new Error('Appointment code is undefined');
+      }
+      console.log(`📡 Fetching appointment details for code: ${appointmentCode}`);
       
       // Assuming there's a method in the appointmentAPI service for this
-      const response = await appointmentAPI.getAppointmentById(appointmentId);
+      const response = await appointmentAPI.getAppointmentByCode(appointmentCode);
       
       console.log('📋 Appointment details response:', response);
       
@@ -740,11 +743,14 @@ const Profile = () => {
     
     try {
       setCancelLoading(true);
-      const { appointmentID } = selectedAppointment;
+      const { appointmentCode } = selectedAppointment;
+      if (!appointmentCode) {
+        throw new Error('Appointment code is undefined');
+      }
       
-      console.log('🚫 Cancelling appointment:', appointmentID);
+      console.log('🚫 Cancelling appointment:', appointmentCode);
       
-      const response = await changeAppointmentStatus(appointmentID, 8, selectedAppointment.paymentStatus);
+      const response = await changeAppointmentStatus(appointmentCode, 8, selectedAppointment.paymentStatus);
       
       if (response.statusCode === 200) {
         console.log('✅ Appointment cancelled successfully');
@@ -925,7 +931,7 @@ const Profile = () => {
               </div>
               <div style={{ display: 'grid', gap: 20 }}>
                 {appointments.map((appointment, index) => (
-                  <div key={appointment.appointmentID || index} style={{ 
+                  <div key={appointment.appointmentCode || index} style={{ 
                     background: '#fff', 
                     borderRadius: 12, 
                     padding: 20, 
@@ -935,7 +941,7 @@ const Profile = () => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
                       <div>
                         <div style={{ fontSize: 18, fontWeight: 700, color: '#2563eb', marginBottom: 4 }}>
-                          Mã lịch hẹn: {appointment.appointmentID || 'N/A'}
+                          Mã lịch hẹn: {appointment.appointmentCode || 'N/A'}
                         </div>
                         <div style={{ fontSize: 14, color: '#666' }}>
                           Ngày tạo: {appointment.createAt ? formatDate(appointment.createAt) : 'N/A'}
@@ -951,7 +957,7 @@ const Profile = () => {
                               setAppointments(prevAppointments => 
                                 prevAppointments.map(app => ({
                                   ...app,
-                                  showActionMenu: app.appointmentID === appointment.appointmentID 
+                                  showActionMenu: app.appointmentCode === appointment.appointmentCode 
                                     ? !app.showActionMenu 
                                     : false
                                 }))
@@ -1551,7 +1557,7 @@ const Profile = () => {
                 Thông tin cuộc hẹn:
               </div>
               <div style={{ display: 'grid', gap: 8, fontSize: 14 }}>
-                <div><span style={{ fontWeight: 500, color: '#4b5563' }}>Mã cuộc hẹn:</span> {selectedAppointment.appointmentID}</div>
+                <div><span style={{ fontWeight: 500, color: '#4b5563' }}>Mã cuộc hẹn:</span> {selectedAppointment.appointmentCode}</div>
                 <div><span style={{ fontWeight: 500, color: '#4b5563' }}>Ngày hẹn:</span> {formatDate(selectedAppointment.appointmentDate)}</div>
                 {selectedAppointment.slot && (
                   <div><span style={{ fontWeight: 500, color: '#4b5563' }}>Thời gian:</span> {formatTime(selectedAppointment.slot.startTime)} - {formatTime(selectedAppointment.slot.endTime)}</div>
@@ -1885,7 +1891,7 @@ const Profile = () => {
                       <div style={{ fontSize: 14, marginBottom: 12 }}>
                         <span style={{ color: '#6b7280', marginRight: 8 }}>Mã lịch hẹn:</span>
                         <span style={{ color: '#1f2937', fontWeight: 500, backgroundColor: '#f9fafb', padding: '3px 8px', borderRadius: 4 }}>
-                          {appointmentDetails.appointmentID}
+                          {appointmentDetails.appointmentCode}
                         </span>
                       </div>
                       

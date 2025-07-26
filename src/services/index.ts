@@ -8,6 +8,7 @@
 import appointmentService from './appointmentService';
 import authService from './authService';
 import blogService from './blogService';
+import chatService from './chatService';
 import consultantService from './consultantService';
 import contactService from './contactService';
 import cycleTrackingService from './cycleTrackingService';
@@ -24,6 +25,7 @@ export {
   appointmentService,
   authService,
   blogService,
+  chatService,
   consultantService,
   contactService,
   cycleTrackingService,
@@ -43,6 +45,7 @@ export default {
   appointment: appointmentService,
   auth: authService,
   blog: blogService,
+  chat: chatService,
   consultant: consultantService,
   contact: contactService,
   cycleTracking: cycleTrackingService,
