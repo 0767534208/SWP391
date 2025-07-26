@@ -783,7 +783,7 @@ const SlotManagement = () => {
             </div>
           )}
 
-          <div className="action-buttons" style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+          <div className="action-buttons" style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             {activeTab === 'slots' ? (
               <>
                 <button 
@@ -852,17 +852,20 @@ const SlotManagement = () => {
                       }
                     </td>
                     <td>{slot.maxAppointment}</td>
-                    <td>
-                      <button
-                        className="btn btn-sm btn-info"
-                        onClick={() => {
-                          setSelectedSlotForDetail(slot);
-                          setIsSlotDetailModalOpen(true);
-                        }}
-                        title="Xem chi tiết slot này"
-                      >
-                        Chi tiết
-                      </button>
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
+                        <button
+                          className="btn btn-sm btn-info"
+                          onClick={() => {
+                            setSelectedSlotForDetail(slot);
+                            setIsSlotDetailModalOpen(true);
+                          }}
+                          title="Xem chi tiết slot này"
+                        >
+                          Chi tiết
+                        </button>
+                        {/* Thêm các nút khác nếu cần */}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -890,8 +893,8 @@ const SlotManagement = () => {
                     <td>{profile.specialty || 'Chưa có chuyên môn'}</td>
                     <td>{profile.experience || 'Chưa có thông tin'}</td>
                     <td>{formatCurrency(profile.consultantPrice)}</td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
                         <button
                           className="btn btn-sm btn-info"
                           onClick={() => fetchConsultantProfile(profile.consultantProfileID)}
@@ -915,6 +918,7 @@ const SlotManagement = () => {
                         >
                           Sửa
                         </button>
+                        {/* Thêm các nút khác nếu cần */}
                       </div>
                     </td>
                   </tr>

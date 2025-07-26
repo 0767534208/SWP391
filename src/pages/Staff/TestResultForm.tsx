@@ -1,4 +1,5 @@
 import React, { useState, useEffect, type ChangeEvent } from 'react';
+import registerBg from '../../assets/images/register-bg.jpg';
 import './TestResultForm.css';
 import testResultService from '../../services/testResultService';
 import { useNavigate } from 'react-router-dom';
@@ -18,58 +19,90 @@ interface TestResultFormProps {
   initialData?: CreateLabTestRequest;
 }
 
-// Test types with proper medical names and reference ranges
-const TEST_TYPES = [
+// Grouped test types for professional table input
+const GROUPED_TEST_TYPES = [
   {
-    id: 'hiv_antibody',
-    name: 'Xét nghiệm kháng thể HIV (HIV Antibody Test)',
-    referenceRange: '< 1.0 S/CO',
-    unit: 'S/CO',
-    normalRange: 'Âm tính (< 1.0)'
+    group: 'SINH HÓA',
+    tests: [
+      {
+        id: 'rpr',
+        name: 'Rapid Plasma Reagin (RPR - Kháng thể không đặc hiệu giang mai)',
+        referenceRange: '< 1',
+        unit: 'RU',
+      },
+    ],
   },
   {
-    id: 'hepatitis_b_surface',
-    name: 'Kháng nguyên bề mặt viêm gan B (HBsAg)',
-    referenceRange: '< 0.05 IU/mL',
-    unit: 'IU/mL',
-    normalRange: 'Âm tính (< 0.05)'
+    group: 'MIỄN DỊCH',
+    tests: [
+      {
+        id: 'hiv_combo',
+        name: 'HIV Combo Ag + Ab',
+        referenceRange: '< 1',
+        unit: 'S/CO',
+      },
+      {
+        id: 'syphilis',
+        name: 'Syphilis',
+        referenceRange: 'Âm Tính: < 1.00\nDương Tính: ≥ 1.00',
+        unit: 'S/CO',
+      },
+    ],
   },
   {
-    id: 'hepatitis_b_antibody',
-    name: 'Kháng thể viêm gan B (Anti-HBs)',
-    referenceRange: '> 10 mIU/mL (bảo vệ)',
-    unit: 'mIU/mL',
-    normalRange: '> 10 (có miễn dịch)'
+    group: 'SINH HỌC PHÂN TỬ',
+    tests: [
+      { id: 'chlamydia', name: 'Chlamydia trachomatis', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'candida', name: 'Candida albicans', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'treponema', name: 'Treponema pallidum', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'hsv1', name: 'Herpes Simplex Virus 1', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'hsv2', name: 'Herpes Simplex Virus 2', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'ureaplasma_parvum', name: 'Ureaplasma parvum', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'trichomonas', name: 'Trichomonas vaginalis', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'mycoplasma_gen', name: 'Mycoplasma genitalium', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'mycoplasma_hom', name: 'Mycoplasma hominis', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'neisseria', name: 'Neisseria gonorrhoeae', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'ureaplasma_urea', name: 'Ureaplasma urealyticum', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'haemophilus', name: 'Haemophilus ducreyi', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'gardnerella', name: 'Gardnerella vaginalis', referenceRange: 'Âm Tính', unit: '' },
+    ],
   },
-  {
-    id: 'hepatitis_c_antibody',
-    name: 'Kháng thể viêm gan C (Anti-HCV)',
-    referenceRange: '< 1.0 S/CO',
-    unit: 'S/CO',
-    normalRange: 'Âm tính (< 1.0)'
-  },
-  {
-    id: 'ureaplasma',
-    name: 'Xét nghiệm Ureaplasma urealyticum',
-    referenceRange: '< 10^4 CFU/mL',
-    unit: 'CFU/mL',
-    normalRange: '< 10^4 CFU/mL'
-  },
-  {
-    id: 'hsv1_igg',
-    name: 'Kháng thể Herpes Simplex Virus 1 IgG',
-    referenceRange: '< 0.9 index',
-    unit: 'index',
-    normalRange: 'Âm tính (< 0.9)'
-  },
-  {
-    id: 'hsv2_igg',
-    name: 'Kháng thể Herpes Simplex Virus 2 IgG',
-    referenceRange: '< 0.9 index',
-    unit: 'index',
-    normalRange: 'Âm tính (< 0.9)'
-  }
 ];
+
+// State for all test results in table
+type TestTable = Record<string, { result: string; conclusion: string }>;
+const useTestTable = () => {
+  const [testTable, setTestTable] = useState<TestTable>(() => {
+    const table: TestTable = {};
+    GROUPED_TEST_TYPES.forEach(group => {
+      group.tests.forEach(test => {
+        table[test.id] = { result: '', conclusion: '' };
+      });
+    });
+    return table;
+  });
+  const handleTestTableChange = (testId: string, value: string) => {
+    setTestTable(prev => {
+      const newTable = { ...prev };
+      let conclusion = '';
+      if (value.trim() === '') {
+        conclusion = '';
+      } else if (value.toLowerCase().includes('âm')) {
+        conclusion = 'Âm Tính';
+      } else if (value.toLowerCase().includes('dương')) {
+        conclusion = 'Dương Tính';
+      } else {
+        const num = parseFloat(value.replace(',', '.'));
+        if (!isNaN(num)) {
+          conclusion = num >= 1 ? 'Dương Tính' : 'Âm Tính';
+        }
+      }
+      newTable[testId] = { result: value, conclusion };
+      return newTable;
+    });
+  };
+  return { testTable, handleTestTableChange };
+};
 
 const TestResultForm = ({
   appointmentId,
@@ -90,7 +123,8 @@ const TestResultForm = ({
     return now.toISOString().split('T')[0];
   };
 
-  // Get staff ID from token
+  // Get staff name from localStorage (hoặc token nếu có)
+  const staffName = localStorage.getItem('staffName') || '';
   const staffId = authUtils.getCurrentUserId() || '';
 
   // Initialize form state
@@ -108,12 +142,10 @@ const TestResultForm = ({
     }
   );
 
-  // Kết luận tự động
-  const [autoConclusion, setAutoConclusion] = useState<string>('');
-
+  const { testTable, handleTestTableChange } = useTestTable();
+  const [note, setNote] = useState('');
   const [appointmentCode, setAppointmentCode] = useState('');
   const [customerInfo, setCustomerInfo] = useState<{name: string, phone: string} | null>(null);
-  const [selectedTestType, setSelectedTestType] = useState<typeof TEST_TYPES[0] | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
@@ -226,231 +258,117 @@ const TestResultForm = ({
     return () => clearTimeout(timeoutId);
   };
 
-  // Handle test type selection
-  const handleTestTypeChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const testTypeId = e.target.value;
-    const testType = TEST_TYPES.find(t => t.id === testTypeId);
-    setSelectedTestType(testType || null);
-    setAutoConclusion('');
-    if (testType) {
-      setFormData(prev => ({
-        ...prev,
-        testName: testType.name,
-        referenceRange: testType.referenceRange,
-        unit: testType.unit,
-        result: '',
-        isPositive: false
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        testName: '',
-        referenceRange: '',
-        unit: '',
-        result: '',
-        isPositive: false
-      }));
-    }
-  };
 
-  // Handle input changes
+  // Handle input changes (only for non-test-table fields)
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    // Handle checkbox inputs
     if (type === 'checkbox') {
       const checkbox = e.target as HTMLInputElement;
       setFormData({
         ...formData,
         [name]: checkbox.checked
       });
-    } 
-    // Handle number inputs
-    else if (name === 'treatmentID') {
-      // Convert to number or null if empty
+    } else if (name === 'treatmentID') {
       const numValue = value.trim() === '' ? null : parseInt(value, 10);
       setFormData({
         ...formData,
         [name]: numValue
       });
-    }
-    // Handle result input for auto conclusion
-    else if (name === 'result') {
+    } else {
       setFormData({
         ...formData,
         [name]: value
       });
-      // Auto conclusion logic
-      if (selectedTestType && value) {
-        let conclusion = '';
-        let isPositive = false;
-        // Only for numeric referenceRange
-        const ref = selectedTestType.referenceRange;
-        const match = ref.match(/([<>]=?)\s*([\d.,eE+-]+)/);
-        if (match) {
-          const op = match[1];
-          const refVal = parseFloat(match[2].replace(',', '.'));
-          const resultVal = parseFloat(value.replace(',', '.'));
-          if (!isNaN(resultVal)) {
-            if (op === '<') {
-              isPositive = !(resultVal < refVal);
-            } else if (op === '>') {
-              isPositive = !(resultVal > refVal);
-            } else if (op === '<=') {
-              isPositive = !(resultVal <= refVal);
-            } else if (op === '>=') {
-              isPositive = !(resultVal >= refVal);
-            }
-            conclusion = isPositive ? 'Dương tính' : 'Âm tính';
-          } else {
-            conclusion = '';
-          }
-        } else {
-          // For qualitative referenceRange
-          if (ref.toLowerCase().includes('âm tính')) {
-            isPositive = value.toLowerCase().includes('dương') || value.toLowerCase().includes('positive');
-            conclusion = isPositive ? 'Dương tính' : 'Âm tính';
-          } else if (ref.toLowerCase().includes('non-reactive')) {
-            isPositive = !value.toLowerCase().includes('non-reactive');
-            conclusion = isPositive ? 'Dương tính' : 'Âm tính';
-          } else {
-            conclusion = '';
+    }
+  };
+
+  // Prepare data for submission: collect all filled test results from testTable
+  const prepareDataForSubmission = () => {
+    // Collect all test results that have a value
+    const testResults = Object.entries(testTable)
+      .filter(([, v]) => v.result.trim() !== '')
+      .map(([testId, v]) => {
+        // Find test info from GROUPED_TEST_TYPES
+        let testInfo: { id: string; name: string; referenceRange: string; unit: string } | null = null;
+        for (const group of GROUPED_TEST_TYPES) {
+          const found = group.tests.find(t => t.id === testId);
+          if (found) {
+            testInfo = found;
+            break;
           }
         }
-        setAutoConclusion(conclusion);
-        setFormData(prev => ({ ...prev, isPositive }));
-      } else {
-        setAutoConclusion('');
-        setFormData(prev => ({ ...prev, isPositive: false }));
-      }
-    }
-    // Handle other inputs
-    else {
-      setFormData({
-        ...formData,
-        [name]: value
+        return {
+          customerID: formData.customerID,
+          staffID: formData.staffID,
+          treatmentID: formData.treatmentID,
+          testName: testInfo ? testInfo.name : testId,
+          result: v.result,
+          referenceRange: testInfo ? testInfo.referenceRange : '',
+          unit: testInfo ? testInfo.unit : '',
+          isPositive: v.conclusion === 'Dương Tính',
+          testDate: formData.testDate
+        };
       });
-    }
+    return testResults;
   };
 
-  // Prepare data for submission
-  const prepareDataForSubmission = (): CreateLabTestRequest => {
-    // Create a clean copy of the form data
-    const cleanData = { ...formData };
-    
-    // Critical fix: Set treatmentID to null if no valid treatment exists
-    // This prevents foreign key constraint violations
-    if (!customerInfo || cleanData.treatmentID === undefined || cleanData.treatmentID === null) {
-      console.log('⚠️ Setting treatmentID to null (no customer info or invalid treatmentID)');
-      cleanData.treatmentID = null;
-    } else {
-      // Ensure treatmentID is a proper number
-      cleanData.treatmentID = Number(cleanData.treatmentID);
-      console.log('✅ treatmentID set to:', cleanData.treatmentID);
-    }
-    
-    // Ensure other fields have proper types
-    if (cleanData.referenceRange === '') {
-      cleanData.referenceRange = undefined;
-    }
-    
-    if (cleanData.unit === '') {
-      cleanData.unit = undefined;
-    }
-    
-    // Ensure testDate is in proper ISO format
-    if (cleanData.testDate && !cleanData.testDate.includes('T')) {
-      // Convert YYYY-MM-DD to ISO format
-      cleanData.testDate = new Date(cleanData.testDate + 'T00:00:00.000Z').toISOString();
-    }
-    
-    console.log('🔧 Data after preparation:', cleanData);
-    console.log('🔧 treatmentID status:', {
-      treatmentID: cleanData.treatmentID,
-      hasCustomerInfo: !!customerInfo,
-      treatmentIDType: typeof cleanData.treatmentID
-    });
-    
-    return cleanData;
-  };
-
-  // Handle form submission
+  // Handle form submission for all filled test results
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsSubmitting(true);
-    
     try {
-      // Prepare data for submission
       const submissionData = prepareDataForSubmission();
-      console.log('🔍 Form data being submitted:', submissionData);
-      
-      // Validate required fields
-      if (!submissionData.customerID) {
-        throw new Error('Customer ID is required. Please enter a valid appointment code first.');
+      if (submissionData.length === 0) {
+        throw new Error('Vui lòng nhập ít nhất một kết quả xét nghiệm.');
       }
-      if (!submissionData.staffID) {
-        throw new Error('Staff ID is required.');
+      // Validate required fields for each test
+      for (const data of submissionData) {
+        if (!data.customerID) throw new Error('Customer ID is required. Vui lòng nhập mã lịch hẹn hợp lệ.');
+        if (!data.staffID) throw new Error('Staff ID is required.');
+        if (!data.testName) throw new Error('Test name is required.');
+        if (!data.result) throw new Error('Test result is required.');
+        if (!data.testDate) throw new Error('Test date is required.');
       }
-      if (!submissionData.testName) {
-        throw new Error('Test name is required. Please select a test type.');
-      }
-      if (!submissionData.result) {
-        throw new Error('Test result is required.');
-      }
-      if (!submissionData.testDate) {
-        throw new Error('Test date is required.');
-      }
-      
-      console.log('✅ Validation passed, sending to API...');
-      
-      // First attempt: Send data as prepared
-      let response;
-      try {
-        response = await testResultService.createTestResult(submissionData);
-        console.log('🎉 API Response (first attempt):', response);
-      } catch (firstError) {
-        console.log('❌ First attempt failed, trying without treatmentID...');
-        
-        // Second attempt: Try without treatmentID if first attempt fails
-        const fallbackData = { ...submissionData, treatmentID: null };
-        console.log('🔄 Fallback data (no treatmentID):', fallbackData);
-        
+      // Submit each test result
+      let allSuccess = true;
+      for (const data of submissionData) {
         try {
-          response = await testResultService.createTestResult(fallbackData);
-          console.log('🎉 API Response (fallback attempt):', response);
-        } catch (secondError) {
-          console.error('❌ Both attempts failed:', { firstError, secondError });
-          throw firstError; // Throw the original error
+          const response = await testResultService.createTestResult(data);
+          if (!(response && (response.statusCode === 200 || response.statusCode === 201))) {
+            allSuccess = false;
+            throw new Error(response?.message || 'Unexpected response from server');
+          }
+        } catch (err) {
+          allSuccess = false;
+          throw err;
         }
       }
-      
-      if (response && (response.statusCode === 200 || response.statusCode === 201)) {
-        console.log('✅ Test result created successfully');
+      if (allSuccess) {
         setSuccess(true);
         setError(null);
-        
         setTimeout(() => {
           if (onSave) {
-            onSave(submissionData);
+            // If onSave expects a single result, pass the first; else, pass all
+            onSave(Array.isArray(submissionData) ? submissionData[0] : submissionData);
           } else {
             navigate('/staff/test-results');
           }
         }, 1500);
-      } else {
-        throw new Error(response?.message || 'Unexpected response from server');
       }
     } catch (err: unknown) {
-      console.error("❌ Error creating test result:", err);
-      let errorMessage = "Không thể lưu kết quả xét nghiệm. Vui lòng thử lại sau.";
-      
-      if (err && typeof err === 'object') {
-        if ('message' in err && typeof err.message === 'string') {
-          errorMessage = err.message;
-        } else if ('data' in err && err.data && typeof err.data === 'object' && 'message' in err.data) {
-          errorMessage = err.data.message as string;
+      let errorMessage = 'Không thể lưu kết quả xét nghiệm. Vui lòng thử lại sau.';
+      if (typeof err === 'object' && err !== null) {
+        // Try to extract message
+        if ('message' in err && typeof (err as { message?: unknown }).message === 'string') {
+          errorMessage = (err as { message: string }).message;
+        } else if ('data' in err && typeof (err as { data?: unknown }).data === 'object' && (err as { data?: { message?: unknown } }).data !== null) {
+          const dataObj = (err as { data: { message?: unknown } }).data;
+          if ('message' in dataObj && typeof dataObj.message === 'string') {
+            errorMessage = dataObj.message;
+          }
         }
       }
-      
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -467,63 +385,40 @@ const TestResultForm = ({
 
   return (
     <div className="test-result-form-container">
-      <div className="page-header">
-        <h1 className="page-title">Nhập Kết Quả Xét Nghiệm Mới</h1>
-        <p className="page-subtitle">Nhập thông tin kết quả xét nghiệm cho bệnh nhân</p>
+      <div className="page-header" style={{ display: 'flex', alignItems: 'center', gap: 24, borderBottom: '2px solid #e5e7eb', paddingBottom: 16, marginBottom: 24 }}>
+        <img src={registerBg} alt="Logo" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+        <div>
+          <h1 className="page-title" style={{ margin: 0, fontSize: 28, fontWeight: 700, color: '#1e293b' }}>PHÒNG KHÁM SỨC KHỎE GIỚI TÍNH</h1>
+          <div style={{ fontSize: 16, color: '#64748b', fontWeight: 500 }}>BẢNG KẾT QUẢ XÉT NGHIỆM</div>
+        </div>
       </div>
 
-      <div className="test-result-form-content">
-        {/* Patient info from appointment code */}
-        {customerInfo && (
-          <div className="patient-info-card">
-            <div className="patient-info-header">Thông tin bệnh nhân</div>
-            <div className="patient-info-content">
-              <div className="patient-info-row">
-                <div className="patient-info-label">Họ tên:</div>
-                <div className="patient-info-value">{customerInfo.name}</div>
-              </div>
-              <div className="patient-info-row">
-                <div className="patient-info-label">Số điện thoại:</div>
-                <div className="patient-info-value">{customerInfo.phone}</div>
-              </div>
-              <div className="patient-info-row">
-                <div className="patient-info-label">Mã lịch hẹn:</div>
-                <div className="patient-info-value">{appointmentCode}</div>
-              </div>
-            </div>
+      <div className="test-result-form-content" style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 32, maxWidth: 900, margin: '0 auto' }}>
+        {/* Thông tin bệnh nhân và xét nghiệm */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 32, marginBottom: 24 }}>
+          <div style={{ flex: 1, minWidth: 260 }}>
+            <div style={{ fontWeight: 600, color: '#334155', marginBottom: 4 }}>Họ tên bệnh nhân:</div>
+            <div style={{ fontSize: 16, color: '#1e293b', minHeight: 24 }}>{customerInfo?.name || patientName || '-'}</div>
           </div>
-        )}
-
-        {/* Legacy patient info display */}
-        {!customerInfo && patientName && (
-        <div className="patient-info-card">
-          <div className="patient-info-header">Thông tin bệnh nhân</div>
-          <div className="patient-info-content">
-            <div className="patient-info-row">
-              <div className="patient-info-label">Họ tên:</div>
-              <div className="patient-info-value">{patientName}</div>
-            </div>
-              {patientPhone && (
-            <div className="patient-info-row">
-              <div className="patient-info-label">Số điện thoại:</div>
-              <div className="patient-info-value">{patientPhone}</div>
-            </div>
-              )}
-              {service && (
-            <div className="patient-info-row">
-              <div className="patient-info-label">Dịch vụ:</div>
-              <div className="patient-info-value">{service}</div>
-            </div>
-              )}
-              {date && time && (
-            <div className="patient-info-row">
-              <div className="patient-info-label">Ngày & giờ hẹn:</div>
-              <div className="patient-info-value">{date} {time}</div>
-            </div>
-              )}
-            </div>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontWeight: 600, color: '#334155', marginBottom: 4 }}>Số điện thoại:</div>
+            <div style={{ fontSize: 16, color: '#1e293b', minHeight: 24 }}>{customerInfo?.phone || patientPhone || '-'}</div>
           </div>
-        )}
+          <div style={{ flex: 1, minWidth: 180 }}>
+            <div style={{ fontWeight: 600, color: '#334155', marginBottom: 4 }}>Mã lịch hẹn:</div>
+            <div style={{ fontSize: 16, color: '#1e293b', minHeight: 24 }}>{appointmentCode || '-'}</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 32, marginBottom: 24 }}>
+          <div style={{ flex: 1, minWidth: 260 }}>
+            <div style={{ fontWeight: 600, color: '#334155', marginBottom: 4 }}>Tên nhân viên thực hiện:</div>
+            <div style={{ fontSize: 16, color: '#1e293b', minHeight: 24 }}>{staffName ? staffName : 'Nhân viên'}</div>
+          </div>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontWeight: 600, color: '#334155', marginBottom: 4 }}>Ngày xét nghiệm:</div>
+            <div style={{ fontSize: 16, color: '#1e293b', minHeight: 24 }}>{formData.testDate}</div>
+          </div>
+        </div>
 
         {success ? (
           <div className="success-message">
@@ -534,7 +429,7 @@ const TestResultForm = ({
         ) : (
           <form onSubmit={handleSubmit} className="test-result-form">
             {/* Appointment Code Input */}
-            <div className="form-group">
+            <div className="form-group" style={{ marginBottom: 20 }}>
               <label htmlFor="appointmentCode">Mã lịch hẹn <span className="required">*</span></label>
               <input
                 type="text"
@@ -544,122 +439,58 @@ const TestResultForm = ({
                 onChange={handleAppointmentCodeChange}
                 required
                 placeholder="Nhập mã lịch hẹn để tìm thông tin khách hàng"
-                style={{ textTransform: 'uppercase' }}
+                style={{ textTransform: 'uppercase', width: 220 }}
               />
               {isLoadingCustomer && (
                 <div className="loading-text">Đang tìm kiếm thông tin khách hàng...</div>
               )}
             </div>
-            
-            {/* Staff ID - Auto-populated from token, read-only */}
-            <div className="form-group">
-              <label htmlFor="staffID">ID Nhân viên <span className="required">*</span></label>
-              <input
-                type="text"
-                id="staffID"
-                name="staffID"
-                value={formData.staffID}
-                readOnly
-                placeholder="ID nhân viên từ hệ thống"
-                style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
-              />
-              <div className="field-note">ID nhân viên được tự động lấy từ tài khoản đăng nhập</div>
-            </div>
-            
-            {/* Test Type Selection */}
-            <div className="form-group">
-              <label htmlFor="testType">Loại xét nghiệm <span className="required">*</span></label>
-              <select
-                id="testType"
-                name="testType"
-                value={selectedTestType?.id || ''}
-                onChange={handleTestTypeChange}
-                required
-              >
-                <option value="">-- Chọn loại xét nghiệm --</option>
-                {TEST_TYPES.map(testType => (
-                  <option key={testType.id} value={testType.id}>
-                    {testType.name}
-                  </option>
-                ))}
-              </select>
-            </div>
 
-            {/* Test Name - Auto-filled based on test type */}
-            <div className="form-group">
-              <label htmlFor="testName">Tên xét nghiệm</label>
-              <input
-                type="text"
-                id="testName"
-                name="testName"
-                value={formData.testName}
-                readOnly
-                style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
-                placeholder="Được tự động điền khi chọn loại xét nghiệm"
-              />
-            </div>
-
-            {/* Test Result - grouped compact block */}
-            <div className="test-result-group-block" style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 4,
-              border: '1px solid #e0e0e0',
-              borderRadius: 8,
-              background: '#f8fafc',
-              padding: 12,
-              marginBottom: 16,
-              maxWidth: 500,
-              marginLeft: 'auto',
-              marginRight: 'auto',
-              marginTop: 16
-            }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                <div style={{ minWidth: 160, flex: 1 }}>
-                  <div style={{ fontSize: 13, color: '#666' }}>Phạm vi tham chiếu</div>
-                  <div style={{ fontWeight: 500 }}>{formData.referenceRange || '-'}</div>
-                  {selectedTestType && (
-                    <div style={{ fontSize: 12, color: '#888' }}>Giá trị bình thường: {selectedTestType.normalRange}</div>
-                  )}
-                </div>
-                <div style={{ minWidth: 100, flex: 1 }}>
-                  <div style={{ fontSize: 13, color: '#666' }}>Đơn vị đo</div>
-                  <div style={{ fontWeight: 500 }}>{formData.unit || '-'}</div>
-                </div>
-                <div style={{ minWidth: 120, flex: 1 }}>
-                  <div style={{ fontSize: 13, color: '#666' }}>Kết quả xét nghiệm *</div>
-                  <input
-                    type="text"
-                    id="result"
-                    name="result"
-                    value={formData.result}
-                    onChange={handleInputChange}
-                    placeholder="Nhập kết quả"
-                    required
-                    style={{ width: '100%', minWidth: 80, maxWidth: 120, padding: '2px 6px', fontWeight: 500 }}
-                  />
-                </div>
-                <div style={{ minWidth: 100, flex: 1 }}>
-                  <div style={{ fontSize: 13, color: '#666' }}>Kết luận</div>
-                  <div style={{
-                    fontWeight: 'bold',
-                    color: autoConclusion === 'Dương tính' ? 'red' : autoConclusion === 'Âm tính' ? 'green' : '#333',
-                    minHeight: 24,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '1px solid #eee',
-                    borderRadius: 4,
-                    background: '#fafbfc',
-                    padding: '2px 6px',
-                    fontSize: 15
-                  }}>{autoConclusion || '-'}</div>
-                </div>
-              </div>
+            {/* Bảng kết quả xét nghiệm chuyên nghiệp */}
+            <div className="test-result-table-pro" style={{ margin: '24px 0', overflowX: 'auto' }}>
+              <table className="test-result-table" style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', fontSize: 15, border: '1.5px solid #64748b' }}>
+                <thead>
+                  <tr style={{ background: '#e0e7ef', color: '#1e293b', fontWeight: 700 }}>
+                    <th style={{ border: '1.5px solid #64748b', padding: 8, minWidth: 220 }}>TÊN XÉT NGHIỆM</th>
+                    <th style={{ border: '1.5px solid #64748b', padding: 8, minWidth: 100 }}>KẾT QUẢ</th>
+                    <th style={{ border: '1.5px solid #64748b', padding: 8, minWidth: 120 }}>GIÁ TRỊ THAM CHIẾU</th>
+                    <th style={{ border: '1.5px solid #64748b', padding: 8, minWidth: 80 }}>ĐƠN VỊ</th>
+                    <th style={{ border: '1.5px solid #64748b', padding: 8, minWidth: 100 }}>KẾT LUẬN</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {GROUPED_TEST_TYPES.map(group => (
+                    <React.Fragment key={group.group}>
+                      <tr style={{ background: '#f1f5f9', fontWeight: 'bold' }}>
+                        <td colSpan={5} style={{ border: '1.5px solid #64748b', padding: 8, color: '#0ea5e9', fontSize: 16 }}>{group.group}</td>
+                      </tr>
+                      {group.tests.map(test => (
+                        <tr key={test.id}>
+                          <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.name}</td>
+                          <td style={{ border: '1.5px solid #64748b', padding: 8 }}>
+                            <input
+                              type="text"
+                              value={testTable[test.id]?.result || ''}
+                              onChange={e => handleTestTableChange(test.id, e.target.value)}
+                              placeholder="Nhập kết quả"
+                              style={{ width: 100, padding: '2px 6px', border: '1px solid #cbd5e1', borderRadius: 4 }}
+                            />
+                          </td>
+                          <td style={{ border: '1.5px solid #64748b', padding: 8, whiteSpace: 'pre-line' }}>{test.referenceRange}</td>
+                          <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.unit}</td>
+                          <td style={{ border: '1.5px solid #64748b', padding: 8, fontWeight: 'bold', color: testTable[test.id]?.conclusion === 'Dương Tính' ? 'red' : testTable[test.id]?.conclusion === 'Âm Tính' ? 'green' : '#333' }}>
+                            {testTable[test.id]?.conclusion || '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             {/* Test Date */}
-            <div className="form-group">
+            <div className="form-group" style={{ marginBottom: 20 }}>
               <label htmlFor="testDate">Ngày xét nghiệm <span className="required">*</span></label>
               <input
                 type="date"
@@ -668,40 +499,65 @@ const TestResultForm = ({
                 value={formData.testDate}
                 onChange={handleInputChange}
                 required
+                style={{ width: 180 }}
+              />
+            </div>
+
+            {/* Ghi chú */}
+            <div className="form-group" style={{ marginBottom: 20 }}>
+              <label htmlFor="note">Ghi chú thêm (nếu có):</label>
+              <textarea
+                id="note"
+                name="note"
+                value={note}
+                onChange={e => setNote(e.target.value)}
+                rows={2}
+                style={{ width: '100%', borderRadius: 6, border: '1px solid #cbd5e1', padding: 8, fontSize: 15 }}
+                placeholder="Nhập ghi chú cho kết quả xét nghiệm, ví dụ: Đề nghị tái khám sau 1 tháng..."
               />
             </div>
 
             {error && <div className="error-message">{error}</div>}
 
-            <div className="form-actions">
-              <button 
-                type="button" 
-                className="cancel-button"
-                onClick={handleCancel}
-                disabled={isSubmitting}
-              >
-                Hủy
-              </button>
-              <button 
-                type="submit" 
-                className="submit-button"
-                disabled={isSubmitting || !customerInfo || !formData.testName || !formData.result}
-                title={
-                  !customerInfo ? "Vui lòng nhập mã lịch hẹn hợp lệ" :
-                  !formData.testName ? "Vui lòng chọn loại xét nghiệm" :
-                  !formData.result ? "Vui lòng nhập kết quả xét nghiệm" :
-                  "Lưu kết quả xét nghiệm"
-                }
-              >
-                {isSubmitting ? (
-                  <>
-                    <span className="loading-spinner"></span>
-                    Đang lưu...
-                  </>
-                ) : (
-                  'Lưu kết quả'
-                )}
-              </button>
+            {/* Chữ ký nhân viên và nút lưu */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 32 }}>
+              <div style={{ fontWeight: 600, color: '#334155', fontSize: 16 }}>
+                Nhân viên thực hiện:<br />
+                <span style={{ display: 'inline-block', minWidth: 180, minHeight: 32, borderBottom: '1px dotted #64748b', marginTop: 12 }}>
+                  {staffName ? staffName : 'Nhân viên'}
+                </span>
+              </div>
+              <div className="form-actions" style={{ display: 'flex', gap: 16 }}>
+                <button 
+                  type="button" 
+                  className="cancel-button"
+                  onClick={handleCancel}
+                  disabled={isSubmitting}
+                  style={{ background: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1', borderRadius: 6, padding: '8px 20px', fontWeight: 600 }}
+                >
+                  Hủy
+                </button>
+                <button 
+                  type="submit" 
+                  className="submit-button"
+                  disabled={isSubmitting || !customerInfo || Object.values(testTable).every(v => !v.result.trim())}
+                  title={
+                    !customerInfo ? "Vui lòng nhập mã lịch hẹn hợp lệ" :
+                    Object.values(testTable).every(v => !v.result.trim()) ? "Vui lòng nhập ít nhất một kết quả xét nghiệm" :
+                    "Lưu kết quả xét nghiệm"
+                  }
+                  style={{ background: '#0ea5e9', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 28px', fontWeight: 700, fontSize: 16 }}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className="loading-spinner"></span>
+                      Đang lưu...
+                    </>
+                  ) : (
+                    'Lưu kết quả'
+                  )}
+                </button>
+              </div>
             </div>
           </form>
         )}

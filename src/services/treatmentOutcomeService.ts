@@ -60,6 +60,7 @@ export interface GetAllAppointment {
   consultationFee: number;
   createAt: string;
   updateAt: string;
+  treatmentID?: number; // Thêm treatmentID để đồng bộ lookup xét nghiệm
 }
 
 export interface CustomerInfo {
