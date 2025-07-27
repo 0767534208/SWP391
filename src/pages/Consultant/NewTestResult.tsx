@@ -1,4 +1,55 @@
 import React, { useState, useEffect, useRef } from 'react';
+import testResultService from '../../services/testResultService';
+import type { LabTestData } from '../../utils/api';
+// Grouped test types for professional table (copy from TestResultConsultant)
+const GROUPED_TEST_TYPES = [
+  {
+    group: 'SINH HÓA',
+    tests: [
+      {
+        id: 'rpr',
+        name: 'Rapid Plasma Reagin (RPR - Kháng thể không đặc hiệu giang mai)',
+        referenceRange: '< 1',
+        unit: 'RU',
+      },
+    ],
+  },
+  {
+    group: 'MIỄN DỊCH',
+    tests: [
+      {
+        id: 'hiv_combo',
+        name: 'HIV Combo Ag + Ab',
+        referenceRange: '< 1',
+        unit: 'S/CO',
+      },
+      {
+        id: 'syphilis',
+        name: 'Syphilis',
+        referenceRange: 'Âm Tính: < 1.00\nDương Tính: ≥ 1.00',
+        unit: 'S/CO',
+      },
+    ],
+  },
+  {
+    group: 'SINH HỌC PHÂN TỬ',
+    tests: [
+      { id: 'chlamydia', name: 'Chlamydia trachomatis', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'candida', name: 'Candida albicans', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'treponema', name: 'Treponema pallidum', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'hsv1', name: 'Herpes Simplex Virus 1', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'hsv2', name: 'Herpes Simplex Virus 2', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'ureaplasma_parvum', name: 'Ureaplasma parvum', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'trichomonas', name: 'Trichomonas vaginalis', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'mycoplasma_gen', name: 'Mycoplasma genitalium', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'mycoplasma_hom', name: 'Mycoplasma hominis', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'neisseria', name: 'Neisseria gonorrhoeae', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'ureaplasma_urea', name: 'Ureaplasma urealyticum', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'haemophilus', name: 'Haemophilus ducreyi', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'gardnerella', name: 'Gardnerella vaginalis', referenceRange: 'Âm Tính', unit: '' },
+    ],
+  },
+];
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { FaArrowLeft, FaSave, FaSearch, FaTimes } from 'react-icons/fa';
@@ -40,6 +91,11 @@ const NewTestResult: React.FC = () => {
 
   // Ref for dropdown container
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Lab test state for selected appointment
+  const [labTests, setLabTests] = useState<LabTestData[] | null>(null);
+  const [labTestLoading, setLabTestLoading] = useState(false);
+  const [labTestError, setLabTestError] = useState<string | null>(null);
 
   // Load data on component mount
   useEffect(() => {
@@ -120,14 +176,12 @@ const NewTestResult: React.FC = () => {
     }
   };
 
-  const handleAppointmentSelect = (appointment: GetAllAppointment) => {
+  const handleAppointmentSelect = async (appointment: GetAllAppointment) => {
     setAppointmentSearch(appointment.appointmentCode);
     setShowAppointmentDropdown(false);
 
     // Auto-fill customer and consultant info
     const customer = customers.find(c => c.id === appointment.customerID);
-    
-    // Use consultant info from appointment if available, otherwise find from consultants list
     let consultant = null;
     if (appointment.consultant) {
       consultant = {
@@ -149,6 +203,25 @@ const NewTestResult: React.FC = () => {
       customerID: appointment.customerID,
       consultantID: appointment.consultantID,
     }));
+
+    // Fetch lab tests for this appointment/treatment
+    setLabTestLoading(true);
+    setLabTestError(null);
+    setLabTests(null);
+    try {
+      // Prefer treatmentID if available, else fallback to appointmentID
+      const treatmentID = appointment.treatmentID || appointment.appointmentID;
+      const res = await testResultService.getAppointmentTestResults(treatmentID);
+      if (res.statusCode === 200 && Array.isArray(res.data) && res.data.length > 0) {
+        setLabTests(res.data as LabTestData[]);
+      } else {
+        setLabTests([]);
+      }
+    } catch (err) {
+      setLabTestError('Không thể tải kết quả xét nghiệm');
+    } finally {
+      setLabTestLoading(false);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -262,6 +335,8 @@ const NewTestResult: React.FC = () => {
     setAppointmentSearch('');
     setSelectedCustomer(null);
     setSelectedConsultant(null);
+    setLabTests(null);
+    setLabTestError(null);
     setFormData(prev => ({
       ...prev,
       appointmentID: undefined,
@@ -349,19 +424,14 @@ const NewTestResult: React.FC = () => {
             </div>
           </div>
 
+
           {/* Customer Info Display */}
           {selectedCustomer && (
             <div className="form-group">
               <label>Thông tin khách hàng</label>
               <div className="info-display">
                 <div className="info-item">
-                  <strong>ID:</strong> {selectedCustomer.id}
-                </div>
-                <div className="info-item">
                   <strong>Tên:</strong> {selectedCustomer.name}
-                </div>
-                <div className="info-item">
-                  <strong>Email:</strong> {selectedCustomer.email}
                 </div>
                 <div className="info-item">
                   <strong>Số điện thoại:</strong> {selectedCustomer.phone}
@@ -376,18 +446,68 @@ const NewTestResult: React.FC = () => {
               <label>Thông tin bác sĩ tư vấn</label>
               <div className="info-display">
                 <div className="info-item">
-                  <strong>ID:</strong> {selectedConsultant.id}
-                </div>
-                <div className="info-item">
                   <strong>Tên:</strong> {selectedConsultant.name}
-                </div>
-                <div className="info-item">
-                  <strong>Email:</strong> {selectedConsultant.email}
                 </div>
                 <div className="info-item">
                   <strong>Số điện thoại:</strong> {selectedConsultant.phone}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Lab Test Results Table (if any) - show after info */}
+          {formData.appointmentID && (
+            <div className="form-group">
+              <label>Kết quả xét nghiệm</label>
+              {labTestLoading ? (
+                <div style={{ margin: '16px 0' }}>Đang tải kết quả xét nghiệm...</div>
+              ) : labTestError ? (
+                <div style={{ margin: '16px 0', color: 'red' }}>{labTestError}</div>
+              ) : labTests && labTests.length > 0 ? (
+                <div className="test-result-table-pro" style={{ margin: '24px 0', overflowX: 'auto' }}>
+                  <table className="test-result-table" style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', fontSize: 15, border: '1.5px solid #64748b' }}>
+                    <thead>
+                      <tr style={{ background: '#e0e7ef', color: '#1e293b', fontWeight: 700 }}>
+                        <th style={{ border: '1.5px solid #64748b', padding: 8, minWidth: 220 }}>TÊN XÉT NGHIỆM</th>
+                        <th style={{ border: '1.5px solid #64748b', padding: 8, minWidth: 100 }}>KẾT QUẢ</th>
+                        <th style={{ border: '1.5px solid #64748b', padding: 8, minWidth: 120 }}>GIÁ TRỊ THAM CHIẾU</th>
+                        <th style={{ border: '1.5px solid #64748b', padding: 8, minWidth: 80 }}>ĐƠN VỊ</th>
+                        <th style={{ border: '1.5px solid #64748b', padding: 8, minWidth: 100 }}>KẾT LUẬN</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {GROUPED_TEST_TYPES.map(group => (
+                        <React.Fragment key={group.group}>
+                          <tr style={{ background: '#f1f5f9', fontWeight: 'bold' }}>
+                            <td colSpan={5} style={{ border: '1.5px solid #64748b', padding: 8, color: '#0ea5e9', fontSize: 16 }}>{group.group}</td>
+                          </tr>
+                          {group.tests.map(test => {
+                            const testResult = labTests.find(t => t.testName === test.name);
+                            const result = testResult?.result || '';
+                            let conclusion = '';
+                            if (typeof testResult?.isPositive === 'boolean') {
+                              conclusion = testResult.isPositive ? 'Dương Tính' : 'Âm Tính';
+                            }
+                            return (
+                              <tr key={test.id}>
+                                <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.name}</td>
+                                <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{result || '-'}</td>
+                                <td style={{ border: '1.5px solid #64748b', padding: 8, whiteSpace: 'pre-line' }}>{test.referenceRange}</td>
+                                <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.unit}</td>
+                                <td style={{ border: '1.5px solid #64748b', padding: 8, fontWeight: 'bold', color: conclusion === 'Dương Tính' ? 'red' : conclusion === 'Âm Tính' ? 'green' : '#333' }}>
+                                  {conclusion || '-'}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </React.Fragment>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div style={{ margin: '16px 0', color: '#64748b' }}>Không có kết quả xét nghiệm cho cuộc hẹn này</div>
+              )}
             </div>
           )}
 

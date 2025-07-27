@@ -53,14 +53,32 @@ const Services = () => {
         const categoryResponse = await categoryAPI.getCategories();
         
         if (serviceResponse.statusCode === 200 && serviceResponse.data) {
-          // Use only the data from the API without adding default values
-          setServices(serviceResponse.data);
+          // Store all services first to access later
+          const allServices = serviceResponse.data;
+          setServices(allServices);
         } else {
           setError('Failed to fetch services');
         }
         
         if (categoryResponse.statusCode === 200 && categoryResponse.data) {
-          setCategories(categoryResponse.data);
+          const allCategories = categoryResponse.data;
+          setCategories(allCategories);
+          
+          // After getting both services and categories, filter services by active categories
+          if (serviceResponse.statusCode === 200 && serviceResponse.data) {
+            const activeCategoryIds = new Set(
+              allCategories
+                .filter((category: CategoryType) => category.status === true)
+                .map((category: CategoryType) => category.categoryID)
+            );
+            
+            // Filter services that are active AND belong to active categories
+            const activeServices = serviceResponse.data.filter((service: ServiceType) => 
+              service.status === true && // Service must be active
+              activeCategoryIds.has(service.categoryID) // Category must be active
+            );
+            setServices(activeServices);
+          }
         }
       } catch (err) {
         setError('Error fetching data');
@@ -89,13 +107,15 @@ const Services = () => {
     return category ? category.name : 'Unknown';
   };
 
-  // Get unique categories for filter
+  // Get unique categories for filter - only show active categories
   const categoryOptions = [
     { id: 'all', name: 'Tất cả dịch vụ' },
-    ...categories.map(category => ({
-      id: category.categoryID.toString(),
-      name: category.name
-    }))
+    ...categories
+      .filter(category => category.status === true) // Only show active categories in filter
+      .map(category => ({
+        id: category.categoryID.toString(),
+        name: category.name
+      }))
   ];
 
   // Handle view service details

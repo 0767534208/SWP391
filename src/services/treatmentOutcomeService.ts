@@ -60,6 +60,7 @@ export interface GetAllAppointment {
   consultationFee: number;
   createAt: string;
   updateAt: string;
+  treatmentID?: number; // Thêm treatmentID để đồng bộ lookup xét nghiệm
 }
 
 export interface CustomerInfo {
@@ -182,14 +183,14 @@ const treatmentOutcomeService = {
    * Get all consultants
    */
   getAllConsultants: async (): Promise<ApiResponse<ConsultantInfo[]>> => {
-    const response = await api.get<any[]>('/api/consultantSlot/GetAllConsultantProfile');
+    const response = await api.get<Array<Record<string, unknown>>>('/api/consultantSlot/GetAllConsultantProfile');
     
     if (response.statusCode === 200 && response.data) {
       const consultants = response.data.map(consultant => ({
-        id: consultant.consultantID || consultant.id,
-        name: consultant.fullName || consultant.name,
-        email: consultant.email || '',
-        phone: consultant.phone || '',
+        id: String(consultant.consultantID || consultant.id || ''),
+        name: String(consultant.fullName || consultant.name || ''),
+        email: String(consultant.email || ''),
+        phone: String(consultant.phone || ''),
       }));
       
       return {

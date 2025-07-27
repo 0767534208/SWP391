@@ -1,6 +1,6 @@
-import React from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import ChatbotWidget from '../ChatBot/ChatbotWidget';
 import './StaffLayout.css';
 import authService from '../../services/authService';
 import { ROUTES } from '../../config/constants';
@@ -105,6 +105,7 @@ const StaffLayout = () => {
           </div>
         </div>
       </main>
+      <ChatbotWidget />
     </div>
   );
 };

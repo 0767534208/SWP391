@@ -162,22 +162,55 @@ const ServiceManagement: React.FC = () => {
       setLoading(true);
       
       if (!isAddingNew) {
-        // Update existing service - chỉ gửi các fields được hỗ trợ
-        const updateData = {
-          servicesName: currentService.servicesName,
-          description: currentService.description,
-          servicesPrice: currentService.servicesPrice,
-          serviceType: currentService.serviceType !== undefined ? currentService.serviceType : 0,
-          status: currentService.status
-          // Note: không gửi categoryID vì API UpdateService không hỗ trợ
+        // Update existing service - ensure all fields have valid values
+        interface UpdateServiceData {
+          servicesName: string;
+          description: string;
+          serviceType: number;
+          status: boolean;
+          servicesPrice?: number;
+        }
+        
+        const updateData: UpdateServiceData = {
+          servicesName: currentService.servicesName?.trim() || '',
+          description: currentService.description?.trim() || '',
+          serviceType: Number(currentService.serviceType) || 0, // Ensure it's a number
+          status: Boolean(currentService.status) // Ensure it's boolean
         };
         
+        // Only include servicesPrice for test services (serviceType = 1)
+        if (Number(currentService.serviceType) === 1) {
+          updateData.servicesPrice = Number(currentService.servicesPrice) || 0;
+        }
+        
+        // Validate data before sending
+        if (!updateData.servicesName) {
+          setError('Service name cannot be empty.');
+          return;
+        }
+        if (!updateData.description) {
+          setError('Service description cannot be empty.');
+          return;
+        }
+        // Only validate price for test services (serviceType = 1)
+        if (updateData.serviceType === 1 && (!updateData.servicesPrice || updateData.servicesPrice <= 0)) {
+          setError('Test service price must be greater than 0.');
+          return;
+        }
+        if (![0, 1].includes(updateData.serviceType)) {
+          setError('Invalid service type (0: Consultation, 1: Test).');
+          return;
+        }
+        
         console.log('Updating service with data:', updateData);
+        console.log('Service ID:', currentService.servicesID);
         
         const response = await serviceAPI.updateService(
           currentService.servicesID, 
           updateData
         );
+        
+        console.log('Update response:', response);
         
         if (response.statusCode === 200 || response.statusCode === 201) {
           // Refresh lại toàn bộ danh sách services để đảm bảo dữ liệu đồng bộ
@@ -188,27 +221,47 @@ const ServiceManagement: React.FC = () => {
           
           setShowModal(false);
           setCurrentService(null);
+          setError(null); // Clear any previous errors
         } else {
-          setError('Không thể cập nhật dịch vụ. Vui lòng thử lại sau.');
+          const errorMsg = response?.message || 'Không thể cập nhật dịch vụ. Vui lòng thử lại sau.';
+          setError(errorMsg);
           console.error('API response error:', response);
         }
       } else {
-        // Add new service - gửi đầy đủ dữ liệu cho CreateService
-        const serviceData = {
+        // Add new service - send complete data for CreateService
+        interface CreateServiceData {
+          ClinicID: number;
+          CategoryID: number;
+          ManagerID: string;
+          ServicesName: string;
+          Description: string;
+          ServiceType: number;
+          Status: boolean;
+          Images: File[];
+          ServicesPrice?: number;
+        }
+        
+        const serviceData: CreateServiceData = {
           ClinicID: currentService.clinicID || 1,
           CategoryID: currentService.categoryID,
           ManagerID: currentService.managerID || managerID,
           ServicesName: currentService.servicesName,
           Description: currentService.description,
-          ServicesPrice: currentService.servicesPrice,
           ServiceType: currentService.serviceType !== undefined ? currentService.serviceType : 0,
           Status: currentService.status,
           Images: currentService.imageFiles || []
         };
         
+        // Only include ServicesPrice for test services (serviceType = 1)
+        if (Number(currentService.serviceType) === 1) {
+          serviceData.ServicesPrice = currentService.servicesPrice;
+        }
+        
         console.log('Creating service with data:', serviceData);
         
         const response = await serviceAPI.createService(serviceData);
+        
+        console.log('Create service response:', response);
         
         if (response.statusCode === 200 || response.statusCode === 201) {
           // Refresh lại toàn bộ danh sách services
@@ -220,13 +273,15 @@ const ServiceManagement: React.FC = () => {
           setShowModal(false);
           setCurrentService(null);
         } else {
-          setError('Không thể tạo dịch vụ mới. Vui lòng thử lại sau.');
+          const errorMsg = response?.message || 'Không thể tạo dịch vụ mới. Vui lòng thử lại sau.';
+          setError(errorMsg);
           console.error('API response error:', response);
         }
       }
     } catch (err) {
       console.error('Error saving service:', err);
-      setError('Đã xảy ra lỗi khi lưu dịch vụ.');
+      const errorMsg = err instanceof Error ? err.message : 'Đã xảy ra lỗi khi lưu dịch vụ.';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -236,32 +291,59 @@ const ServiceManagement: React.FC = () => {
   const handleToggleActive = async (id: number) => {
     try {
       setLoading(true);
+      setError(null); // Clear previous errors
       
       // Find the service to toggle
       const service = services.find(s => s.servicesID === id);
-      if (!service) return;
+      if (!service) {
+        setError('Không tìm thấy dịch vụ.');
+        return;
+      }
       
-      // Call API to update status (provide full service data to match UpdateServiceRequest schema)
-      const response = await serviceAPI.updateService(id, {
-        servicesName: service.servicesName,
-        description: service.description,
-        servicesPrice: service.servicesPrice,
-        serviceType: service.serviceType || 0,
-        status: !service.status
-      });
+      // Prepare data with proper validation
+      interface ToggleServiceData {
+        servicesName: string;
+        description: string;
+        serviceType: number;
+        status: boolean;
+        servicesPrice?: number;
+      }
       
-      if (response.statusCode === 200) {
+      const updateData: ToggleServiceData = {
+        servicesName: service.servicesName?.trim() || '',
+        description: service.description?.trim() || '',
+        serviceType: Number(service.serviceType) || 0, // Ensure it's a number
+        status: !service.status // Toggle status
+      };
+      
+      // Only include servicesPrice for test services (serviceType = 1)
+      if (Number(service.serviceType) === 1) {
+        updateData.servicesPrice = Number(service.servicesPrice) || 0;
+      }
+      
+      console.log('Toggling service status with data:', updateData);
+      console.log('Service ID:', id);
+      
+      // Call API to update status
+      const response = await serviceAPI.updateService(id, updateData);
+      
+      console.log('Toggle response:', response);
+      
+      if (response.statusCode === 200 || response.statusCode === 201) {
         // Refresh lại toàn bộ danh sách services để đảm bảo dữ liệu đồng bộ
         const serviceResponse = await serviceAPI.getServices();
         if (serviceResponse.statusCode === 200 && serviceResponse.data) {
           setServices(serviceResponse.data);
         }
       } else {
-        setError('Không thể cập nhật trạng thái dịch vụ. Vui lòng thử lại sau.');
+        const errorMsg = response?.message || 'Không thể cập nhật trạng thái dịch vụ. Vui lòng thử lại sau.';
+        setError(errorMsg);
+        console.error('API response error:', response);
       }
     } catch (err) {
       console.error('Error toggling service status:', err);
-      setError('Đã xảy ra lỗi khi cập nhật trạng thái dịch vụ.');
+      const errorMsg = err instanceof Error ? err.message : 'Đã xảy ra lỗi khi cập nhật trạng thái dịch vụ.';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -361,7 +443,9 @@ const ServiceManagement: React.FC = () => {
     
     setCurrentService({
       ...currentService,
-      serviceType: value
+      serviceType: value,
+      // Clear price if switching to consultation service (type 0)
+      servicesPrice: value === 0 ? 0 : currentService.servicesPrice
     });
   };
 
@@ -564,14 +648,23 @@ const ServiceManagement: React.FC = () => {
                 </div>
                 
                 <div className="form-group">
-                  <label htmlFor="servicesPrice">Giá</label>
+                  <label htmlFor="servicesPrice">
+                    Giá
+                    {currentService.serviceType === 0 && (
+                      <span style={{fontSize: '12px', color: '#888', fontWeight: 'normal'}}>
+                        {' '}(Không áp dụng cho dịch vụ tư vấn)
+                      </span>
+                    )}
+                  </label>
                   <input
                     type="number"
                     id="servicesPrice"
-                    value={currentService.servicesPrice}
+                    value={currentService.serviceType === 0 ? '' : currentService.servicesPrice}
                     onChange={(e) => setCurrentService({...currentService, servicesPrice: Number(e.target.value)})}
-                    required
-                    readOnly={!isEditing}
+                    required={currentService.serviceType === 1} // Only required for test services
+                    readOnly={!isEditing || currentService.serviceType === 0} // Read-only for consultation services
+                    disabled={currentService.serviceType === 0} // Disabled for consultation services
+                    placeholder={currentService.serviceType === 0 ? 'Giá sẽ được tính theo tư vấn viên' : 'Nhập giá dịch vụ'}
                   />
                 </div>
                 

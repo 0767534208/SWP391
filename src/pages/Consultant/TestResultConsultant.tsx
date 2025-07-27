@@ -1,9 +1,59 @@
 import React, { useState, useEffect } from 'react';
+// Grouped test types for professional table input (copy from TestResultManagementStaff)
+const GROUPED_TEST_TYPES = [
+  {
+    group: 'SINH HÓA',
+    tests: [
+      {
+        id: 'rpr',
+        name: 'Rapid Plasma Reagin (RPR - Kháng thể không đặc hiệu giang mai)',
+        referenceRange: '< 1',
+        unit: 'RU',
+      },
+    ],
+  },
+  {
+    group: 'MIỄN DỊCH',
+    tests: [
+      {
+        id: 'hiv_combo',
+        name: 'HIV Combo Ag + Ab',
+        referenceRange: '< 1',
+        unit: 'S/CO',
+      },
+      {
+        id: 'syphilis',
+        name: 'Syphilis',
+        referenceRange: 'Âm Tính: < 1.00\nDương Tính: ≥ 1.00',
+        unit: 'S/CO',
+      },
+    ],
+  },
+  {
+    group: 'SINH HỌC PHÂN TỬ',
+    tests: [
+      { id: 'chlamydia', name: 'Chlamydia trachomatis', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'candida', name: 'Candida albicans', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'treponema', name: 'Treponema pallidum', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'hsv1', name: 'Herpes Simplex Virus 1', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'hsv2', name: 'Herpes Simplex Virus 2', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'ureaplasma_parvum', name: 'Ureaplasma parvum', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'trichomonas', name: 'Trichomonas vaginalis', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'mycoplasma_gen', name: 'Mycoplasma genitalium', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'mycoplasma_hom', name: 'Mycoplasma hominis', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'neisseria', name: 'Neisseria gonorrhoeae', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'ureaplasma_urea', name: 'Ureaplasma urealyticum', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'haemophilus', name: 'Haemophilus ducreyi', referenceRange: 'Âm Tính', unit: '' },
+      { id: 'gardnerella', name: 'Gardnerella vaginalis', referenceRange: 'Âm Tính', unit: '' },
+    ],
+  },
+];
 import { FaSearch, FaTimes, FaEye, FaEdit, FaPlus, FaFlask } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import './TestResultConsultant.css';
 import { treatmentOutcomeService } from '../../services';
 import testResultService from '../../services/testResultService';
+import type { LabTestData } from '../../utils/api';
 import { toast } from 'react-hot-toast';
 import type { TreatmentOutcome } from '../../services/treatmentOutcomeService';
 
@@ -45,7 +95,8 @@ const TestResultConsultant: React.FC = () => {
   const [showLabTestModal, setShowLabTestModal] = useState<boolean>(false);
   const [viewModalData, setViewModalData] = useState<ViewModalData | null>(null);
   const [editModalData, setEditModalData] = useState<EditModalData | null>(null);
-  const [selectedLabTest, setSelectedLabTest] = useState<any>(null);
+  // Danh sách test của 1 cuộc hẹn (treatmentID)
+  const [selectedLabTests, setSelectedLabTests] = useState<LabTestData[] | null>(null);
   const [labTestLoading, setLabTestLoading] = useState<boolean>(false);
 
   // Load data on component mount
@@ -195,25 +246,21 @@ const TestResultConsultant: React.FC = () => {
   };
 
   // Handle view lab test details
+  // Xem tất cả test theo đúng mã cuộc hẹn (treatmentID)
   const handleViewLabTest = async (treatmentId: number) => {
     try {
       setLabTestLoading(true);
-      const labTestResponse = await testResultService.getAppointmentTestResults(treatmentId.toString());
-      
-      if (labTestResponse.statusCode === 200 && labTestResponse.data && labTestResponse.data.length > 0) {
-        const labTestId = (labTestResponse.data[0] as any).labTestID || labTestResponse.data[0].id;
-        const testDetailResponse = await testResultService.getTestResult(labTestId.toString());
-        
-        if (testDetailResponse.statusCode === 200 && testDetailResponse.data) {
-          setSelectedLabTest(testDetailResponse.data);
-          setShowLabTestModal(true);
-        } else {
-          toast.error('Không thể tải chi tiết kết quả xét nghiệm');
-        }
+      // Lấy tất cả test của treatmentID này
+      const labTestResponse = await testResultService.getAppointmentTestResults(treatmentId);
+      if (labTestResponse.statusCode === 200 && Array.isArray(labTestResponse.data) && labTestResponse.data.length > 0) {
+        setSelectedLabTests(labTestResponse.data as LabTestData[]);
+        setShowLabTestModal(true);
       } else {
+        setSelectedLabTests(null);
         toast.error('Không tìm thấy kết quả xét nghiệm cho điều trị này');
       }
     } catch (error) {
+      setSelectedLabTests(null);
       console.error('Error loading lab test details:', error);
       toast.error('Có lỗi xảy ra khi tải kết quả xét nghiệm');
     } finally {
@@ -224,7 +271,7 @@ const TestResultConsultant: React.FC = () => {
   // Close lab test modal
   const closeLabTestModal = () => {
     setShowLabTestModal(false);
-    setSelectedLabTest(null);
+    setSelectedLabTests(null);
   };
 
   // Format date for display
@@ -501,62 +548,10 @@ const TestResultConsultant: React.FC = () => {
         </div>
       )}
 
-      {/* Lab Test Result Modal */}
-      {showLabTestModal && selectedLabTest && (
+      {/* Lab Test Modal - Professional Table (chỉ bảng kết quả) */}
+      {showLabTestModal && selectedLabTests && (
         <div className="modal-overlay" onClick={closeLabTestModal}>
-          <div className="modal-content lab-test-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Kết quả xét nghiệm</h3>
-              <button 
-                onClick={closeLabTestModal}
-                className="modal-close"
-              >
-                <FaTimes />
-              </button>
-            </div>
-            <div className="modal-body">
-              {labTestLoading ? (
-                <div className="loading-state">
-                  <div className="loading-spinner"></div>
-                  <p>Đang tải kết quả xét nghiệm...</p>
-                </div>
-              ) : (
-                <div className="lab-test-details">
-                  <h4>Thông tin xét nghiệm</h4>
-                  <div className="detail-grid">
-                    <div className="detail-item">
-                      <strong>Tên xét nghiệm:</strong> {selectedLabTest.testName}
-                    </div>
-                    <div className="detail-item">
-                      <strong>Ngày thực hiện:</strong> {formatDate(selectedLabTest.datePerformed)}
-                    </div>
-                    <div className="detail-item">
-                      <strong>Kết quả:</strong> {selectedLabTest.result}
-                    </div>
-                    <div className="detail-item">
-                      <strong>Đơn vị:</strong> {selectedLabTest.unit}
-                    </div>
-                    <div className="detail-item">
-                      <strong>Tham chiếu:</strong> {selectedLabTest.referenceRange}
-                    </div>
-                  </div>
-                  
-
-                  <h4>Ghi chú</h4>
-                  <div className="detail-content">
-                    {selectedLabTest.notes || 'Không có ghi chú'}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Lab Test Modal */}
-      {showLabTestModal && selectedLabTest && (
-        <div className="modal-overlay" onClick={closeLabTestModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" style={{ maxWidth: 900, minWidth: 600, width: '90%' }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Chi tiết kết quả xét nghiệm</h3>
               <button 
@@ -567,53 +562,47 @@ const TestResultConsultant: React.FC = () => {
               </button>
             </div>
             <div className="modal-body">
-              <div className="modal-info-grid">
-                <div className="modal-info-item">
-                  <label>ID:</label>
-                  <span>{selectedLabTest.labTestID || selectedLabTest.id}</span>
-                </div>
-                <div className="modal-info-item">
-                  <label>Mã điều trị:</label>
-                  <span>{selectedLabTest.treatmentID ? `APT-${selectedLabTest.treatmentID}` : 'N/A'}</span>
-                </div>
-                <div className="modal-info-item">
-                  <label>Bệnh nhân:</label>
-                  <span>{selectedLabTest.customerName || selectedLabTest.patientName || `Bệnh nhân ${selectedLabTest.customerID || 'N/A'}`}</span>
-                </div>
-                <div className="modal-info-item">
-                  <label>Nhân viên xét nghiệm:</label>
-                  <span>{selectedLabTest.staffName || `Nhân viên ${selectedLabTest.staffID || 'N/A'}`}</span>
-                </div>
-                <div className="modal-info-item">
-                  <label>Loại xét nghiệm:</label>
-                  <span>{selectedLabTest.testName || selectedLabTest.testType || 'N/A'}</span>
-                </div>
-                <div className="modal-info-item">
-                  <label>Ngày xét nghiệm:</label>
-                  <span>{selectedLabTest.testDate ? formatDate(selectedLabTest.testDate) : 'N/A'}</span>
-                </div>
-                <div className="modal-info-item">
-                  <label>Kết quả:</label>
-                  <span>{selectedLabTest.result || 'N/A'}</span>
-                </div>
-                <div className="modal-info-item">
-                  <label>Phạm vi tham chiếu:</label>
-                  <span>{selectedLabTest.referenceRange || 'N/A'}</span>
-                </div>
-                <div className="modal-info-item">
-                  <label>Đơn vị đo:</label>
-                  <span>{selectedLabTest.unit || 'N/A'}</span>
-                </div>
-                <div className="modal-info-item">
-                  <label>Tính chất:</label>
-                  <span>{selectedLabTest.isPositive !== undefined ? (selectedLabTest.isPositive ? 'Dương tính' : 'Âm tính') : 'N/A'}</span>
-                </div>
-                {selectedLabTest.notes && (
-                  <div className="modal-info-item full-width">
-                    <label>Ghi chú:</label>
-                    <span>{selectedLabTest.notes}</span>
-                  </div>
-                )}
+              {/* Bảng kết quả xét nghiệm chuyên nghiệp */}
+              <div className="test-result-table-pro" style={{ margin: '24px 0', overflowX: 'auto' }}>
+                <table className="test-result-table" style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', fontSize: 15, border: '1.5px solid #64748b' }}>
+                  <thead>
+                    <tr style={{ background: '#e0e7ef', color: '#1e293b', fontWeight: 700 }}>
+                      <th style={{ border: '1.5px solid #64748b', padding: 8, minWidth: 220 }}>TÊN XÉT NGHIỆM</th>
+                      <th style={{ border: '1.5px solid #64748b', padding: 8, minWidth: 100 }}>KẾT QUẢ</th>
+                      <th style={{ border: '1.5px solid #64748b', padding: 8, minWidth: 120 }}>GIÁ TRỊ THAM CHIẾU</th>
+                      <th style={{ border: '1.5px solid #64748b', padding: 8, minWidth: 80 }}>ĐƠN VỊ</th>
+                      <th style={{ border: '1.5px solid #64748b', padding: 8, minWidth: 100 }}>KẾT LUẬN</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {GROUPED_TEST_TYPES.map(group => (
+                      <React.Fragment key={group.group}>
+                        <tr style={{ background: '#f1f5f9', fontWeight: 'bold' }}>
+                          <td colSpan={5} style={{ border: '1.5px solid #64748b', padding: 8, color: '#0ea5e9', fontSize: 16 }}>{group.group}</td>
+                        </tr>
+                        {group.tests.map(test => {
+                          const testResult = selectedLabTests.find(t => t.testName === test.name);
+                          const result = testResult?.result || '';
+                          let conclusion = '';
+                          if (typeof testResult?.isPositive === 'boolean') {
+                            conclusion = testResult.isPositive ? 'Dương Tính' : 'Âm Tính';
+                          }
+                          return (
+                            <tr key={test.id}>
+                              <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.name}</td>
+                              <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{result || '-'}</td>
+                              <td style={{ border: '1.5px solid #64748b', padding: 8, whiteSpace: 'pre-line' }}>{test.referenceRange}</td>
+                              <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.unit}</td>
+                              <td style={{ border: '1.5px solid #64748b', padding: 8, fontWeight: 'bold', color: conclusion === 'Dương Tính' ? 'red' : conclusion === 'Âm Tính' ? 'green' : '#333' }}>
+                                {conclusion || '-'}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
