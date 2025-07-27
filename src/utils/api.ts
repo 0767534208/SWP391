@@ -25,8 +25,32 @@ export const consultantProfileAPI = {
  * Bao gồm xử lý token, refresh token, và các endpoint API cơ bản
  */
 
-import type { UserData, RegisterRequest, AppointmentRequest } from '../types';
+import type { UserData, RegisterRequest, AppointmentRequest, User } from '../types';
 import { API, STORAGE_KEYS, ROUTES } from '../config/constants';
+
+// Helper function to create a minimal valid image file for placeholder
+const createPlaceholderImage = (): File => {
+  // Create a minimal 1x1 pixel PNG image as base64
+  const canvas = document.createElement('canvas');
+  canvas.width = 1;
+  canvas.height = 1;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, 1, 1);
+  }
+  
+  // Convert canvas to blob, then to File
+  const dataURL = canvas.toDataURL('image/png');
+  const base64Data = dataURL.split(',')[1];
+  const bytes = atob(base64Data);
+  const byteArray = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) {
+    byteArray[i] = bytes.charCodeAt(i);
+  }
+  
+  return new File([byteArray], 'placeholder.png', { type: 'image/png' });
+};
 
 // Define interface for API response
 export interface ApiResponse<T> {
@@ -652,7 +676,10 @@ export const serviceAPI = {
     if (serviceData.ManagerID) queryParams.append('ManagerID', serviceData.ManagerID);
     if (serviceData.ServicesName) queryParams.append('ServicesName', serviceData.ServicesName);
     if (serviceData.Description) queryParams.append('Description', serviceData.Description);
-    if (serviceData.ServicesPrice) queryParams.append('ServicesPrice', serviceData.ServicesPrice.toString());
+    // Only include ServicesPrice for test services (ServiceType = 1)
+    if (serviceData.ServiceType === 1 && serviceData.ServicesPrice) {
+      queryParams.append('ServicesPrice', serviceData.ServicesPrice.toString());
+    }
     if (serviceData.ServiceType !== undefined) queryParams.append('ServiceType', serviceData.ServiceType.toString());
     if (serviceData.Status !== undefined) queryParams.append('Status', serviceData.Status.toString());
     
@@ -664,11 +691,26 @@ export const serviceAPI = {
     
     // Thêm hình ảnh vào formData nếu có
     if (serviceData.Images && serviceData.Images.length > 0) {
-      for (const image of serviceData.Images) {
-        if (image instanceof File || image instanceof Blob) {
+      // Only add actual image files, not placeholder files
+      const validImages = serviceData.Images.filter((image: File) => 
+        image instanceof File && 
+        image.size > 0 && 
+        image.type.startsWith('image/')
+      );
+      
+      if (validImages.length > 0) {
+        for (const image of validImages) {
           formData.append('Images', image);
         }
+      } else {
+        // Create a minimal valid image placeholder if no valid images provided
+        const placeholderImage = createPlaceholderImage();
+        formData.append('Images', placeholderImage);
       }
+    } else {
+      // API requires Images field - create a minimal valid image placeholder
+      const placeholderImage = createPlaceholderImage();
+      formData.append('Images', placeholderImage);
     }
     
     const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
@@ -683,8 +725,41 @@ export const serviceAPI = {
       headers,
       body: formData,
     });
-    
-    return handleResponse<any>(response);
+
+    // Log detailed error information for debugging
+    if (!response.ok) {
+      console.error('CreateService Error Details:');
+      console.error('Status:', response.status);
+      console.error('Status Text:', response.statusText);
+      console.error('URL:', `${API.BASE_URL}${url}`);
+      console.error('Headers:', headers);
+      
+      let errorText = '';
+      try {
+        errorText = await response.text();
+        console.error('Error Response Body:', errorText);
+      } catch (e) {
+        console.error('Could not read error response body');
+      }
+      
+      // Try to parse error as JSON
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      if (errorText) {
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          // If not JSON, use the text as is
+          errorMessage = errorText || errorMessage;
+        }
+      }
+      
+      throw new Error(errorMessage);
+    }
+
+    // Parse successful response
+    const responseData = await response.json();
+    return responseData;
   },
 
   /**
@@ -696,17 +771,22 @@ export const serviceAPI = {
     // Theo swagger UpdateServiceRequest schema, chỉ hỗ trợ các fields:
     // servicesID, servicesName, description, servicesPrice, serviceType, status
     // KHÔNG hỗ trợ categoryID
-    const updateData = {
-      servicesID: serviceId,
-      servicesName: serviceData.servicesName,
-      description: serviceData.description,
-      servicesPrice: serviceData.servicesPrice,
-      serviceType: serviceData.serviceType,
-      status: serviceData.status
+    const updateData: any = {
+      servicesID: Number(serviceId), // Đảm bảo là number
+      servicesName: serviceData.servicesName?.toString() || '',
+      description: serviceData.description?.toString() || '',
+      serviceType: Number(serviceData.serviceType) || 0, // Đảm bảo là number (0 hoặc 1)
+      status: Boolean(serviceData.status) // Đảm bảo là boolean
       // Note: categoryID không được hỗ trợ trong UpdateService API
     };
     
+    // Only include servicesPrice for test services (serviceType = 1)
+    if (Number(serviceData.serviceType) === 1 && serviceData.servicesPrice !== undefined) {
+      updateData.servicesPrice = Number(serviceData.servicesPrice) || 0;
+    }
+    
     console.log('UpdateService payload:', updateData);
+    console.log('UpdateService URL:', `/api/Service/UpdateService?serviceID=${serviceId}`);
     
     return apiRequest<any>(`/api/Service/UpdateService?serviceID=${serviceId}`, 'PUT', updateData);
   }
@@ -1338,6 +1418,13 @@ export const consultantSlotAPI = {
   },
 
   /**
+   * Alias for getAllConsultants (for backward compatibility)
+   */
+  getAllConsultantSlots: async (): Promise<ApiResponse<any[]>> => {
+    return apiRequest<any[]>('/api/consultantSlot/GetAllConsultantSlot', 'GET');
+  },
+
+  /**
    * Lấy thông tin đăng ký slot của một consultant
 /**
    * Lấy tất cả consultant profile  
@@ -1384,11 +1471,13 @@ export const consultantSlotAPI = {
   },
 
   /**
-   * Hủy đăng ký slot của consultant
+   * Hủy đăng ký slot của consultant - không có API unregister riêng
+   * Sử dụng API swap hoặc update thay thế
    * @param slotId - ID của slot đã đăng ký
    */
   unregisterSlot: async (slotId: string): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/consultantSlot/unregister?id=${slotId}`, 'DELETE');
+    // Tạm thời trả về error vì API không tồn tại
+    throw new Error('Unregister API không khả dụng. Vui lòng sử dụng chức năng khác.');
   },
   
   /**
@@ -1396,7 +1485,69 @@ export const consultantSlotAPI = {
    */
   getAvailableSlots: async (): Promise<ApiResponse<any[]>> => {
     return apiRequest<any[]>('/api/slot/GetSlot', 'GET');
-  
+  },
+
+  /**
+   * Tạo consultant profile mới - sử dụng request body thay vì query params
+   * @param profileData - {accountId, description, specialty, experience, consultantPrice}
+   */
+  createConsultantProfile: async (profileData: any): Promise<ApiResponse<any>> => {
+    const requestBody = {
+      accountId: profileData.accountId || '',
+      description: profileData.description || '',
+      specialty: profileData.specialty || '',
+      experience: profileData.experience || '',
+      consultantPrice: Number(profileData.consultantPrice) || 0
+    };
+    return apiRequest<any>('/api/consultantSlot/CreateConsultantProfile', 'POST', requestBody);
+  },
+
+  /**
+   * Cập nhật consultant profile
+   * @param profileId - ID của profile
+   * @param profileData - Dữ liệu cập nhật
+   */
+  updateConsultantProfile: async (profileId: number, profileData: any): Promise<ApiResponse<any>> => {
+    const queryParams = new URLSearchParams({
+      consultantProfileID: profileId.toString(),
+      description: profileData.description || '',
+      specialty: profileData.specialty || '',
+      experience: profileData.experience || '',
+      consultantPrice: profileData.consultantPrice?.toString() || '0'
+    });
+    return apiRequest<any>(`/api/consultantSlot/UpdateConsultantProfile?${queryParams.toString()}`, 'PUT');
+  },
+
+  /**
+   * Xóa consultant profile - không có API delete, sử dụng deactivate thay thế
+   * @param profileId - ID của profile cần xóa
+   */
+  deleteConsultantProfile: async (profileId: number): Promise<ApiResponse<any>> => {
+    // Tạm thời trả về error vì API delete không khả dụng
+    throw new Error('Delete profile API không khả dụng. Vui lòng sử dụng chức năng deactivate.');
+  },
+
+  /**
+   * Hoán đổi slots giữa các consultant
+   * @param fromConsultantId - ID consultant hiện tại
+   * @param toConsultantId - ID consultant nhận slot
+   * @param slotId - ID của slot cần hoán đổi
+   */
+  swapSlots: async (consultantA: string, slotA: number, consultantB: string, slotB: number): Promise<ApiResponse<any>> => {
+    const queryParams = new URLSearchParams({
+      consultantA,
+      slotA: slotA.toString(),
+      consultantB,
+      slotB: slotB.toString()
+    });
+    return apiRequest<any>(`/api/consultantSlot/swap?${queryParams.toString()}`, 'PUT');
+  },
+
+  /**
+   * Lấy danh sách tất cả users có thể làm consultant
+   */
+  getAllUsers: async (): Promise<ApiResponse<User[]>> => {
+    return apiRequest<User[]>('/api/account/GetAllAccounts', 'GET');
   }
 };
 
@@ -1419,45 +1570,77 @@ export const blogAPI = {
   
   /**
    * Tạo bài viết mới (dành cho Manager)
-   * @param blogData - { title, content, author, status, images }
+   * @param blogData - { title, content, author, isPublished, image? }
    */
   createBlog: async (blogData: any): Promise<ApiResponse<any>> => {
-    // Tạo FormData cho multipart/form-data
-    const formData = new FormData();
-    
-    // Thêm các trường dữ liệu cơ bản
-    formData.append('Title', blogData.title);
-    formData.append('Content', blogData.content);
-    formData.append('Author', blogData.author || '');
-    formData.append('Status', blogData.isPublished ? 'true' : 'false');
-    
-    // Thêm hình ảnh nếu có
-    if (blogData.image) {
-      if (typeof blogData.image === 'string') {
-        // Nếu là URL
-        const response = await fetch(blogData.image);
-        const blob = await response.blob();
-        formData.append('Images', blob, 'image.jpg');
-      } else if (blogData.image instanceof File) {
-        // Nếu là File
+    try {
+      console.log('Creating blog with data:', blogData);
+      
+      // Ensure required fields have default values to prevent validation errors
+      const title = blogData.title?.trim() || 'Untitled Blog';
+      const content = blogData.content?.trim() || 'No content provided';
+      const author = blogData.author?.trim() || 'Anonymous';
+      const status = blogData.isPublished ? 'true' : 'false';
+      
+      console.log('Blog data being sent:', { title, content, author, status });
+      
+      // Build query parameters
+      const queryParams = new URLSearchParams({
+        Title: title,
+        Content: content,
+        Author: author,
+        Status: status
+      });
+      
+      const url = `/api/blog/CreateBlog?${queryParams.toString()}`;
+      console.log('CreateBlog URL:', url);
+      
+      // Tạo FormData cho multipart/form-data
+      const formData = new FormData();
+      
+      // Thêm hình ảnh nếu có, hoặc tạo placeholder
+      if (blogData.image && blogData.image instanceof File) {
         formData.append('Images', blogData.image);
+      } else {
+        // API requires Images field - create a placeholder image like we did for services
+        const placeholderImage = createPlaceholderImage();
+        formData.append('Images', placeholderImage);
       }
+      
+      const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      console.log('Sending CreateBlog request...');
+      
+      // Gửi request với multipart/form-data
+      const response = await fetch(`${API.BASE_URL}${url}`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      console.log('CreateBlog response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('CreateBlog Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('CreateBlog success:', result);
+      return result;
+    } catch (error) {
+      console.error('Create blog error:', error);
+      throw error;
     }
-    
-    const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    // Gửi request với multipart/form-data
-    const response = await fetch(`${API.BASE_URL}/api/blog/CreateBlog`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
-    
-    return handleResponse<any>(response);
   },
   
   /**

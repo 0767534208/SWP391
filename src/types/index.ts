@@ -37,6 +37,22 @@ export interface UserData {
 }
 
 /**
+ * User account information from GetAllAccounts API
+ */
+export interface User {
+  userID: string;
+  userName: string;
+  email: string;
+  name: string;
+  address: string;
+  phone: string;
+  isActive: boolean;
+  roles: string[];
+  token: string | null;
+  refreshToken: string | null;
+}
+
+/**
  * Dữ liệu đăng nhập
  */
 export interface LoginRequest {

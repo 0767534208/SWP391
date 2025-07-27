@@ -8,7 +8,6 @@
 import appointmentService from './appointmentService';
 import authService from './authService';
 import blogService from './blogService';
-import chatService from './chatService';
 import consultantService from './consultantService';
 import contactService from './contactService';
 import cycleTrackingService from './cycleTrackingService';
@@ -17,7 +16,7 @@ import serviceService from './serviceService';
 import slotService from './slotService';
 import testResultService from './testResultService';
 import treatmentOutcomeService from './treatmentOutcomeService';
-import { adminDashboardAPI } from './adminService';
+import chatbotService from './chatbotService';
 export { default as qnaService } from './qnaService';
 
 // Export all services
@@ -25,7 +24,6 @@ export {
   appointmentService,
   authService,
   blogService,
-  chatService,
   consultantService,
   contactService,
   cycleTrackingService,
@@ -34,18 +32,17 @@ export {
   slotService,
   testResultService,
   treatmentOutcomeService,
+  chatbotService,
 };
 
 // Also re-export the auth and user APIs from api.ts
 export { authAPI, userAPI } from '../utils/api';
-export { adminDashboardAPI } from './adminService';
 
 // Default export of all services as a single object
 export default {
   appointment: appointmentService,
   auth: authService,
   blog: blogService,
-  chat: chatService,
   consultant: consultantService,
   contact: contactService,
   cycleTracking: cycleTrackingService,
@@ -53,6 +50,6 @@ export default {
   service: serviceService,
   slot: slotService,
   testResult: testResultService,
-  admin: { dashboard: adminDashboardAPI },
   treatmentOutcome: treatmentOutcomeService,
+  chatbot: chatbotService,
 }; 

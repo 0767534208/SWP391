@@ -539,8 +539,13 @@ const Profile = () => {
           })));
         }
         
-        // Filter for ONLY services with serviceType = 1 (STI test services)
+        // Filter for ONLY services with serviceType = 1 (STI test services) AND status = true (active)
         const testServices = servicesResponse.data.filter((service: any) => {
+          // Must be active service first
+          if (service.status !== true) {
+            return false;
+          }
+          
           // First, try to match by explicit serviceType or type property
           if (service.serviceType === 1 || service.type === 1) {
             return true;

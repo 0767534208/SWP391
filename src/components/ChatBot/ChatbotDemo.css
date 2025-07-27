@@ -1,0 +1,193 @@
+/* Chatbot Widget Demo Styles */
+
+.chatbot-demo-container {
+  min-height: 100vh;
+  background: linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.demo-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.chatbot-demo-container h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  text-align: center;
+  color: #2c3e50;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.demo-description {
+  font-size: 1.2rem;
+  text-align: center;
+  color: #6c757d;
+  margin-bottom: 50px;
+  line-height: 1.6;
+}
+
+.demo-features h2,
+.demo-instructions h2,
+.demo-examples h2 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+/* Features Grid */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  margin-bottom: 60px;
+}
+
+.feature-card {
+  background: white;
+  border-radius: 15px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border: 1px solid #e9ecef;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+.feature-icon {
+  font-size: 3rem;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.feature-card h3 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 15px;
+}
+
+.feature-card p {
+  font-size: 1rem;
+  color: #6c757d;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Instructions */
+.demo-instructions {
+  background: white;
+  border-radius: 15px;
+  padding: 40px;
+  margin-bottom: 50px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.demo-instructions ol {
+  font-size: 1.1rem;
+  color: #495057;
+  line-height: 1.8;
+  padding-left: 20px;
+}
+
+.demo-instructions ol li {
+  margin-bottom: 10px;
+  padding-left: 10px;
+}
+
+/* Examples */
+.demo-examples {
+  background: white;
+  border-radius: 15px;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.examples-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  justify-content: center;
+}
+
+.example-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 25px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+}
+
+.example-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .demo-content {
+    padding: 20px 15px;
+  }
+
+  .chatbot-demo-container h1 {
+    font-size: 2.5rem;
+  }
+
+  .demo-description {
+    font-size: 1.1rem;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .feature-card {
+    padding: 25px;
+  }
+
+  .demo-instructions,
+  .demo-examples {
+    padding: 25px;
+  }
+
+  .examples-list {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .example-badge {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .chatbot-demo-container h1 {
+    font-size: 2rem;
+  }
+
+  .demo-description {
+    font-size: 1rem;
+  }
+
+  .demo-features h2,
+  .demo-instructions h2,
+  .demo-examples h2 {
+    font-size: 1.5rem;
+  }
+}

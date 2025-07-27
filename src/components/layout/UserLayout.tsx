@@ -1,6 +1,7 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import Footer from "./Footer";
 import Navbar from "./Navbar";
+import ChatbotWidget from "../ChatBot/ChatbotWidget";
 import "./UserLayout.css";
 import { useEffect } from "react";
 
@@ -46,6 +47,7 @@ export default function UserLayout() {
         <Outlet /> {/* Hiển thị trang con */}
       </div>
       <Footer/>
+      <ChatbotWidget />
     </div>
   );
 }

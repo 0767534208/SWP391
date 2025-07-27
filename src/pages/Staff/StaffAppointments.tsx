@@ -3,6 +3,8 @@ import type { ChangeEvent } from 'react';
 import './StaffAppointments.css';
 import { FaSync, FaCheckCircle, FaTimesCircle, FaEye, FaPencilAlt, FaMoneyBillWave } from 'react-icons/fa';
 import { appointmentAPI } from '../../utils/api';
+import treatmentOutcomeService from '../../services/treatmentOutcomeService';
+import testResultService from '../../services/testResultService';
 
 interface AppointmentType {
   id: string;
@@ -456,39 +458,137 @@ const StaffAppointments = () => {
       
       console.log(`Updating status from ${currentAppointment.status} to ${newStatus}`);
       
-      // Directly update status to completed without opening result modal
-      // Skip the result input step and update status directly
+      // Special handling for 'completed' status - we should always use the test results modal
+      if (newStatus === 'completed') {
+        console.log('Completed status requested - redirecting to test results modal');
+        setIsSubmitting(false);
+        setIsStatusModalOpen(false);
+        setIsResultModalOpen(true);
+        setResultText('');
+        return;
+      }
       
       try {
         // Convert string status to number for API
         const statusNumber = mapStatusStringToNumber(newStatus);
+        console.log(`Status string "${newStatus}" mapped to number: ${statusNumber}`);
+        
+        // Special handling for 'awaiting_results' status - need to ensure TreatmentOutcome exists
+        if (newStatus === 'awaiting_results') {
+          console.log('Handling awaiting_results status - checking for TreatmentOutcome');
+          // First, check if TreatmentOutcome exists for this appointment
+          try {
+            const treatmentResponse = await treatmentOutcomeService.getTreatmentOutcomesByAppointment(parseInt(currentAppointment.id));
+            console.log('Treatment outcome check response:', treatmentResponse);
+            
+            // If no treatment outcome exists, check if this appointment needs one
+            if (!treatmentResponse.data || treatmentResponse.data.length === 0) {
+              console.log('No treatment outcome found, checking appointment type...');
+              
+              // Get appointment details from the current data
+              const response = await appointmentAPI.getAllAppointments();
+              const fullAppointment = response.data?.find(apt => apt.appointmentID.toString() === currentAppointment.id);
+              
+              console.log('Full appointment data:', fullAppointment);
+              
+              if (fullAppointment && fullAppointment.customerID) {
+                const consultantID = fullAppointment.consultantID;
+                
+                if (!consultantID) {
+                  // This is likely a test-only appointment without a consultant
+                  // For test-only appointments, we might not need a TreatmentOutcome
+                  // Let's try to proceed without creating one and see if the API allows it
+                  console.log('Test-only appointment detected (no consultant). Proceeding without TreatmentOutcome.');
+                  
+                  // We'll skip TreatmentOutcome creation and try to update status directly
+                  // If the API requires it, it will fail and we'll handle the error
+                } else {
+                  // This appointment has a consultant, so create a TreatmentOutcome
+                  const createTreatmentData = {
+                    customerID: fullAppointment.customerID,
+                    consultantID: consultantID,
+                    appointmentID: parseInt(currentAppointment.id),
+                    diagnosis: "Đang chờ kết quả xét nghiệm",
+                    treatmentPlan: "Xét nghiệm STI theo yêu cầu",
+                    prescription: "",
+                    recommendation: "Chờ kết quả xét nghiệm để đưa ra khuyến nghị cụ thể"
+                  };
+                  
+                  console.log('Creating treatment outcome with data:', createTreatmentData);
+                  const createResult = await treatmentOutcomeService.createTreatmentOutcome(createTreatmentData);
+                  console.log('Created treatment outcome result:', createResult);
+                  
+                  if (createResult.statusCode !== 200) {
+                    console.error('Failed to create treatment outcome:', createResult);
+                    showToast("Không thể tạo treatment outcome. Vui lòng thử lại.", "error");
+                    return;
+                  }
+                }
+              } else {
+                console.error('Missing customer ID in appointment data');
+                showToast("Thiếu thông tin khách hàng. Không thể cập nhật trạng thái.", "error");
+                return;
+              }
+            } else {
+              console.log('Treatment outcome already exists');
+            }
+          } catch (treatmentError) {
+            console.error('Error checking/creating treatment outcome:', treatmentError);
+            showToast("Lỗi khi kiểm tra treatment outcome. Vui lòng thử lại.", "error");
+            return;
+          }
+        }
         
         // Call the API to update appointment status
-        // Using the correct API endpoint format with query parameters
-        // https://localhost:7084/api/appointment/ChangeAppointmentStatus?appointmentID=1&status=4&paymentStatus=1
+        console.log(`Calling API with appointmentID: ${currentAppointment.id}, status: ${statusNumber}, paymentStatus: ${currentAppointment.paymentStatus}`);
+        
         const response = await appointmentAPI.changeAppointmentStatus(
           parseInt(currentAppointment.id),
-          statusNumber + 1, // Add 1 to the status as requested
+          statusNumber, // Use the correct status number without adding 1
           currentAppointment.paymentStatus // Keep current payment status
         );
+        
+        console.log('API response:', response);
         
         if (response.statusCode === 200) {
           // Show success toast notification
           showToast("Cập nhật trạng thái thành công!", "success");
           
           // Update local state with the new status
-      const updatedAppointments = appointments.map(appointment => {
-        if (appointment.id === currentAppointment.id) {
-          return {
-            ...appointment,
-            status: newStatus
-          };
-        }
-        return appointment;
-      });
+          const updatedAppointments = appointments.map(appointment => {
+            if (appointment.id === currentAppointment.id) {
+              return {
+                ...appointment,
+                status: newStatus
+              };
+            }
+            return appointment;
+          });
 
-      setAppointments(updatedAppointments);
-      setIsStatusModalOpen(false);
+          setAppointments(updatedAppointments);
+          setIsStatusModalOpen(false);
+          
+          // Refresh appointments to get updated data
+          await fetchAppointments();
+        } else {
+          console.error('API response error:', response);
+          if (response.message?.includes('Cannot find the TreatmentOutcome')) {
+            // If we get this error for a test-only appointment, provide more specific guidance
+            if (currentAppointment && !currentAppointment.consultant) {
+              showToast("Cuộc hẹn xét nghiệm này cần có tư vấn viên được phân công trước khi chuyển sang trạng thái 'Đợi kết quả'. Vui lòng liên hệ quản lý để phân công tư vấn viên.", "error");
+            } else {
+              showToast("Không tìm thấy treatment outcome. Vui lòng thử lại hoặc liên hệ admin.", "error");
+            }
+          } else if (response.message?.includes('Missing LabTest result')) {
+            // Handle the case where lab test results are required
+            showToast("Cần nhập kết quả xét nghiệm trước khi hoàn thành cuộc hẹn.", "error");
+            // Automatically open the results modal for the user
+            setIsStatusModalOpen(false);
+            setIsResultModalOpen(true);
+            setResultText('');
+          } else {
+            showToast(response.message || "Cập nhật trạng thái thất bại", "error");
+          }
         }
       } catch (error) {
         console.error('Error updating appointment status:', error);
@@ -505,21 +605,114 @@ const StaffAppointments = () => {
       setIsSubmitting(true);
       
       try {
-        // Update appointment status to completed
+        // First, create a lab test result for any appointment that needs test results
+        let labTestCreated = false;
+        
+        try {
+          // Get appointment details to find customerID and treatmentID
+          const response = await appointmentAPI.getAllAppointments();
+          const fullAppointment = response.data?.find(apt => apt.appointmentID.toString() === currentAppointment.id);
+          
+          if (fullAppointment) {
+            // Get staff ID from localStorage
+            const staffId = localStorage.getItem('userId') || localStorage.getItem('AccountID');
+            
+            if (staffId && fullAppointment.customerID) {
+              const labTestData = {
+                customerID: fullAppointment.customerID,
+                staffID: staffId,
+                treatmentID: fullAppointment.treatmentID ? parseInt(fullAppointment.treatmentID.toString()) : null,
+                testName: currentAppointment.service || "Xét nghiệm STI",
+                result: resultText,
+                referenceRange: "Bình thường: Âm tính",
+                unit: "Định tính",
+                isPositive: resultText.toLowerCase().includes('dương') || resultText.toLowerCase().includes('positive'),
+                testDate: new Date().toISOString()
+              };
+              
+              console.log('Creating lab test with data:', labTestData);
+              const labTestResult = await testResultService.createTestResult(labTestData);
+              
+              if (labTestResult.statusCode === 200 || labTestResult.statusCode === 201) {
+                labTestCreated = true;
+                console.log('Lab test created successfully:', labTestResult);
+              } else {
+                console.error('Failed to create lab test:', labTestResult);
+                showToast("Không thể lưu kết quả xét nghiệm. Vui lòng thử lại.", "error");
+                return;
+              }
+            }
+          }
+        } catch (labTestError) {
+          console.error('Error creating lab test:', labTestError);
+          showToast("Lỗi khi lưu kết quả xét nghiệm. Vui lòng thử lại.", "error");
+          return;
+        }
+        
+        // For test-only appointments without consultants, we need to create a TreatmentOutcome first
+        if (currentAppointment.consultant === 'Không có tư vấn viên') {
+          console.log('Test-only appointment detected - checking for existing TreatmentOutcome');
+          try {
+            const response = await appointmentAPI.getAllAppointments();
+            const fullAppointment = response.data?.find(apt => apt.appointmentID.toString() === currentAppointment.id);
+            
+            if (fullAppointment && fullAppointment.customerID) {
+              // Check if TreatmentOutcome already exists
+              if (fullAppointment.treatmentOutcome && fullAppointment.treatmentID) {
+                console.log('TreatmentOutcome already exists for this appointment:', fullAppointment.treatmentOutcome);
+              } else {
+                // Use a default staff ID as consultant for test-only appointments
+                const staffId = localStorage.getItem('userId') || localStorage.getItem('AccountID');
+                
+                if (!staffId) {
+                  showToast("Không tìm thấy thông tin nhân viên. Vui lòng đăng nhập lại.", "error");
+                  return;
+                }
+                
+                const createTreatmentData = {
+                  customerID: fullAppointment.customerID,
+                  consultantID: staffId, // Use staff as consultant for test-only appointments
+                  appointmentID: parseInt(currentAppointment.id),
+                  diagnosis: "Hoàn thành xét nghiệm",
+                  treatmentPlan: "Xét nghiệm đã hoàn thành",
+                  prescription: "",
+                  recommendation: resultText
+                };
+                
+                console.log('Creating treatment outcome for test-only appointment:', createTreatmentData);
+                const createResult = await treatmentOutcomeService.createTreatmentOutcome(createTreatmentData);
+                
+                if (createResult.statusCode !== 200 && createResult.statusCode !== 201) {
+                  console.error('Failed to create treatment outcome for test-only appointment:', createResult);
+                  showToast("Không thể tạo treatment outcome. Vui lòng thử lại.", "error");
+                  return;
+                } else {
+                  console.log('TreatmentOutcome created successfully for test-only appointment:', createResult);
+                }
+              }
+            }
+          } catch (treatmentError) {
+            console.error('Error creating treatment outcome for test-only appointment:', treatmentError);
+            showToast("Lỗi khi tạo treatment outcome. Vui lòng thử lại.", "error");
+            return;
+          }
+        }
+        
+        // Now update appointment status to completed
         const statusNumber = mapStatusStringToNumber('completed');
         
         const response = await appointmentAPI.changeAppointmentStatus(
           parseInt(currentAppointment.id),
-          statusNumber + 1, // Add 1 to the status as requested
+          statusNumber, // Use the correct status number without adding 1
           currentAppointment.paymentStatus // Keep current payment status
         );
         
         if (response.statusCode === 200) {
           // Show success toast notification
-          showToast("Lưu kết quả thành công!", "success");
-          
-          // In a real app, you would also save the test results or consultation notes
-          // to a separate API endpoint here
+          const message = labTestCreated ? 
+            "Lưu kết quả xét nghiệm và hoàn thành cuộc hẹn thành công!" : 
+            "Lưu kết quả và hoàn thành cuộc hẹn thành công!";
+          showToast(message, "success");
           
         const updatedAppointments = appointments.map(appointment => {
           if (appointment.id === currentAppointment.id) {
@@ -544,6 +737,11 @@ const StaffAppointments = () => {
         setIsResultModalOpen(false);
         setIsStatusModalOpen(false);
           setResultText('');
+          
+          // Refresh appointments to get updated data
+          await fetchAppointments();
+        } else {
+          showToast(response.message || "Lưu kết quả thất bại", "error");
         }
       } catch (error) {
         console.error('Error saving test results:', error);
@@ -995,24 +1193,47 @@ const StaffAppointments = () => {
                       
                       {currentAppointment.status === 'require_stis_test' && (
                         <div className="status-option">
-                          <button 
-                            className="status-button status-button-awaiting-results"
-                            onClick={() => updateAppointmentStatus('awaiting_results')}
-                            disabled={isSubmitting}
-                          >
-                            {isSubmitting ? 'Đang cập nhật...' : 'Đợi Kết Quả'}
-                          </button>
+                          {currentAppointment.consultant === 'Không có tư vấn viên' ? (
+                            <div className="status-option">
+                              <p className="text-sm text-orange-600 italic mb-2">
+                                ⚠️ Cuộc hẹn này chưa có tư vấn viên được phân công. Cần phân công tư vấn viên trước khi chuyển sang trạng thái "Đợi kết quả".
+                              </p>
+                              <button 
+                                className="status-button status-button-awaiting-results opacity-50 cursor-not-allowed"
+                                disabled={true}
+                                title="Cần phân công tư vấn viên trước"
+                              >
+                                Đợi Kết Quả (Cần tư vấn viên)
+                              </button>
+                            </div>
+                          ) : (
+                            <button 
+                              className="status-button status-button-awaiting-results"
+                              onClick={() => updateAppointmentStatus('awaiting_results')}
+                              disabled={isSubmitting}
+                            >
+                              {isSubmitting ? 'Đang cập nhật...' : 'Đợi Kết Quả'}
+                            </button>
+                          )}
                         </div>
                       )}
                       
                       {currentAppointment.status === 'awaiting_results' && (
                         <div className="status-option">
+                          <p className="text-sm text-blue-600 italic mb-2">
+                            📝 Nhấn nút bên dưới để nhập kết quả xét nghiệm và hoàn thành cuộc hẹn.
+                          </p>
                           <button 
                             className="status-button status-button-completed"
-                            onClick={() => updateAppointmentStatus('completed')}
+                            onClick={() => {
+                              // For awaiting_results status, we need to collect test results first
+                              setIsStatusModalOpen(false);
+                              setIsResultModalOpen(true);
+                              setResultText('');
+                            }}
                             disabled={isSubmitting}
                           >
-                            {isSubmitting ? 'Đang cập nhật...' : 'Hoàn Thành'}
+                            {isSubmitting ? 'Đang cập nhật...' : 'Nhập Kết Quả & Hoàn Thành'}
                           </button>
                         </div>
                       )}
@@ -1088,6 +1309,13 @@ const StaffAppointments = () => {
                 <p className="text-xs text-gray-500 mt-1">
                   Vui lòng nhập {currentAppointment.serviceType === 'test' ? 'kết quả xét nghiệm' : 'nhận xét tư vấn'} trước khi chuyển trạng thái sang Hoàn thành
                 </p>
+                {currentAppointment.serviceType === 'test' && (
+                  <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                    <p className="text-xs text-blue-700">
+                      💡 <strong>Lưu ý:</strong> Kết quả sẽ được lưu vào hệ thống xét nghiệm và cuộc hẹn sẽ tự động chuyển sang trạng thái "Hoàn thành".
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end space-x-2">
