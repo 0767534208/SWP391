@@ -472,4 +472,109 @@
   .required-field {
     color: #ef4444;
     margin-left: 0.25rem;
-  } 
+  }
+  
+  /* Toast Notification Animations */
+  @keyframes slideInFromTop {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes slideOutToTop {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+  }
+  
+  @keyframes subtlePulse {
+    0% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.2); }
+    70% { box-shadow: 0 0 0 5px rgba(5, 150, 105, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0); }
+  }
+  
+  @keyframes subtlePulseError {
+    0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.2); }
+    70% { box-shadow: 0 0 0 5px rgba(220, 38, 38, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+  }
+  
+  /* Compact notification toast in top-right corner */
+  .notification-toast-compact {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.25rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    z-index: 50;
+    animation: slideInFromTop 0.3s ease forwards;
+    max-width: 250px;
+    font-size: 0.75rem;
+  }
+  
+  .notification-toast-compact.hide {
+    animation: slideOutToTop 0.3s ease forwards;
+  }
+  
+  .notification-success-compact {
+    background-color: #d1fae5;
+    border-left: 2px solid #059669;
+    color: #059669;
+    animation: subtlePulse 1.5s infinite;
+  }
+  
+  .notification-error-compact {
+    background-color: #fee2e2;
+    border-left: 2px solid #dc2626;
+    color: #dc2626;
+    animation: subtlePulseError 1.5s infinite;
+  }
+  
+  /* Confirmation Modal Styling */
+  .confirm-modal {
+    animation: modalFadeIn 0.3s ease;
+  }
+  
+  .confirm-modal-content {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+  }
+  
+  .confirm-icon-warning {
+    color: #f59e0b;
+  }
+  
+  .confirm-button-cancel {
+    background-color: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    transition: all 0.2s;
+  }
+  
+  .confirm-button-cancel:hover {
+    background-color: #e5e7eb;
+  }
+  
+  .confirm-button-danger {
+    background-color: #dc2626;
+    color: white;
+    border: none;
+    transition: all 0.2s;
+  }
+  
+  .confirm-button-danger:hover {
+    background-color: #b91c1c;
+  }

@@ -16,6 +16,12 @@ interface UserType {
   roles?: string[];
 }
 
+interface NotificationType {
+  type: 'success' | 'error';
+  message: string;
+  visible: boolean;
+}
+
 interface UserFormData {
   name: string;
   email: string;
@@ -31,6 +37,13 @@ const User = () => {
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [selectedUserToDeactivate, setSelectedUserToDeactivate] = useState<UserType | null>(null);
+  const [notification, setNotification] = useState<NotificationType>({
+    type: 'success',
+    message: '',
+    visible: false
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 10;
 
@@ -133,15 +146,50 @@ const User = () => {
     });
   };
 
-  // No longer need handleEdit and handleDelete functions since we're only toggling status
+  // Show notification function - compact version
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    // Ensure message is not too long for compact display
+    const shortMessage = message.length > 50 ? message.substring(0, 47) + '...' : message;
+    
+    setNotification({
+      type,
+      message: shortMessage,
+      visible: true
+    });
+    
+    // Enhanced console logging with styling
+    if (type === 'success') {
+      console.log('%c ✅ THÀNH CÔNG ', 'background: #059669; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold;', message);
+    } else {
+      console.log('%c ❌ THẤT BẠI ', 'background: #dc2626; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold;', message);
+    }
+    
+    // Auto-hide after 2 seconds (faster for compact notifications)
+    setTimeout(() => {
+      setNotification(prev => ({ ...prev, visible: false }));
+    }, 2000);
+  };
+  
+  // Handle opening the confirmation modal
+  const handleStatusToggleClick = (user: UserType) => {
+    // Show confirmation for both activation and deactivation
+    setSelectedUserToDeactivate(user);
+    setIsConfirmModalOpen(true);
+  };
   
   // Toggle user status (active/inactive)
-  const toggleUserStatus = async (userEmail: string) => {
+  const toggleUserStatus = async (userEmail: string, skipConfirmation = false) => {
     try {
       const user = users.find(u => u.email === userEmail);
       if (!user) return;
       
       const newStatus = !user.isActive;
+      
+      // If we're deactivating and not skipping confirmation, don't proceed (this shouldn't happen)
+      if (!newStatus && !skipConfirmation && user.status === 'active') {
+        return;
+      }
+      
       const response = await authAPI.updateAccountStatus(userEmail, { status: newStatus });
       
       if (response.statusCode === 200) {
@@ -151,12 +199,23 @@ const User = () => {
             ? { ...u, isActive: newStatus, status: newStatus ? 'active' : 'inactive' }
             : u
         ));
+        
+        // Show success notification
+        showNotification('success', newStatus 
+          ? `Đã kích hoạt tài khoản ${userEmail} thành công` 
+          : `Đã vô hiệu hóa tài khoản ${userEmail} thành công`);
       } else {
-        alert('Failed to update user status');
+        showNotification('error', 'Cập nhật trạng thái tài khoản thất bại');
       }
     } catch (err) {
       console.error('Error toggling user status:', err);
-      alert('An error occurred while updating user status');
+      showNotification('error', 'Đã xảy ra lỗi khi cập nhật trạng thái tài khoản');
+    } finally {
+      // Close the confirmation modal if it was open
+      if (isConfirmModalOpen) {
+        setIsConfirmModalOpen(false);
+        setSelectedUserToDeactivate(null);
+      }
     }
   };
 
@@ -178,12 +237,12 @@ const User = () => {
   const addUser = async () => {
     // Validate form
     if (!formData.name || !formData.email || !formData.phone || !formData.password) {
-      alert('Vui lòng điền đầy đủ thông tin');
+      showNotification('error', 'Vui lòng điền đầy đủ thông tin');
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      alert('Mật khẩu xác nhận không khớp');
+      showNotification('error', 'Mật khẩu xác nhận không khớp');
       return;
     }
 
@@ -203,8 +262,8 @@ const User = () => {
       const response = await authAPI.createAccount(accountData);
       
       if (response.statusCode === 200) {
-        // Refresh the user list after successful creation
-        alert('Tạo người dùng thành công');
+        // Show success notification
+        showNotification('success', `Tạo tài khoản ${formData.email} thành công`);
         
         // Fetch users again to refresh the list
         const updatedResponse = await authAPI.getAllAccounts();
@@ -232,7 +291,7 @@ const User = () => {
       }
     } catch (err) {
       console.error('Error creating user:', err);
-      alert('An error occurred while creating the user');
+      showNotification('error', 'Đã xảy ra lỗi khi tạo tài khoản người dùng');
     }
   };
 
@@ -354,7 +413,7 @@ const User = () => {
                       <td>
                         <button 
                           className={`status-toggle status-${user.status}`} 
-                          onClick={() => toggleUserStatus(user.email)}
+                          onClick={() => handleStatusToggleClick(user)}
                           title="Click để thay đổi trạng thái"
                         >
                           {user.status === 'active' ? 'Hoạt Động' : 
@@ -366,7 +425,7 @@ const User = () => {
                         <button 
                           className="action-button action-button-toggle" 
                           style={{ backgroundColor: user.status === 'active' ? '#fee2e2' : '#d1fae5', border: '1px solid', borderColor: user.status === 'active' ? '#fecaca' : '#a7f3d0' }}
-                          onClick={() => toggleUserStatus(user.email)}
+                          onClick={() => handleStatusToggleClick(user)}
                           title={user.status === 'active' ? 'Vô hiệu hóa người dùng' : 'Kích hoạt người dùng'}
                         >
                           {user.status === 'active' ? (
@@ -570,6 +629,100 @@ const User = () => {
                 Thêm Người Dùng
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal for Changing User Status */}
+      {isConfirmModalOpen && selectedUserToDeactivate && (
+        <div className="fixed inset-0 z-50 overflow-auto bg-gray-800 bg-opacity-75 flex items-center justify-center confirm-modal">
+          <div className="bg-white rounded-lg w-full max-w-md mx-3 overflow-hidden confirm-modal-content">
+            <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {selectedUserToDeactivate.status === 'active' 
+                  ? 'Xác nhận vô hiệu hóa tài khoản' 
+                  : 'Xác nhận kích hoạt tài khoản'}
+              </h3>
+              <button 
+                className="text-gray-400 hover:text-gray-600"
+                onClick={() => setIsConfirmModalOpen(false)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4">
+              <div className="flex items-center mb-4">
+                {selectedUserToDeactivate.status === 'active' ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-yellow-500 mr-4 confirm-icon-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-500 mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+                <p className="text-gray-700">
+                  {selectedUserToDeactivate.status === 'active' ? (
+                    <>
+                      Bạn có chắc chắn muốn vô hiệu hóa tài khoản <span className="font-semibold">{selectedUserToDeactivate.name}</span> ({selectedUserToDeactivate.email}) không? Người dùng này sẽ không thể đăng nhập vào hệ thống cho đến khi được kích hoạt lại.
+                    </>
+                  ) : (
+                    <>
+                      Bạn có chắc chắn muốn kích hoạt tài khoản <span className="font-semibold">{selectedUserToDeactivate.name}</span> ({selectedUserToDeactivate.email}) không? Người dùng này sẽ có thể đăng nhập và sử dụng hệ thống.
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
+              <button 
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none confirm-button-cancel"
+                onClick={() => setIsConfirmModalOpen(false)}
+              >
+                Hủy
+              </button>
+              {selectedUserToDeactivate.status === 'active' ? (
+                <button 
+                  className="px-4 py-2 bg-red-600 border border-red-600 rounded-md text-sm font-medium text-white hover:bg-red-700 focus:outline-none confirm-button-danger"
+                  onClick={() => toggleUserStatus(selectedUserToDeactivate.email, true)}
+                >
+                  Vô hiệu hóa
+                </button>
+              ) : (
+                <button 
+                  className="px-4 py-2 bg-green-600 border border-green-600 rounded-md text-sm font-medium text-white hover:bg-green-700 focus:outline-none"
+                  onClick={() => toggleUserStatus(selectedUserToDeactivate.email, true)}
+                >
+                  Kích hoạt
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification Toast - Compact, Top-Right Corner */}
+      {notification.visible && (
+        <div className={`fixed top-4 right-4 z-50 p-2 rounded-md shadow-lg notification-toast-compact ${
+          notification.type === 'success' ? 'notification-success-compact' : 'notification-error-compact'
+        }`}>
+          <div className="flex items-center">
+            {notification.type === 'success' ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            )}
+            <span className={`text-xs font-medium ${
+              notification.type === 'success' ? 'text-green-700' : 'text-red-700'
+            }`}>
+              {notification.message}
+            </span>
           </div>
         </div>
       )}
