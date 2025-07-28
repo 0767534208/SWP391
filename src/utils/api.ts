@@ -602,14 +602,6 @@ export const authAPI = {
   updateAccountStatus: (userEmail: string, statusData: any): Promise<ApiResponse<void>> => {
     return apiRequest<void>(`/api/account/Update-Account-Status?userEmail=${userEmail}`, 'PUT', statusData);
   },
-  
-  /**
-   * Lấy danh sách tất cả tài khoản (dành cho admin)
-   * @returns Danh sách tất cả tài khoản trong hệ thống
-   */
-  getAllAccounts: async (): Promise<ApiResponse<UserData[]>> => {
-    return apiRequest<UserData[]>(`/api/account/GetAllAccounts`, 'GET');
-  },
 };
 
 // User API endpoints
@@ -1718,18 +1710,14 @@ export const qnaAPI = {
    * Get all messages for a question
    */
   getMessages: async (questionId: number): Promise<ApiResponse<any>> => {
-    const queryParams = new URLSearchParams();
-    queryParams.append('questionId', questionId.toString());
-    return apiRequest<any>(`${API.QNA.MESSAGES}?${queryParams.toString()}`, 'GET');
+    return apiRequest<any>(`/api/QnAMessage/${questionId}`, 'GET');
   },
   
   /**
    * Add a message to a question
    */
   createMessage: async (questionId: number, data: any): Promise<ApiResponse<any>> => {
-    const queryParams = new URLSearchParams();
-    queryParams.append('questionId', questionId.toString());
-    return apiRequest<any>(`${API.QNA.MESSAGES}?${queryParams.toString()}`, 'POST', data);
+    return apiRequest<any>(`/api/QnAMessage/${questionId}`, 'POST', data);
   },
   
   /**

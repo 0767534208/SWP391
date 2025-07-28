@@ -53,10 +53,13 @@ const QnA = () => {
     setIsLoading(true);
     setError(null);
     try {
+      console.log("Fetching all questions...");
       const response = await qnaService.getAllQuestions({ 
         page: 1,
         limit: 50 
       });
+      console.log("Questions API response:", response);
+      
       if (response && response.data) {
         // Check if data is an array (direct response) or has items property (paginated response)
         const questionItems = Array.isArray(response.data) ? response.data : 
@@ -73,7 +76,11 @@ const QnA = () => {
           answers: [] // Answers will be fetched separately when a question is selected
         })) as Question[];
         
+        console.log("Mapped questions:", mappedQuestions);
         setQuestions(mappedQuestions);
+      } else {
+        console.warn("No data returned from questions API");
+        setQuestions([]);
       }
     } catch (err) {
       console.error('Error fetching questions:', err);
@@ -81,6 +88,7 @@ const QnA = () => {
       // Check if error is "No questions" which means there are just no questions yet
       if (err instanceof Error && err.message === 'No questions') {
         // Treat as empty state, not an error
+        console.log("No questions found - empty state");
         setQuestions([]);
       } else {
         // Other errors
@@ -96,7 +104,10 @@ const QnA = () => {
     setIsLoading(true);
     setError(null);
     try {
+      console.log(`Fetching question detail for ID ${questionId}...`);
       const response = await qnaService.getQuestion(questionId);
+      console.log("Question detail API response:", response);
+      
       if (response && response.data) {
         const q = response.data;
         const question: Question = {
@@ -115,11 +126,20 @@ const QnA = () => {
             isVerified: a.isVerified || false
           }))
         };
+        console.log("Mapped question detail:", question);
         setSelectedQuestion(question);
+      } else {
+        console.warn(`No data returned for question ID ${questionId}`);
+        setError('Không thể tìm thấy câu hỏi này.');
       }
     } catch (err) {
       console.error('Error fetching question details:', err);
       setError('Không thể tải chi tiết câu hỏi. Vui lòng thử lại sau.');
+      
+      // Add a timeout to return to the questions list
+      setTimeout(() => {
+        closeQuestion();
+      }, 3000);
     } finally {
       setIsLoading(false);
     }
@@ -168,6 +188,13 @@ const QnA = () => {
     setIsLoading(true);
     setError(null);
     
+    // Validate question content
+    if (!newQuestion.content.trim() || newQuestion.content.trim().length < 10) {
+      setError('Câu hỏi phải có ít nhất 10 ký tự.');
+      setIsLoading(false);
+      return;
+    }
+    
     // Check if user is logged in
     const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
     const isLoggedIn = localStorage.getItem(STORAGE_KEYS.IS_LOGGED_IN) === 'true';
@@ -180,7 +207,10 @@ const QnA = () => {
     }
     
     try {
+      console.log("Creating new question:", newQuestion);
       const response = await qnaService.createQuestion(newQuestion);
+      console.log("Create question API response:", response);
+      
       if (response && response.data) {
         alert("Câu hỏi của bạn đã được gửi và đang chờ được duyệt.");
         setShowAskModal(false);
@@ -189,6 +219,9 @@ const QnA = () => {
         });
         // Refresh questions
         fetchQuestions();
+      } else {
+        console.warn("No data returned from create question API");
+        setError('Có lỗi xảy ra khi gửi câu hỏi. Vui lòng thử lại sau.');
       }
     } catch (err) {
       console.error('Error submitting question:', err);
@@ -213,7 +246,15 @@ const QnA = () => {
 
   // Submit an answer to a question
   const handleSubmitAnswer = async (questionId: number, content: string) => {
-    if (!content.trim()) return;
+    if (!content.trim()) {
+      setError('Vui lòng nhập nội dung câu trả lời.');
+      return;
+    }
+    
+    if (content.trim().length < 5) {
+      setError('Câu trả lời quá ngắn. Vui lòng cung cấp câu trả lời chi tiết hơn.');
+      return;
+    }
     
     setIsLoading(true);
     setError(null);
@@ -230,15 +271,23 @@ const QnA = () => {
     }
     
     try {
+      console.log(`Submitting answer for question ID ${questionId}`);
       const answerData: CreateAnswerRequest = {
         questionId,
         content
       };
+      console.log("Answer data:", answerData);
       
       const response = await qnaService.addMessage(questionId, answerData);
+      console.log("Submit answer API response:", response);
+      
       if (response && response.data) {
+        console.log("Answer submitted successfully");
         // Fetch updated question details to show the new answer
         fetchQuestionDetail(questionId);
+      } else {
+        console.warn("No data returned from add message API");
+        setError('Có lỗi xảy ra khi gửi câu trả lời. Vui lòng thử lại sau.');
       }
     } catch (err) {
       console.error('Error submitting answer:', err);
