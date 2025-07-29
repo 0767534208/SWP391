@@ -3,6 +3,8 @@ import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 import './CycleTracker.css'
 import './loading-indicator.css'
+import './cycle-confirm-modal.css'
+import './date-input.css'
 import { FaSave, FaSpinner, FaSync, FaCheck, FaExclamationCircle, FaInfoCircle, FaTimes } from 'react-icons/fa'
 import { 
   menstrualCycleAPI, 
@@ -29,6 +31,41 @@ interface NotificationProps {
     message: string;
     onClose: () => void;
 }
+
+// Confirmation dialog props
+interface ConfirmModalProps {
+    isOpen: boolean;
+    message: string;
+    onConfirm: () => void;
+    onCancel: () => void;
+}
+
+// Confirmation dialog component
+const ConfirmModal: React.FC<ConfirmModalProps> = ({ isOpen, message, onConfirm, onCancel }) => {
+    if (!isOpen) return null;
+    
+    return (
+        <div className="confirm-modal-overlay">
+            <div className="confirm-modal">
+                <div className="confirm-modal-header">
+                    <FaInfoCircle className="confirm-icon" />
+                    <h3>Xác nhận</h3>
+                </div>
+                <div className="confirm-modal-body">
+                    <p>{message}</p>
+                </div>
+                <div className="confirm-modal-footer">
+                    <button className="btn btn-cancel" onClick={onCancel}>
+                        Hủy bỏ
+                    </button>
+                    <button className="btn btn-confirm" onClick={onConfirm}>
+                        Xác nhận
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // Notification component to replace alerts
 const Notification: React.FC<NotificationProps> = ({ type, message, onClose }) => {
@@ -76,6 +113,9 @@ const CycleTracker: React.FC = () => {
     const [isSaving, setIsSaving] = useState(false)
     const [isPredictionLoading, setIsPredictionLoading] = useState(false)
     const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+    
+    // Confirmation dialog state
+    const [showConfirm, setShowConfirm] = useState(false)
     
     // Notification system
     interface NotificationData {
@@ -334,8 +374,8 @@ const CycleTracker: React.FC = () => {
         }
     };
 
-    // Save menstrual cycle data to API
-    const saveMenstrualCycleToAPI = async () => {
+    // Handle confirmation and save data to API
+    const handleSaveButtonClick = () => {
         if (!currentUserId || !lastPeriodStart || !cycleLength || !periodLength) {
             console.log('Thiếu thông tin: Vui lòng điền đầy đủ thông tin trước khi lưu.');
             showNotification('error', 'Vui lòng điền đầy đủ thông tin trước khi lưu');
@@ -356,13 +396,27 @@ const CycleTracker: React.FC = () => {
             });
             return;
         }
+        
+        // Show confirmation dialog
+        setShowConfirm(true);
+    };
 
+    // Save menstrual cycle data to API
+    const saveMenstrualCycleToAPI = async () => {
+        // Hide the confirmation dialog
+        setShowConfirm(false);
+        
         try {
             setIsSaving(true);
             setFormStatus({
                 message: 'Đang lưu cài đặt...',
                 type: 'info'
             });
+            
+            // Ensure we have a valid user ID and lastPeriodStart
+            if (!currentUserId || !lastPeriodStart) {
+                throw new Error('Missing user ID or start date');
+            }
             
             const cycleData = {
                 customerID: currentUserId,
@@ -379,16 +433,24 @@ const CycleTracker: React.FC = () => {
                 // Update existing cycle
                 const updateData: UpdateMenstrualCycleRequest = {
                     menstrualCycleID: menstrualCycleFromDB.menstrualCycleID,
-                    ...cycleData
+                    customerID: currentUserId,
+                    startDate: cycleData.startDate,
+                    periodLength: cycleData.periodLength,
+                    cycleLength: cycleData.cycleLength
                 };
                 response = await menstrualCycleAPI.updateMenstrualCycle(updateData);
             } else {
                 // Create new cycle
-                const createData: CreateMenstrualCycleRequest = cycleData;
+                const createData: CreateMenstrualCycleRequest = {
+                    customerID: currentUserId,
+                    startDate: cycleData.startDate,
+                    periodLength: cycleData.periodLength,
+                    cycleLength: cycleData.cycleLength
+                };
                 response = await menstrualCycleAPI.createMenstrualCycle(createData);
             }
 
-            if (response.statusCode === 200) {
+            if (response.statusCode === 201 || response.statusCode === 200) {
                 if (response.data) {
                     setMenstrualCycleFromDB(response.data);
                     console.log('Đã lưu cài đặt thành công!', response.data);
@@ -537,53 +599,7 @@ const CycleTracker: React.FC = () => {
             return 'next-period';
         }
         
-        // If we don't have API prediction data, fall back to calculation based on user input
-        if (cyclePhases.periodDates.length === 0 && lastPeriodStart && cycleLength && periodLength) {
-            // Validate date objects
-            if (isNaN(date.getTime()) || isNaN(lastPeriodStart.getTime())) {
-                return 'none';
-            }
-            
-            const cycleLen = typeof cycleLength === 'number' ? cycleLength : parseInt(String(cycleLength));
-            const periodLen = typeof periodLength === 'number' ? periodLength : parseInt(String(periodLength));
-            
-            // Validate parsed numbers
-            if (isNaN(cycleLen) || isNaN(periodLen) || cycleLen <= 0 || periodLen <= 0) {
-                return 'none';
-            }
-
-            // Calculate days since period start
-            const daysSincePeriodStart = Math.floor((date.getTime() - lastPeriodStart.getTime()) / (1000 * 60 * 60 * 24));
-            
-            // For multiple cycles, find which cycle we're in
-            const cycleNumber = Math.floor(daysSincePeriodStart / cycleLen);
-            const dayInCurrentCycle = daysSincePeriodStart - (cycleNumber * cycleLen);
-            
-            // Handle future cycles too
-            let adjustedDayInCycle = dayInCurrentCycle;
-            if (adjustedDayInCycle < 0) {
-                // For past dates
-                adjustedDayInCycle = cycleLen + (daysSincePeriodStart % cycleLen);
-            }
-            
-            // Period days (days 0 to periodLen-1)
-            if (adjustedDayInCycle >= 0 && adjustedDayInCycle < periodLen) {
-                return 'period';
-            }
-            
-            // Ovulation typically occurs 14 days before next period
-            const ovulationDay = cycleLen - 14;
-            if (adjustedDayInCycle >= ovulationDay - 1 && adjustedDayInCycle <= ovulationDay + 1) {
-                return 'ovulation';
-            }
-            
-            // Fertile window: 5 days before ovulation through 1 day after
-            const fertileStart = Math.max(0, ovulationDay - 5);
-            const fertileEnd = ovulationDay + 1;
-            if (adjustedDayInCycle >= fertileStart && adjustedDayInCycle <= fertileEnd) {
-                return 'fertile';
-            }
-        }
+        // We now only use API prediction data, no calculations based on user input
         
         return 'none';
     }
@@ -636,6 +652,16 @@ const CycleTracker: React.FC = () => {
 
     return (
         <div className="cycle-tracker">
+            {/* Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showConfirm}
+                message={menstrualCycleFromDB ? 
+                    "Bạn có chắc muốn cập nhật thông tin chu kỳ kinh nguyệt không?" : 
+                    "Bạn có chắc muốn lưu thông tin chu kỳ kinh nguyệt mới không?"}
+                onConfirm={saveMenstrualCycleToAPI}
+                onCancel={() => setShowConfirm(false)}
+            />
+            
             {/* Notification system */}
             <div className="notification-container">
                 {notifications.map(notification => (
@@ -712,15 +738,61 @@ const CycleTracker: React.FC = () => {
                                     />
                                 </div>
                                 
-                                <div className="form-group">
+                                <div className="form-group date-input-group">
                                     <label htmlFor="lastPeriodStart">Ngày bắt đầu kỳ kinh cuối:</label>
-                                    <input
-                                        type="date"
-                                        id="lastPeriodStart"
-                                        value={lastPeriodStart ? lastPeriodStart.toISOString().split('T')[0] : ''}
-                                        onChange={(e) => setLastPeriodStart(e.target.value ? new Date(e.target.value) : null)}
-                                        disabled={isLoading || isSaving}
-                                    />
+                                    <div className="date-input-wrapper">
+                                        <input
+                                            type="date"
+                                            id="lastPeriodStart"
+                                            className="date-input"
+                                            value={lastPeriodStart ? lastPeriodStart.toISOString().split('T')[0] : ''}
+                                            onChange={(e) => setLastPeriodStart(e.target.value ? new Date(e.target.value) : null)}
+                                            disabled={isLoading || isSaving}
+                                            onFocus={(e) => {
+                                                const target = e.target as HTMLInputElement;
+                                                if (target.showPicker) {
+                                                    target.showPicker();
+                                                }
+                                            }}
+                                            onClick={(e) => {
+                                                // This ensures the date picker opens on click in all browsers
+                                                const target = e.target as HTMLInputElement;
+                                                // Try using the modern showPicker API first
+                                                if (target.showPicker) {
+                                                    target.showPicker();
+                                                } else {
+                                                    // For older browsers, manually trigger the focus event
+                                                    target.focus();
+                                                    
+                                                    // For some mobile browsers, we need to blur and focus again
+                                                    setTimeout(() => {
+                                                        target.blur();
+                                                        setTimeout(() => target.focus(), 10);
+                                                    }, 10);
+                                                }
+                                            }}
+                                        />
+                                        <button 
+                                            type="button"
+                                            className="calendar-button"
+                                            onClick={() => {
+                                                const dateInput = document.getElementById('lastPeriodStart') as HTMLInputElement;
+                                                if (dateInput) {
+                                                    if (dateInput.showPicker) {
+                                                        dateInput.showPicker();
+                                                    } else {
+                                                        dateInput.focus();
+                                                        setTimeout(() => {
+                                                            dateInput.click();
+                                                        }, 10);
+                                                    }
+                                                }
+                                            }}
+                                            disabled={isLoading || isSaving}
+                                        >
+                                            📅
+                                        </button>
+                                    </div>
                                 </div>
                                 
                                 {/* Form status message */}
@@ -737,7 +809,7 @@ const CycleTracker: React.FC = () => {
                                     <div className="settings-buttons">
                                         <button 
                                             className={`btn ${!lastPeriodStart || !cycleLength || !periodLength || isLoading || isSaving ? 'btn-disabled' : 'btn-save'}`}
-                                            onClick={saveMenstrualCycleToAPI}
+                                            onClick={handleSaveButtonClick}
                                             disabled={!lastPeriodStart || !cycleLength || !periodLength || isLoading || isSaving}
                                         >
                                             {isSaving ? (
@@ -785,14 +857,9 @@ const CycleTracker: React.FC = () => {
                                                     </div>
                                                 )}
                                             </div>
-                                        ) : lastPeriodStart && cycleLength && periodLength ? (
-                                            <div className="calendar-info">
-                                                <p>Hiển thị dự đoán dựa trên dữ liệu nhập</p>
-                                                <small>(Lưu cài đặt để tạo dự đoán từ API)</small>
-                                            </div>
                                         ) : (
                                             <div className="calendar-info">
-                                                <p>Vui lòng nhập đầy đủ thông tin để xem dự đoán chu kỳ</p>
+                                                <p>Vui lòng nhập đầy đủ thông tin và lưu cài đặt để xem dự đoán chu kỳ</p>
                                             </div>
                                         )}
                                         <div className="calendar-wrapper">

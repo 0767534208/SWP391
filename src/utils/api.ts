@@ -523,6 +523,13 @@ export const appointmentAPI = {
 // Auth API endpoints
 export const authAPI = {
   /**
+   * Lấy danh sách tất cả tài khoản
+   */
+  getAllAccounts: async (): Promise<ApiResponse<User[]>> => {
+    return apiRequest<User[]>('/api/account/GetAllAccounts', 'GET');
+  },
+
+  /**
    * Đăng nhập
    * @param username - Tên đăng nhập
    * @param password - Mật khẩu
