@@ -38,16 +38,17 @@ import Consultants from './pages/Admin/Consultant';
 
 import ServiceManagement from './pages/Manager/ServiceManagement';
 import CategoryManagement from './pages/Manager/CategoryManagement';
-import BlogManagement from './pages/Manager/BlogManagement';
 import SlotManagement from './pages/Manager/SlotManagement';
 import SlotCreation from './pages/Manager/SlotCreation';
 import WeeklyCalendar from './pages/Manager/WeeklyCalendar';
 import Dashboard from './pages/Manager/Dashboard';
+import BlogApproval from './pages/Manager/BlogApproval';
 import StaffAppointments from './pages/Staff/StaffAppointments';
 import TestResultView from './pages/Staff/TestResultView';
 import TestResultManagementStaff from './pages/Staff/TestResultManagementStaff';
 import TestResultEdit from './pages/Staff/TestResultEdit';
 import StaffTransactions from './pages/Staff/StaffTransactions';
+import BlogManagement from './pages/Staff/BlogManagement';
 import NewLabTest from './pages/Staff/NewLabTest';
 
 // Import API Testers
@@ -187,10 +188,10 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="services" element={<ServiceManagement />} />
           <Route path="categories" element={<CategoryManagement />} />
-          <Route path="blogs" element={<BlogManagement />} />
           <Route path="slots" element={<SlotManagement />} />
           <Route path="slot-calendar" element={<WeeklyCalendar />} />
           <Route path="slot-creation" element={<SlotCreation />} />
+          <Route path="blogs" element={<BlogApproval />} />
         </Route>
 
         {/* Route dành cho staff */}
@@ -206,6 +207,7 @@ function App() {
           <Route path="test-results/:id" element={<TestResultView />} />
           <Route path="test-results/edit/:id" element={<TestResultEdit />} />
           <Route path="transactions" element={<StaffTransactions />} />
+          <Route path="blogs" element={<BlogManagement />} />
         </Route>
 
         {/* Route dành cho admin */}
