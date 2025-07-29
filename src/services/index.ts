@@ -17,6 +17,7 @@ import slotService from './slotService';
 import testResultService from './testResultService';
 import treatmentOutcomeService from './treatmentOutcomeService';
 import chatbotService from './chatbotService';
+import qnaSignalRService from './signalRService';
 export { default as qnaService } from './qnaService';
 
 // Export all services
@@ -28,6 +29,7 @@ export {
   contactService,
   cycleTrackingService,
   paymentService,
+  qnaSignalRService,
   serviceService,
   slotService,
   testResultService,
