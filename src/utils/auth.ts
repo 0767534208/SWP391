@@ -28,6 +28,24 @@ export const authUtils = {
   getUserRole: (): string | null => {
     return localStorage.getItem(STORAGE_KEYS.USER_ROLE);
   },
+  
+  /**
+   * Check if user has a specific role
+   */
+  hasRole: (role: string): boolean => {
+    const userRole = localStorage.getItem(STORAGE_KEYS.USER_ROLE);
+    if (!userRole) return false;
+    return userRole.toLowerCase() === role.toLowerCase();
+  },
+  
+  /**
+   * Check if user has any of the specified roles
+   */
+  hasAnyRole: (roles: string[]): boolean => {
+    const userRole = localStorage.getItem(STORAGE_KEYS.USER_ROLE);
+    if (!userRole) return false;
+    return roles.some(role => userRole.toLowerCase() === role.toLowerCase());
+  },
 
   /**
    * Get user token

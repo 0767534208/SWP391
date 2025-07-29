@@ -1,12 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './QnA.css';
-import { qnaService } from '../../services';
+import './reply-styles.css';
+import './realtime.css';
+import './confirm-modal.css';
+import './toast-notification.css';
+import { qnaService, qnaSignalRService } from '../../services';
 import authService from '../../services/authService';
+import { authUtils } from '../../utils/auth';
 import type { 
   CreateQuestionRequest, 
   CreateAnswerRequest
 } from '../../types';
-import { STORAGE_KEYS, ROUTES } from '../../config/constants';
+import { STORAGE_KEYS, ROUTES, USER_ROLES } from '../../config/constants';
 
 // Map the API Question and Answer types to the local component state types
 interface Question {
@@ -26,6 +31,15 @@ interface Answer {
   authorRole: string;
   date: string;
   isVerified: boolean;
+  parentMessageId: number | null;
+  replies: Answer[];
+}
+
+// Define the type for our toast notifications
+interface Toast {
+  id: string;
+  message: string;
+  type: 'success' | 'error' | 'info';
 }
 
 const QnA = () => {
@@ -34,18 +48,95 @@ const QnA = () => {
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [showAskModal, setShowAskModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingAnswer, setPendingAnswer] = useState<{questionId: number, content: string, parentMessageId?: number | null}>({questionId: 0, content: ''});
   const [newQuestion, setNewQuestion] = useState<CreateQuestionRequest>({
     content: '',
   });
+  
+  // Add toast notifications state
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
-  // Add state for loading, error, and questions data
+  // Add state for loading, error, questions data, and real-time connection status
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [isRealTimeConnected, setIsRealTimeConnected] = useState<boolean>(false);
   
-  // Fetch questions on component mount
+  // Function to show a toast notification
+  const showToast = (message: string, type: 'success' | 'error' | 'info') => {
+    const id = Date.now().toString();
+    setToasts(prev => [...prev, { id, message, type }]);
+    
+    // Automatically remove the toast after 4 seconds (to match CSS animation)
+    setTimeout(() => {
+      setToasts(prev => prev.filter(toast => toast.id !== id));
+    }, 4000);
+  };
+  
+  // Function to manually remove a toast
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
+  
+  // Check if user can ask questions (only normal users can ask questions)
+  const canAskQuestions = () => {
+    // Staff and consultants cannot ask questions
+    const restrictedRoles = [USER_ROLES.STAFF, USER_ROLES.CONSULTANT];
+    const userRole = localStorage.getItem(STORAGE_KEYS.USER_ROLE);
+    
+    if (!userRole) return true; // If no role is set (not logged in), show the ask button
+    
+    // Return true if the user is NOT a staff or consultant
+    return !restrictedRoles.includes(userRole.toLowerCase());
+  };
+  
+  // Initialize SignalR connection and fetch questions on component mount
   useEffect(() => {
     fetchQuestions();
+    
+    // Initialize SignalR connection
+    const initializeSignalR = async () => {
+      try {
+        // Get the API base URL from the current origin
+        const apiBaseUrl = window.location.origin;
+        console.log('Initializing SignalR connection to:', apiBaseUrl);
+        
+        // Start the SignalR connection
+        const connected = await qnaSignalRService.startConnection(apiBaseUrl);
+        
+        if (connected) {
+          setIsRealTimeConnected(true);
+          
+          // Set up event handlers for real-time updates
+          qnaSignalRService.onMessageReceived((questionId, message) => {
+            console.log('Real-time message received:', message, 'for question:', questionId);
+            
+            // If we're viewing this question, update it
+            if (selectedQuestion && selectedQuestion.id === questionId) {
+              fetchQuestionDetail(questionId);
+            } else {
+              // Otherwise, just refresh the questions list
+              fetchQuestions();
+            }
+          });
+          
+          // Handle connection errors
+          qnaSignalRService.onConnectionError(() => {
+            setIsRealTimeConnected(false);
+          });
+        }
+      } catch (error) {
+        console.error('Failed to initialize SignalR:', error);
+      }
+    };
+    
+    initializeSignalR();
+    
+    // Clean up SignalR connection on component unmount
+    return () => {
+      qnaSignalRService.stopConnection();
+    };
   }, []);
 
   // Function to fetch questions from API
@@ -53,10 +144,13 @@ const QnA = () => {
     setIsLoading(true);
     setError(null);
     try {
+      console.log("Fetching all questions...");
       const response = await qnaService.getAllQuestions({ 
         page: 1,
         limit: 50 
       });
+      console.log("Questions API response:", response);
+      
       if (response && response.data) {
         // Check if data is an array (direct response) or has items property (paginated response)
         const questionItems = Array.isArray(response.data) ? response.data : 
@@ -73,7 +167,11 @@ const QnA = () => {
           answers: [] // Answers will be fetched separately when a question is selected
         })) as Question[];
         
+        console.log("Mapped questions:", mappedQuestions);
         setQuestions(mappedQuestions);
+      } else {
+        console.warn("No data returned from questions API");
+        setQuestions([]);
       }
     } catch (err) {
       console.error('Error fetching questions:', err);
@@ -81,6 +179,7 @@ const QnA = () => {
       // Check if error is "No questions" which means there are just no questions yet
       if (err instanceof Error && err.message === 'No questions') {
         // Treat as empty state, not an error
+        console.log("No questions found - empty state");
         setQuestions([]);
       } else {
         // Other errors
@@ -96,9 +195,53 @@ const QnA = () => {
     setIsLoading(true);
     setError(null);
     try {
+      console.log(`Fetching question detail for ID ${questionId}...`);
       const response = await qnaService.getQuestion(questionId);
+      console.log("Question detail API response:", response);
+      
       if (response && response.data) {
         const q = response.data;
+        
+        // First, map all messages to Answer objects
+        const allMessages = (q.messages || []).map((a: any): Answer => ({
+          id: a.messageID || a.id,
+          content: a.content || '',
+          author: (a.customer && a.customer.name) || a.authorName || 'Ẩn danh',
+          authorRole: a.authorRole || 'user',
+          date: new Date(a.createdAt || new Date()).toISOString().split('T')[0],
+          isVerified: a.isVerified || false,
+          parentMessageId: a.parentMessageId || null,
+          replies: []
+        }));
+        
+        // Create a message lookup for faster access
+        const messagesById: { [id: number]: Answer } = {};
+        allMessages.forEach(message => {
+          if (message.id) {
+            messagesById[message.id] = message;
+          }
+        });
+        
+        // Build the reply hierarchy recursively
+        // This approach allows for unlimited levels of nesting
+        const topLevelAnswers: Answer[] = [];
+          
+        allMessages.forEach(message => {
+          if (message.parentMessageId) {
+            // This is a reply to another message
+            const parent = messagesById[message.parentMessageId];
+            if (parent) {
+              if (!parent.replies) {
+                parent.replies = [];
+              }
+              parent.replies.push(message);
+            }
+          } else {
+            // This is a top-level message (direct answer to the question)
+            topLevelAnswers.push(message);
+          }
+        });
+        
         const question: Question = {
           id: q.questionID || q.id,
           content: q.content || '',
@@ -106,20 +249,27 @@ const QnA = () => {
           author: (q.customer && q.customer.name) || q.authorName || 'Ẩn danh',
           authorRole: q.authorRole || 'user',
           answered: q.messages && q.messages.length > 0 || false,
-          answers: (q.messages || []).map((a) => ({
-            id: a.messageID || a.id,
-            content: a.content || '',
-            author: (a.customer && a.customer.name) || a.authorName || 'Ẩn danh',
-            authorRole: a.authorRole || 'user',
-            date: new Date(a.createdAt || new Date()).toISOString().split('T')[0],
-            isVerified: a.isVerified || false
-          }))
+          answers: topLevelAnswers
         };
+        console.log("Mapped question detail:", question);
         setSelectedQuestion(question);
+        
+        // Join the SignalR group for this question to receive real-time updates
+        if (question.id) {
+          qnaSignalRService.joinQuestionRoom(question.id);
+        }
+      } else {
+        console.warn(`No data returned for question ID ${questionId}`);
+        setError('Không thể tìm thấy câu hỏi này.');
       }
     } catch (err) {
       console.error('Error fetching question details:', err);
       setError('Không thể tải chi tiết câu hỏi. Vui lòng thử lại sau.');
+      
+      // Add a timeout to return to the questions list
+      setTimeout(() => {
+        closeQuestion();
+      }, 3000);
     } finally {
       setIsLoading(false);
     }
@@ -145,11 +295,23 @@ const QnA = () => {
   
   // Close question detail
   const closeQuestion = () => {
+    // Leave the SignalR group when closing a question
+    if (selectedQuestion && selectedQuestion.id) {
+      qnaSignalRService.leaveQuestionRoom(selectedQuestion.id);
+    }
+    
     setSelectedQuestion(null);
   };
 
   // Handle ask button
   const handleAskButton = () => {
+    // Only allow regular users to ask questions
+    if (!canAskQuestions()) {
+      const errorMessage = 'Chỉ người dùng thông thường mới có thể đặt câu hỏi.';
+      showToast(errorMessage, "error");
+      setError(errorMessage);
+      return;
+    }
     setShowAskModal(true);
   };
 
@@ -168,6 +330,15 @@ const QnA = () => {
     setIsLoading(true);
     setError(null);
     
+    // Validate question content
+    if (!newQuestion.content.trim() || newQuestion.content.trim().length < 10) {
+      const errorMessage = 'Câu hỏi phải có ít nhất 10 ký tự.';
+      showToast(errorMessage, "error");
+      setError(errorMessage);
+      setIsLoading(false);
+      return;
+    }
+    
     // Check if user is logged in
     const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
     const isLoggedIn = localStorage.getItem(STORAGE_KEYS.IS_LOGGED_IN) === 'true';
@@ -179,23 +350,39 @@ const QnA = () => {
       return;
     }
     
+    // Check if user has permission to ask questions (only regular users can)
+    if (!canAskQuestions()) {
+      setError('Tư vấn viên và nhân viên không thể đặt câu hỏi.');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
+      console.log("Creating new question:", newQuestion);
       const response = await qnaService.createQuestion(newQuestion);
+      console.log("Create question API response:", response);
+      
       if (response && response.data) {
-        alert("Câu hỏi của bạn đã được gửi và đang chờ được duyệt.");
+        showToast("✅ Câu hỏi của bạn đã được gửi và đang chờ được duyệt!", "success");
         setShowAskModal(false);
         setNewQuestion({
           content: ''
         });
         // Refresh questions
         fetchQuestions();
+      } else {
+        console.warn("No data returned from create question API");
+        showToast('❌ Có lỗi xảy ra khi gửi câu hỏi. Vui lòng thử lại sau.', "error");
+        setError('Có lỗi xảy ra khi gửi câu hỏi. Vui lòng thử lại sau.');
       }
     } catch (err) {
       console.error('Error submitting question:', err);
       
       // Check for 403 Forbidden error
       if (err instanceof Error && err.message.includes('403')) {
-        setError('Bạn không có quyền đặt câu hỏi. Vui lòng đăng nhập hoặc liên hệ quản trị viên.');
+        const errorMessage = 'Bạn không có quyền đặt câu hỏi. Vui lòng đăng nhập hoặc liên hệ quản trị viên.';
+        showToast(errorMessage, "error");
+        setError(errorMessage);
         
         // Clear token if it's invalid and redirect to login
         authService.clearAuthData();
@@ -204,48 +391,130 @@ const QnA = () => {
           window.location.href = ROUTES.AUTH.LOGIN;
         }, 2000);
       } else {
-        setError('Không thể gửi câu hỏi. Vui lòng thử lại sau.');
+        const errorMessage = 'Không thể gửi câu hỏi. Vui lòng thử lại sau.';
+        showToast(errorMessage, "error");
+        setError(errorMessage);
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Submit an answer to a question
-  const handleSubmitAnswer = async (questionId: number, content: string) => {
-    if (!content.trim()) return;
+  // Function to show confirmation modal and store the pending answer
+  const confirmSubmitAnswer = (questionId: number, content: string, parentMessageId?: number | null) => {
+    console.log('Preparing to submit answer:', {
+      questionId,
+      content,
+      parentMessageId
+    });
     
-    setIsLoading(true);
-    setError(null);
+    if (!content.trim()) {
+      console.error('Empty content provided');
+      const errorMessage = 'Vui lòng nhập nội dung câu trả lời.';
+      showToast(errorMessage, "error");
+      setError(errorMessage);
+      return;
+    }
+    
+    if (content.trim().length < 5) {
+      console.error('Content too short:', content);
+      const errorMessage = 'Câu trả lời quá ngắn. Vui lòng cung cấp câu trả lời chi tiết hơn.';
+      showToast(errorMessage, "error");
+      setError(errorMessage);
+      return;
+    }
     
     // Check if user is logged in
     const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
     const isLoggedIn = localStorage.getItem(STORAGE_KEYS.IS_LOGGED_IN) === 'true';
     
     if (!token || !isLoggedIn) {
+      console.error('User not logged in');
+      setError(null);
+      setShowLoginModal(true);
+      return;
+    }
+    
+    // Store the pending answer and show confirmation modal
+    setPendingAnswer({ questionId, content, parentMessageId });
+    setShowConfirmModal(true);
+  };
+
+  // Submit an answer to a question
+  const handleSubmitAnswer = async (questionId: number, content: string, parentMessageId?: number | null) => {
+    console.log('handleSubmitAnswer called with:', {
+      questionId,
+      content,
+      parentMessageId,
+      isParentMessageIdDefined: parentMessageId !== undefined && parentMessageId !== null,
+    });
+    
+    setIsLoading(true);
+    setError(null);
+    setShowConfirmModal(false); // Hide modal
+    
+    // Check if user is logged in
+    const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+    const isLoggedIn = localStorage.getItem(STORAGE_KEYS.IS_LOGGED_IN) === 'true';
+    const userRole = localStorage.getItem(STORAGE_KEYS.USER_ROLE);
+    console.log('Authentication status:', { token: !!token, isLoggedIn, userRole });
+    
+    if (!token || !isLoggedIn) {
+      console.error('User not logged in');
       setError(null);
       setIsLoading(false);
       setShowLoginModal(true);
       return;
     }
     
+    // At this point, the user is logged in, and we allow all authenticated users
+    // (including consultants and staff) to answer questions
+    
     try {
+      console.log(`Submitting answer for question ID ${questionId}${parentMessageId ? ` with parent message ID ${parentMessageId}` : ''}`);
+      // Convert parentMessageId to number if it's a string
+      let processedParentId = parentMessageId;
+      if (typeof parentMessageId === 'string') {
+        processedParentId = parseInt(parentMessageId, 10);
+        console.log(`Converted parentMessageId from string to number: ${parentMessageId} -> ${processedParentId}`);
+      }
+      
       const answerData: CreateAnswerRequest = {
         questionId,
-        content
+        content,
+        parentMessageId: processedParentId
       };
+      console.log("Answer data being sent to API:", JSON.stringify(answerData));
       
-      const response = await qnaService.addMessage(questionId, answerData);
-      if (response && response.data) {
-        // Fetch updated question details to show the new answer
-        fetchQuestionDetail(questionId);
+      try {
+        const response = await qnaService.addMessage(questionId, answerData);
+        console.log("Submit answer API response:", JSON.stringify(response));
+        
+        if (response && response.data) {
+          console.log("✅ Answer submitted successfully:", JSON.stringify(response.data));
+          showToast("✅ Câu trả lời của bạn đã được gửi thành công !", "success");
+          
+          // Add a small delay before fetching the updated question to ensure the API has processed the new reply
+          setTimeout(() => {
+            fetchQuestionDetail(questionId);
+          }, 500);
+        } else {
+          console.warn("⚠️ No data returned from add message API");
+          showToast("Có lỗi xảy ra khi gửi câu trả lời. Vui lòng thử lại sau.", "error");
+          setError('Có lỗi xảy ra khi gửi câu trả lời. Vui lòng thử lại sau.');
+        }
+      } catch (apiError) {
+        console.error('❌ API error when submitting answer:', apiError);
+        throw apiError; // Re-throw to be caught by the outer catch block
       }
     } catch (err) {
-      console.error('Error submitting answer:', err);
+      console.error('❌ Error submitting answer:', err);
       
       // Check for 403 Forbidden error
       if (err instanceof Error && err.message.includes('403')) {
-        setError('Bạn không có quyền trả lời câu hỏi. Vui lòng đăng nhập hoặc liên hệ quản trị viên.');
+        const errorMessage = 'Bạn không có quyền trả lời câu hỏi. Vui lòng đăng nhập hoặc liên hệ quản trị viên.';
+        showToast(errorMessage, "error");
+        setError(errorMessage);
         
         // Clear token if it's invalid and redirect to login
         authService.clearAuthData();
@@ -254,12 +523,37 @@ const QnA = () => {
           window.location.href = ROUTES.AUTH.LOGIN;
         }, 2000);
       } else {
-        setError('Không thể gửi câu trả lời. Vui lòng thử lại sau.');
+        const errorMessage = 'Không thể gửi câu trả lời. Vui lòng thử lại sau.';
+        showToast(errorMessage, "error");
+        setError(errorMessage);
       }
     } finally {
       setIsLoading(false);
     }
   };
+  
+  // State for reply functionality
+  const [replyingTo, setReplyingTo] = useState<Answer | null>(null);
+  
+  // Debug log when replyingTo changes
+  useEffect(() => {
+    console.log('replyingTo state changed:', replyingTo);
+  }, [replyingTo]);
+  
+  // Effect to handle SignalR room subscription when selected question changes
+  useEffect(() => {
+    // If a question is selected and it has an ID, join that room
+    if (selectedQuestion && selectedQuestion.id) {
+      qnaSignalRService.joinQuestionRoom(selectedQuestion.id);
+    }
+    
+    // Clean up when component unmounts or question changes
+    return () => {
+      if (selectedQuestion && selectedQuestion.id) {
+        qnaSignalRService.leaveQuestionRoom(selectedQuestion.id);
+      }
+    };
+  }, [selectedQuestion?.id]);
 
   // Handle searching questions
   const handleSearch = async () => {
@@ -297,12 +591,47 @@ const QnA = () => {
 
   return (
     <div className="qna-container">
+      {/* Toast notifications */}
+      <div className="toast-container">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`toast toast-${toast.type}`}>
+            <div className="toast-content">
+              <div className="toast-icon">
+                {toast.type === 'success' && <i className="fas fa-check-circle"></i>}
+                {toast.type === 'error' && <i className="fas fa-exclamation-circle"></i>}
+                {toast.type === 'info' && <i className="fas fa-info-circle"></i>}
+              </div>
+              <div className="toast-message">{toast.message}</div>
+            </div>
+            <button 
+              className="toast-close"
+              onClick={() => removeToast(toast.id)}
+            >
+              &times;
+            </button>
+            <div className="toast-progress"></div>
+          </div>
+        ))}
+      </div>
+      
       {/* Main container */}
       <div className="qna-content">
         {/* Header */}
       <div className="qna-header">
-          <h1>Hỏi & Đáp về sức khỏe</h1>
-          <p>Đặt câu hỏi và nhận câu trả lời từ các chuyên gia y tế của chúng tôi</p>
+          <div className="flex justify-between items-center">
+            <h1>Hỏi & Đáp về sức khỏe</h1>
+            {isRealTimeConnected && (
+              <div className="real-time-indicator flex items-center text-sm text-green-600">
+                <span className="pulse-dot mr-1"></span>
+                <span>Cập nhật trực tuyến</span>
+              </div>
+            )}
+          </div>
+          {canAskQuestions() ? (
+            <p>Đặt câu hỏi và nhận câu trả lời từ các chuyên gia y tế của chúng tôi</p>
+          ) : (
+            <p>Trả lời các câu hỏi sức khỏe từ người dùng</p>
+          )}
       </div>
 
         {/* Search and filters */}
@@ -329,9 +658,11 @@ const QnA = () => {
               <option value="unanswered">Chưa có câu trả lời</option>
           </select>
           </div>
-          <button className="ask-button" onClick={handleAskButton}>
-            Đặt câu hỏi
-          </button>
+          {canAskQuestions() && (
+            <button className="ask-button" onClick={handleAskButton}>
+              Đặt câu hỏi
+            </button>
+          )}
         </div>
         
         {/* Error message */}
@@ -415,7 +746,7 @@ const QnA = () => {
                 </div>
               ) : (
                 selectedQuestion.answers.map((answer) => (
-                                    <div key={answer.id} className={`answer-card ${answer.isVerified ? 'verified' : ''} ${answer.authorRole !== 'user' ? 'expert-answer' : 'user-answer'}`}>
+                  <div key={answer.id} className={`answer-card ${answer.isVerified ? 'verified' : ''} ${answer.authorRole !== 'user' ? 'expert-answer' : 'user-answer'}`}>
                     {answer.authorRole !== 'user' && (
                       <div className="expert-badge">
                         <i className="fas fa-user-md"></i> Câu trả lời từ chuyên gia
@@ -452,7 +783,209 @@ const QnA = () => {
                           </span>
                         )}
                       </div>
+                      <div className="answer-actions">
+                        <button 
+                          className="reply-button"
+                          onClick={() => setReplyingTo(answer)}
+                        >
+                          <i className="fas fa-reply"></i> Trả lời
+                        </button>
+                      </div>
                     </div>
+                    
+                    {/* Reply form for this specific answer */}
+                    {replyingTo && replyingTo.id === answer.id && (
+                      <div className="reply-form">
+                        <textarea 
+                          id={`reply-content-${answer.id}`}
+                          placeholder="Viết câu trả lời của bạn..."
+                        />
+                        <div className="reply-actions">
+                          <button 
+                            className="cancel-button"
+                            onClick={() => setReplyingTo(null)}
+                          >
+                            Hủy
+                          </button>
+                          <button 
+                            className="submit-button"
+                            onClick={() => {
+                              const contentElement = document.getElementById(`reply-content-${answer.id}`) as HTMLTextAreaElement;
+                              const content = contentElement.value;
+                              if (answer.id) {
+                                confirmSubmitAnswer(selectedQuestion.id || 0, content, answer.id);
+                                // We'll clear this after confirmation
+                              }
+                            }}
+                          >
+                            <i className="fas fa-paper-plane"></i> Gửi
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Display replies to this answer if any */}
+                    {answer.replies && answer.replies.length > 0 && (
+                      <div className="replies-container">
+                        {answer.replies.map(reply => (
+                          <div key={reply.id} className={`reply-card ${reply.isVerified ? 'verified' : ''} ${reply.authorRole !== 'user' ? 'expert-reply' : 'user-reply'}`}>
+                            <p className="reply-content">{reply.content}</p>
+                            <div className="reply-footer">
+                              <div className="author-info">
+                                <span className="author">
+                                  {reply.author}
+                                  {reply.authorRole !== 'user' && (
+                                    <span className={`role-badge ${reply.authorRole}`}>
+                                      {reply.authorRole === 'consultant' ? (
+                                        <><i className="fas fa-stethoscope"></i> Tư vấn viên</>
+                                      ) : reply.authorRole === 'staff' ? (
+                                        <><i className="fas fa-user-nurse"></i> Nhân viên</>
+                                      ) : reply.authorRole === 'admin' ? (
+                                        <><i className="fas fa-user-shield"></i> Quản trị viên</>
+                                      ) : (
+                                        <><i className="fas fa-user-md"></i> Chuyên gia</>
+                                      )}
+                                    </span>
+                                  )}
+                                  {reply.authorRole === 'user' && (
+                                    <span className="role-badge">
+                                      <i className="fas fa-user"></i> Người dùng
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="date">{reply.date}</span>
+                              </div>
+                              <div className="answer-actions">
+                                <button 
+                                  className="reply-button"
+                                  onClick={() => setReplyingTo(reply)}
+                                >
+                                  <i className="fas fa-reply"></i> Trả lời
+                                </button>
+                              </div>
+                            </div>
+                            
+                            {/* Reply form for this specific reply */}
+                            {replyingTo && replyingTo.id === reply.id && (
+                              <div className="reply-form">
+                                <textarea 
+                                  id={`reply-content-${reply.id}`}
+                                  placeholder="Viết câu trả lời của bạn..."
+                                />
+                                <div className="reply-actions">
+                                  <button 
+                                    className="cancel-button"
+                                    onClick={() => setReplyingTo(null)}
+                                  >
+                                    Hủy
+                                  </button>
+                                  <button 
+                                    className="submit-button"
+                                    onClick={() => {
+                                      const contentElement = document.getElementById(`reply-content-${reply.id}`) as HTMLTextAreaElement;
+                                      const content = contentElement.value;
+                                      if (reply.id) {
+                                        confirmSubmitAnswer(selectedQuestion.id || 0, content, reply.id);
+                                        // We'll clear this after confirmation
+                                      }
+                                    }}
+                                  >
+                                    <i className="fas fa-paper-plane"></i> Gửi
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Display nested replies */}
+                            {reply.replies && reply.replies.length > 0 && (
+                              <div className="replies-container nested-replies">
+                                {reply.replies.map(nestedReply => (
+                                  <div key={nestedReply.id} className={`reply-card nested ${nestedReply.isVerified ? 'verified' : ''} ${nestedReply.authorRole !== 'user' ? 'expert-reply' : 'user-reply'}`}>
+                                    <p className="reply-content">{nestedReply.content}</p>
+                                    <div className="reply-footer">
+                                      <div className="author-info">
+                                        <span className="author">
+                                          {nestedReply.author}
+                                          {nestedReply.authorRole !== 'user' && (
+                                            <span className={`role-badge ${nestedReply.authorRole}`}>
+                                              {nestedReply.authorRole === 'consultant' ? (
+                                                <><i className="fas fa-stethoscope"></i> Tư vấn viên</>
+                                              ) : nestedReply.authorRole === 'staff' ? (
+                                                <><i className="fas fa-user-nurse"></i> Nhân viên</>
+                                              ) : nestedReply.authorRole === 'admin' ? (
+                                                <><i className="fas fa-user-shield"></i> Quản trị viên</>
+                                              ) : (
+                                                <><i className="fas fa-user-md"></i> Chuyên gia</>
+                                              )}
+                                            </span>
+                                          )}
+                                          {nestedReply.authorRole === 'user' && (
+                                            <span className="role-badge">
+                                              <i className="fas fa-user"></i> Người dùng
+                                            </span>
+                                          )}
+                                        </span>
+                                        <span className="date">{nestedReply.date}</span>
+                                      </div>
+                                      <div className="answer-actions">
+                                        <button 
+                                          className="reply-button"
+                                          onClick={() => {
+                                            console.log('Clicking reply button for nested reply:', nestedReply);
+                                            setReplyingTo(nestedReply);
+                                          }}
+                                        >
+                                          <i className="fas fa-reply"></i> Trả lời
+                                        </button>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Reply form for this specific nested reply */}
+                                    {replyingTo && replyingTo.id === nestedReply.id && (
+                                      <div className="reply-form">
+                                        <textarea 
+                                          id={`reply-content-${nestedReply.id}`}
+                                          placeholder="Viết câu trả lời của bạn..."
+                                        />
+                                        <div className="reply-actions">
+                                          <button 
+                                            className="cancel-button"
+                                            onClick={() => setReplyingTo(null)}
+                                          >
+                                            Hủy
+                                          </button>
+                                          <button 
+                                            className="submit-button"
+                                            onClick={() => {
+                                              const contentElement = document.getElementById(`reply-content-${nestedReply.id}`) as HTMLTextAreaElement;
+                                              const content = contentElement.value;
+                                              console.log('Submitting nested reply:', {
+                                                questionId: selectedQuestion.id,
+                                                content,
+                                                parentMessageId: nestedReply.id,
+                                                replyingTo: nestedReply
+                                              });
+                                              if (nestedReply.id) {
+                                                confirmSubmitAnswer(selectedQuestion.id || 0, content, nestedReply.id);
+                                                // We'll clear this after confirmation
+                                              } else {
+                                                console.error('Cannot reply: nestedReply.id is undefined', nestedReply);
+                                              }
+                                            }}
+                                          >
+                                            <i className="fas fa-paper-plane"></i> Gửi
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))
               )}
@@ -470,8 +1003,8 @@ const QnA = () => {
                 <button onClick={() => {
                   const contentElement = document.getElementById('answer-content') as HTMLTextAreaElement;
                   const content = contentElement.value;
-                  handleSubmitAnswer(selectedQuestion.id || 0, content);
-                  contentElement.value = '';
+                  confirmSubmitAnswer(selectedQuestion.id || 0, content, null);
+                  // We'll clear this after confirmation
                 }}>
                   <i className="fas fa-paper-plane"></i> Gửi câu trả lời
                 </button>
@@ -542,7 +1075,9 @@ const QnA = () => {
                 <i className="fas fa-user-circle"></i>
               </div>
               <p>Bạn cần đăng nhập để sử dụng tính năng này.</p>
-              <p className="login-benefits">Đăng nhập giúp bạn theo dõi câu hỏi của mình, nhận thông báo khi có câu trả lời và tích lũy uy tín trong cộng đồng.</p>
+              <p className="login-benefits">
+                Đăng nhập giúp bạn {canAskQuestions() ? 'theo dõi câu hỏi của mình, nhận thông báo khi có câu trả lời' : 'trả lời câu hỏi của người dùng'} và tích lũy uy tín trong cộng đồng.
+              </p>
               <div className="form-actions">
                 <button 
                   type="button" 
@@ -557,6 +1092,65 @@ const QnA = () => {
                   onClick={() => window.location.href = ROUTES.AUTH.LOGIN}
                 >
                   <i className="fas fa-sign-in-alt"></i> Đăng nhập ngay
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Confirmation Modal */}
+      {showConfirmModal && pendingAnswer && (
+        <div className="modal-overlay">
+          <div className="confirm-modal">
+            <div className="modal-header">
+              <h3><i className="fas fa-question-circle"></i> Xác nhận gửi câu trả lời</h3>
+              <button className="close-button" onClick={() => setShowConfirmModal(false)}>
+                &times;
+              </button>
+            </div>
+            <div className="modal-content">
+              <div className="confirm-icon">
+                <i className="fas fa-paper-plane"></i>
+              </div>
+              <p>Bạn có chắc chắn muốn gửi câu trả lời này không?</p>
+              <div className="answer-preview">
+                <p>{pendingAnswer.content}</p>
+              </div>
+              <div className="form-actions">
+                <button 
+                  type="button" 
+                  className="cancel-button"
+                  onClick={() => setShowConfirmModal(false)}
+                >
+                  <i className="fas fa-times"></i> Hủy
+                </button>
+                <button 
+                  type="button" 
+                  className="submit-button"
+                  onClick={() => {
+                    // Submit the answer
+                    handleSubmitAnswer(
+                      pendingAnswer.questionId, 
+                      pendingAnswer.content, 
+                      pendingAnswer.parentMessageId
+                    );
+                    
+                    // Clear form if there was a reply in progress
+                    if (replyingTo && replyingTo.id) {
+                      const contentElement = document.getElementById(`reply-content-${replyingTo.id}`) as HTMLTextAreaElement;
+                      if (contentElement) contentElement.value = '';
+                    } else {
+                      // Clear the main answer textarea
+                      const contentElement = document.getElementById('answer-content') as HTMLTextAreaElement;
+                      if (contentElement) contentElement.value = '';
+                    }
+                    
+                    // Reset replyingTo state
+                    setReplyingTo(null);
+                  }}
+                >
+                  <i className="fas fa-paper-plane"></i> Gửi ngay
                 </button>
               </div>
             </div>
