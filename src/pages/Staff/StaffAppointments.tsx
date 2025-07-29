@@ -244,14 +244,17 @@ const StaffAppointments = () => {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
-  const [isResultModalOpen, setIsResultModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [currentAppointment, setCurrentAppointment] = useState<AppointmentType | null>(null);
-  const [resultText, setResultText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const appointmentsPerPage = 10;
+  
+  // Confirmation modal states
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const [pendingStatusChange, setPendingStatusChange] = useState<string | null>(null);
   
   // Refund related states
   const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
@@ -451,23 +454,28 @@ const StaffAppointments = () => {
     setIsDetailsModalOpen(true);
   };
 
-  // Update appointment status
-  const updateAppointmentStatus = async (newStatus: string) => {
+      // Prepare for status update and show confirmation modal
+  const handleStatusUpdateRequest = (newStatus: string) => {
     if (currentAppointment) {
-      setIsSubmitting(true);
+      setConfirmMessage(`Bạn có chắc chắn muốn chuyển trạng thái cuộc hẹn #${currentAppointment.id} từ "${getStatusDisplayText(currentAppointment.status)}" sang "${getStatusDisplayText(newStatus)}"?`);
+      setPendingStatusChange(newStatus);
+      setIsConfirmModalOpen(true);
+    }
+  };
+  
+  // Update appointment status after confirmation
+  const updateAppointmentStatus = async () => {
+    if (currentAppointment && pendingStatusChange) {
+      const newStatus = pendingStatusChange;
       
+      // Đóng cả hai modal ngay lập tức để trở về trang quản lý
+      setIsStatusModalOpen(false);
+      setIsConfirmModalOpen(false);
+      
+      setIsSubmitting(true);
       console.log(`Updating status from ${currentAppointment.status} to ${newStatus}`);
       
-      // Special handling for 'completed' status - we should always use the test results modal
-      if (newStatus === 'completed') {
-        console.log('Completed status requested - redirecting to test results modal');
-        setIsSubmitting(false);
-        setIsStatusModalOpen(false);
-        setIsResultModalOpen(true);
-        setResultText('');
-        return;
-      }
-      
+      // For completed status, we'll now directly complete the appointment without the results modal
       try {
         // Convert string status to number for API
         const statusNumber = mapStatusStringToNumber(newStatus);
@@ -538,6 +546,50 @@ const StaffAppointments = () => {
             return;
           }
         }
+
+        // Handle completed status - automatically create empty test results if needed
+        if (newStatus === 'completed' && currentAppointment.serviceType === 'test') {
+          console.log('Creating default test results for completed status');
+          try {
+            // Get appointment details to find customerID and treatmentID
+            const response = await appointmentAPI.getAllAppointments();
+            const fullAppointment = response.data?.find(apt => apt.appointmentID.toString() === currentAppointment.id);
+            
+            if (fullAppointment) {
+              // Get staff ID from localStorage
+              const staffId = localStorage.getItem('userId') || localStorage.getItem('AccountID');
+              
+              if (staffId && fullAppointment.customerID) {
+                const labTestData = {
+                  customerID: fullAppointment.customerID,
+                  staffID: staffId,
+                  treatmentID: fullAppointment.treatmentID ? parseInt(fullAppointment.treatmentID.toString()) : null,
+                  testName: currentAppointment.service || "Xét nghiệm STI",
+                  result: "Hoàn thành xét nghiệm",
+                  referenceRange: "Bình thường: Âm tính",
+                  unit: "Định tính",
+                  isPositive: false,
+                  testDate: new Date().toISOString()
+                };
+                
+                console.log('Creating lab test with data:', labTestData);
+                const labTestResult = await testResultService.createTestResult(labTestData);
+                
+                if (labTestResult.statusCode !== 200 && labTestResult.statusCode !== 201) {
+                  console.error('Failed to create lab test:', labTestResult);
+                  showToast("Không thể tạo kết quả xét nghiệm. Vui lòng thử lại.", "error");
+                  return;
+                } else {
+                  console.log('Test result created successfully:', labTestResult);
+                }
+              }
+            }
+          } catch (labTestError) {
+            console.error('Error creating lab test:', labTestError);
+            showToast("Lỗi khi tạo kết quả xét nghiệm. Vui lòng thử lại.", "error");
+            return;
+          }
+        }
         
         // Call the API to update appointment status
         console.log(`Calling API with appointmentID: ${currentAppointment.id}, status: ${statusNumber}, paymentStatus: ${currentAppointment.paymentStatus}`);
@@ -553,6 +605,7 @@ const StaffAppointments = () => {
         if (response.statusCode === 200) {
           // Show success toast notification
           showToast("Cập nhật trạng thái thành công!", "success");
+          console.log('Status update successful - completed');
           
           // Update local state with the new status
           const updatedAppointments = appointments.map(appointment => {
@@ -566,193 +619,43 @@ const StaffAppointments = () => {
           });
 
           setAppointments(updatedAppointments);
+          
+          // Close both modals to return to the appointment list
           setIsStatusModalOpen(false);
+          setIsConfirmModalOpen(false);
           
           // Refresh appointments to get updated data
           await fetchAppointments();
         } else {
           console.error('API response error:', response);
+          console.log('Status update failed');
           if (response.message?.includes('Cannot find the TreatmentOutcome')) {
             // If we get this error for a test-only appointment, provide more specific guidance
             if (currentAppointment && !currentAppointment.consultant) {
-              showToast("Cuộc hẹn xét nghiệm này cần có tư vấn viên được phân công trước khi chuyển sang trạng thái 'Đợi kết quả'. Vui lòng liên hệ quản lý để phân công tư vấn viên.", "error");
+              showToast("Cuộc hẹn xét nghiệm này cần có tư vấn viên được phân công trước khi chuyển sang trạng thái mới. Vui lòng liên hệ quản lý để phân công tư vấn viên.", "error");
             } else {
               showToast("Không tìm thấy treatment outcome. Vui lòng thử lại hoặc liên hệ admin.", "error");
             }
-          } else if (response.message?.includes('Missing LabTest result')) {
-            // Handle the case where lab test results are required
-            showToast("Cần nhập kết quả xét nghiệm trước khi hoàn thành cuộc hẹn.", "error");
-            // Automatically open the results modal for the user
-            setIsStatusModalOpen(false);
-            setIsResultModalOpen(true);
-            setResultText('');
           } else {
             showToast(response.message || "Cập nhật trạng thái thất bại", "error");
           }
+          
+          // Đóng modal trong trường hợp lỗi API
+          setIsStatusModalOpen(false);
+          setIsConfirmModalOpen(false);
         }
       } catch (error) {
         console.error('Error updating appointment status:', error);
+        console.log('Status update failed due to exception');
         showToast("Cập nhật trạng thái thất bại. Vui lòng thử lại sau.", "error");
       } finally {
         setIsSubmitting(false);
-      }
-    }
-  };
-
-  // Save test results and complete appointment
-  const saveTestResults = async () => {
-    if (currentAppointment && resultText.trim() !== '') {
-      setIsSubmitting(true);
-      
-      try {
-        // First, create a lab test result for any appointment that needs test results
-        let labTestCreated = false;
-        
-        try {
-          // Get appointment details to find customerID and treatmentID
-          const response = await appointmentAPI.getAllAppointments();
-          const fullAppointment = response.data?.find(apt => apt.appointmentID.toString() === currentAppointment.id);
-          
-          if (fullAppointment) {
-            // Get staff ID from localStorage
-            const staffId = localStorage.getItem('userId') || localStorage.getItem('AccountID');
-            
-            if (staffId && fullAppointment.customerID) {
-              const labTestData = {
-                customerID: fullAppointment.customerID,
-                staffID: staffId,
-                treatmentID: fullAppointment.treatmentID ? parseInt(fullAppointment.treatmentID.toString()) : null,
-                testName: currentAppointment.service || "Xét nghiệm STI",
-                result: resultText,
-                referenceRange: "Bình thường: Âm tính",
-                unit: "Định tính",
-                isPositive: resultText.toLowerCase().includes('dương') || resultText.toLowerCase().includes('positive'),
-                testDate: new Date().toISOString()
-              };
-              
-              console.log('Creating lab test with data:', labTestData);
-              const labTestResult = await testResultService.createTestResult(labTestData);
-              
-              if (labTestResult.statusCode === 200 || labTestResult.statusCode === 201) {
-                labTestCreated = true;
-                console.log('Lab test created successfully:', labTestResult);
-              } else {
-                console.error('Failed to create lab test:', labTestResult);
-                showToast("Không thể lưu kết quả xét nghiệm. Vui lòng thử lại.", "error");
-                return;
-              }
-            }
-          }
-        } catch (labTestError) {
-          console.error('Error creating lab test:', labTestError);
-          showToast("Lỗi khi lưu kết quả xét nghiệm. Vui lòng thử lại.", "error");
-          return;
-        }
-        
-        // For test-only appointments without consultants, we need to create a TreatmentOutcome first
-        if (currentAppointment.consultant === 'Không có tư vấn viên') {
-          console.log('Test-only appointment detected - checking for existing TreatmentOutcome');
-          try {
-            const response = await appointmentAPI.getAllAppointments();
-            const fullAppointment = response.data?.find(apt => apt.appointmentID.toString() === currentAppointment.id);
-            
-            if (fullAppointment && fullAppointment.customerID) {
-              // Check if TreatmentOutcome already exists
-              if (fullAppointment.treatmentOutcome && fullAppointment.treatmentID) {
-                console.log('TreatmentOutcome already exists for this appointment:', fullAppointment.treatmentOutcome);
-              } else {
-                // Use a default staff ID as consultant for test-only appointments
-                const staffId = localStorage.getItem('userId') || localStorage.getItem('AccountID');
-                
-                if (!staffId) {
-                  showToast("Không tìm thấy thông tin nhân viên. Vui lòng đăng nhập lại.", "error");
-                  return;
-                }
-                
-                const createTreatmentData = {
-                  customerID: fullAppointment.customerID,
-                  consultantID: staffId, // Use staff as consultant for test-only appointments
-                  appointmentID: parseInt(currentAppointment.id),
-                  diagnosis: "Hoàn thành xét nghiệm",
-                  treatmentPlan: "Xét nghiệm đã hoàn thành",
-                  prescription: "",
-                  recommendation: resultText
-                };
-                
-                console.log('Creating treatment outcome for test-only appointment:', createTreatmentData);
-                const createResult = await treatmentOutcomeService.createTreatmentOutcome(createTreatmentData);
-                
-                if (createResult.statusCode !== 200 && createResult.statusCode !== 201) {
-                  console.error('Failed to create treatment outcome for test-only appointment:', createResult);
-                  showToast("Không thể tạo treatment outcome. Vui lòng thử lại.", "error");
-                  return;
-                } else {
-                  console.log('TreatmentOutcome created successfully for test-only appointment:', createResult);
-                }
-              }
-            }
-          } catch (treatmentError) {
-            console.error('Error creating treatment outcome for test-only appointment:', treatmentError);
-            showToast("Lỗi khi tạo treatment outcome. Vui lòng thử lại.", "error");
-            return;
-          }
-        }
-        
-        // Now update appointment status to completed
-        const statusNumber = mapStatusStringToNumber('completed');
-        
-        const response = await appointmentAPI.changeAppointmentStatus(
-          parseInt(currentAppointment.id),
-          statusNumber, // Use the correct status number without adding 1
-          currentAppointment.paymentStatus // Keep current payment status
-        );
-        
-        if (response.statusCode === 200) {
-          // Show success toast notification
-          const message = labTestCreated ? 
-            "Lưu kết quả xét nghiệm và hoàn thành cuộc hẹn thành công!" : 
-            "Lưu kết quả và hoàn thành cuộc hẹn thành công!";
-          showToast(message, "success");
-          
-        const updatedAppointments = appointments.map(appointment => {
-          if (appointment.id === currentAppointment.id) {
-            const updatedAppointment = {
-              ...appointment,
-              status: 'completed'
-            };
-            
-            // Save to the appropriate field based on service type
-            if (appointment.serviceType === 'test') {
-              updatedAppointment.testResults = resultText;
-            } else {
-              updatedAppointment.consultationNotes = resultText;
-            }
-            
-            return updatedAppointment;
-          }
-          return appointment;
-        });
-  
-        setAppointments(updatedAppointments);
-        setIsResultModalOpen(false);
+        // Luôn đóng các modal dù thành công hay thất bại
         setIsStatusModalOpen(false);
-          setResultText('');
-          
-          // Refresh appointments to get updated data
-          await fetchAppointments();
-        } else {
-          showToast(response.message || "Lưu kết quả thất bại", "error");
-        }
-      } catch (error) {
-        console.error('Error saving test results:', error);
-        showToast("Lưu kết quả thất bại. Vui lòng thử lại sau.", "error");
-      } finally {
-        setIsSubmitting(false);
+        setIsConfirmModalOpen(false);
       }
-    } else {
-      showToast('Vui lòng nhập kết quả trước khi hoàn thành', "error");
     }
-  };
+  };  // This function is no longer needed as we're now handling completion directly through the updateAppointmentStatus function
 
   // Handle refresh data
   const handleRefresh = () => {
@@ -1165,7 +1068,7 @@ const StaffAppointments = () => {
                         <div className="status-option">
                           <button 
                             className="status-button status-button-confirmed"
-                            onClick={() => updateAppointmentStatus('confirmed')}
+                            onClick={() => handleStatusUpdateRequest('confirmed')}
                             disabled={isSubmitting}
                           >
                             {isSubmitting ? 'Đang cập nhật...' : 'Đã Xác Nhận'}
@@ -1177,7 +1080,7 @@ const StaffAppointments = () => {
                         <div className="status-option">
                           <button 
                             className="status-button status-button-in-progress"
-                            onClick={() => updateAppointmentStatus('in_progress')}
+                            onClick={() => handleStatusUpdateRequest('in_progress')}
                             disabled={isSubmitting}
                           >
                             {isSubmitting ? 'Đang cập nhật...' : 'Đang Thực Hiện'}
@@ -1209,7 +1112,7 @@ const StaffAppointments = () => {
                           ) : (
                             <button 
                               className="status-button status-button-awaiting-results"
-                              onClick={() => updateAppointmentStatus('awaiting_results')}
+                              onClick={() => handleStatusUpdateRequest('awaiting_results')}
                               disabled={isSubmitting}
                             >
                               {isSubmitting ? 'Đang cập nhật...' : 'Đợi Kết Quả'}
@@ -1221,19 +1124,14 @@ const StaffAppointments = () => {
                       {currentAppointment.status === 'awaiting_results' && (
                         <div className="status-option">
                           <p className="text-sm text-blue-600 italic mb-2">
-                            📝 Nhấn nút bên dưới để nhập kết quả xét nghiệm và hoàn thành cuộc hẹn.
+                            ✓ Nhấn nút bên dưới để hoàn thành cuộc hẹn.
                           </p>
                           <button 
                             className="status-button status-button-completed"
-                            onClick={() => {
-                              // For awaiting_results status, we need to collect test results first
-                              setIsStatusModalOpen(false);
-                              setIsResultModalOpen(true);
-                              setResultText('');
-                            }}
+                            onClick={() => handleStatusUpdateRequest('completed')}
                             disabled={isSubmitting}
                           >
-                            {isSubmitting ? 'Đang cập nhật...' : 'Nhập Kết Quả & Hoàn Thành'}
+                            {isSubmitting ? 'Đang cập nhật...' : 'Hoàn Thành Cuộc Hẹn'}
                           </button>
                         </div>
                       )}
@@ -1256,94 +1154,7 @@ const StaffAppointments = () => {
         </div>
       )}
 
-      {/* Test Results Modal */}
-      {isResultModalOpen && currentAppointment && (
-        <div className="fixed inset-0 z-50 overflow-auto bg-gray-800 bg-opacity-75 flex items-center justify-center modal-overlay">
-          <div className="bg-white rounded-lg w-full max-w-md mx-3 overflow-hidden modal-container result-input-modal">
-            <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {currentAppointment.serviceType === 'test' 
-                  ? 'Nhập Kết Quả Xét Nghiệm' 
-                  : 'Nhập Nhận Xét Tư Vấn'}
-              </h3>
-              <button 
-                className="text-gray-400 hover:text-gray-600"
-                onClick={() => {
-                  if (window.confirm('Bạn có chắc chắn muốn đóng mà không lưu kết quả?')) {
-                    setIsResultModalOpen(false);
-                  }
-                }}
-                disabled={isSubmitting}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
-            </div>
-            <div className="p-4">
-              <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-1">Bệnh nhân:</p>
-                <p className="font-medium">{currentAppointment.patientName}</p>
-              </div>
-              <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-1">Dịch vụ:</p>
-                <p className="font-medium">{currentAppointment.service}</p>
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {currentAppointment.serviceType === 'test' 
-                    ? 'Kết quả xét nghiệm' 
-                    : 'Nhận xét tư vấn'} <span className="text-red-500">*</span>
-                </label>
-                <textarea 
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  rows={5}
-                  placeholder={currentAppointment.serviceType === 'test' 
-                    ? "Nhập kết quả xét nghiệm và ghi chú" 
-                    : "Nhập nhận xét và khuyến nghị sau buổi tư vấn"}
-                  value={resultText}
-                  onChange={(e) => setResultText(e.target.value)}
-                  required
-                  disabled={isSubmitting}
-                ></textarea>
-                <p className="text-xs text-gray-500 mt-1">
-                  Vui lòng nhập {currentAppointment.serviceType === 'test' ? 'kết quả xét nghiệm' : 'nhận xét tư vấn'} trước khi chuyển trạng thái sang Hoàn thành
-                </p>
-                {currentAppointment.serviceType === 'test' && (
-                  <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
-                    <p className="text-xs text-blue-700">
-                      💡 <strong>Lưu ý:</strong> Kết quả sẽ được lưu vào hệ thống xét nghiệm và cuộc hẹn sẽ tự động chuyển sang trạng thái "Hoàn thành".
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end space-x-2">
-                <button 
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-                  onClick={() => {
-                    if (resultText.trim() !== '' && window.confirm('Bạn có chắc chắn muốn đóng mà không lưu kết quả?')) {
-                      setIsResultModalOpen(false);
-                    } else if (resultText.trim() === '') {
-                      setIsResultModalOpen(false);
-                    }
-                  }}
-                  disabled={isSubmitting}
-                >
-                  Hủy
-                </button>
-                <button 
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
-                  onClick={saveTestResults}
-                  disabled={isSubmitting || resultText.trim() === ''}
-                >
-                  {isSubmitting ? 'Đang lưu...' : 'Lưu và hoàn thành'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Test Results Modal has been removed as we're now directly completing appointments without input */}
       
       {/* Appointment Details Modal */}
       {isDetailsModalOpen && currentAppointment && (
@@ -1553,6 +1364,54 @@ const StaffAppointments = () => {
                   style={{ opacity: isSubmitting ? 0.9 : 1 }}
                 >
                   {isSubmitting ? 'Đang xử lý...' : 'Xử lý hoàn tiền'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Status Change Confirmation Modal */}
+      {isConfirmModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-auto bg-gray-800 bg-opacity-75 flex items-center justify-center modal-overlay">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="border-b p-4 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900">Xác nhận thay đổi trạng thái</h3>
+              <button 
+                onClick={() => {
+                  setIsConfirmModalOpen(false);
+                  setIsStatusModalOpen(false); // Đóng cả modal trạng thái khi nhấp vào nút X
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="h-5 w-5" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                  <path d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-4">
+              <div className="mb-4 text-gray-700">
+                {confirmMessage}
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-3">
+                <button
+                  onClick={() => {
+                    setIsConfirmModalOpen(false);
+                    setIsStatusModalOpen(false); // Đóng cả modal trạng thái khi hủy
+                  }}
+                  className="px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md"
+                  disabled={isSubmitting}
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={updateAppointmentStatus}
+                  className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Đang cập nhật...' : 'Xác nhận'}
                 </button>
               </div>
             </div>
