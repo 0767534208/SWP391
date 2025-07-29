@@ -394,47 +394,19 @@ const ConsultantSlotRegistration: React.FC = () => {
     setIsLoading(true);
     try {
       console.log('Attempting to register slot with ID:', slotId, 'and maxAppointment:', maxAppointment);
-      const response = await consultantSlotAPI.registerSlot(consultantId, slotId, maxAppointment);
+      // Đúng thứ tự: slotId, maxAppointment, consultantId
+      const response = await consultantSlotAPI.registerSlot(slotId, maxAppointment, consultantId);
       console.log('Register response:', response);
 
       if (response.statusCode === 200 || response.statusCode === 201) {
-        // Get registered slot details from response if available
-        const newRegisteredSlot = response.data || {
-          slotID: slotId,
-          maxAppointment: maxAppointment
-        };
-
-        // Update the registeredSlots array with the new slot
-        const updatedRegisteredSlots = [...registeredSlots, {
-          id: newRegisteredSlot.id || newRegisteredSlot.consultantSlotID || Date.now(), // Fallback to timestamp if no ID
-          slotID: slotId,
-          date: selectedSlot.date || '',
-          startTime: selectedSlot.start,
-          endTime: selectedSlot.end,
-          maxAppointment: maxAppointment
-        }];
-        setRegisteredSlots(updatedRegisteredSlots);
-
-        // Immediately mark the slot as registered in the UI
-        const updatedSlots = [...availableSlots];
-        for (const day of updatedSlots) {
-          for (const slot of day.slots) {
-            if (slot.id === slotId || slot.slotID === slotId) {
-              slot.isRegistered = true;
-              console.log(`Marked slot ${slotId} as registered in UI`);
-            }
-          }
-        }
-        setAvailableSlots(updatedSlots);
-
         showNotification('Đăng ký khung giờ thành công!');
-
-        // Refresh data from server (but keep our UI updates)
-        setTimeout(() => {
-          fetchRegisteredSlots();
-          // Pass our updated registered slot IDs to ensure they're properly marked
-          fetchSlots([...updatedRegisteredSlots.map(slot => slot.slotID)]);
-        }, 500);
+        // Cập nhật lại lịch đăng ký và lịch slot mới nhất từ server
+        const registeredSlotsData = await fetchRegisteredSlots();
+        // Lấy danh sách slotID đã đăng ký mới nhất để truyền vào fetchSlots, đảm bảo cập nhật màu xanh
+        const registeredSlotIds = registeredSlotsData.map((slot: any) => slot.slotID);
+        await fetchSlots(registeredSlotIds);
+        // Cập nhật lại số lượng tư vấn viên mới nhất cho từng slot
+        await fetchConsultantsForSlots();
       } else {
         showNotification('Lỗi khi đăng ký khung giờ. Vui lòng thử lại sau.', true);
       }
