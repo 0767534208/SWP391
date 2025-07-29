@@ -215,12 +215,31 @@ const TestResultForm = ({
   };
   const [note, setNote] = useState('');
   const [appointmentCode, setAppointmentCode] = useState('');
+  const [allAppointmentCodes, setAllAppointmentCodes] = useState<string[]>([]);
   const [customerInfo, setCustomerInfo] = useState<{name: string, phone: string} | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
   const [isLoadingCustomer, setIsLoadingCustomer] = useState(false);
+
+  // Fetch all appointment codes for dropdown
+  useEffect(() => {
+    async function fetchAllCodes() {
+      try {
+        const response = await appointmentAPI.getAllAppointments();
+        if (response.data) {
+          const codes = response.data
+            .filter((apt: any) => apt.appointmentCode)
+            .map((apt: any) => apt.appointmentCode);
+          setAllAppointmentCodes(codes);
+        }
+      } catch {
+        setAllAppointmentCodes([]);
+      }
+    }
+    fetchAllCodes();
+  }, []);
 
   // Effect to auto-populate staff ID from token
   useEffect(() => {
@@ -308,25 +327,16 @@ const TestResultForm = ({
     }
   };
 
-  // Handle appointment code change
-  const handleAppointmentCodeChange = (e: ChangeEvent<HTMLInputElement>) => {
+  // Handle appointment code change (dropdown)
+  const handleAppointmentCodeChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const code = e.target.value;
     setAppointmentCode(code);
-    
-    // Clear previous customer info immediately when code changes
     if (!code.trim()) {
       setCustomerInfo(null);
       setFormData(prev => ({ ...prev, customerID: '', treatmentID: null }));
       return;
     }
-    
-    // Debounce the API call
-    const timeoutId = setTimeout(() => {
-      getCustomerFromAppointmentCode(code);
-    }, 500);
-    
-    // Cleanup function to cancel previous timeout
-    return () => clearTimeout(timeoutId);
+    getCustomerFromAppointmentCode(code);
   };
 
 
@@ -494,16 +504,19 @@ const TestResultForm = ({
             {/* Appointment Code Input */}
             <div className="form-group" style={{ marginBottom: 20 }}>
               <label htmlFor="appointmentCode">Mã lịch hẹn <span className="required">*</span></label>
-              <input
-                type="text"
+              <select
                 id="appointmentCode"
                 name="appointmentCode"
                 value={appointmentCode}
                 onChange={handleAppointmentCodeChange}
                 required
-                placeholder="Nhập mã lịch hẹn để tìm thông tin khách hàng"
-                style={{ textTransform: 'uppercase', width: 220 }}
-              />
+                style={{ width: 220, textTransform: 'uppercase' }}
+              >
+                <option value="">-- Chọn mã lịch hẹn --</option>
+                {allAppointmentCodes.map(code => (
+                  <option key={code} value={code}>{code}</option>
+                ))}
+              </select>
               {isLoadingCustomer && (
                 <div className="loading-text">Đang tìm kiếm thông tin khách hàng...</div>
               )}
