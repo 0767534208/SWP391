@@ -79,6 +79,8 @@ const TestResultEdit: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pendingSubmitEvent, setPendingSubmitEvent] = useState<React.FormEvent | null>(null);
   const [testGroup, setTestGroup] = useState<TestResult[]>([]);
   const [patientInfo, setPatientInfo] = useState<{ name: string; phone: string; appointmentCode: string } | null>(null);
   const [testTable, setTestTable] = useState<Record<string, { result: string; conclusion: string }>>({});
@@ -93,11 +95,12 @@ const TestResultEdit: React.FC = () => {
         if (!id) throw new Error('ID không hợp lệ');
         const testResultId = parseInt(id);
         if (isNaN(testResultId)) throw new Error('ID phải là số nguyên');
-        // Get the selected test result
+        // Lấy lab test đang chỉnh sửa
         const response = await testResultService.getTestResult(testResultId);
         if (!response || !response.data) throw new Error('Không tìm thấy kết quả xét nghiệm');
         const result = response.data as any;
-        // Get all test results for the same group (customerID, staffID, testDate, treatmentID)
+
+        // Lấy tất cả lab test của staff này
         const groupRes = await testResultService.getStaffCreatedResults({
           page: 1,
           limit: 100,
@@ -107,40 +110,57 @@ const TestResultEdit: React.FC = () => {
         });
         let group: TestResult[] = [];
         if (groupRes && groupRes.data) {
-          group = (groupRes.data as TestResult[]).filter(t =>
-            t.customerID === result.customerID &&
-            t.staffID === result.staffID &&
-            t.testDate === result.testDate &&
-            t.treatmentID === result.treatmentID
-          );
+          // Gom nhóm theo treatmentID và ngày testDate (yyyy-MM-dd)
+          if (result.treatmentID && result.testDate) {
+            let dateKey = '';
+            try {
+              const d = new Date(result.testDate);
+              dateKey = d.toISOString().split('T')[0];
+            } catch {
+              dateKey = result.testDate;
+            }
+            group = (groupRes.data as TestResult[]).filter(t => {
+              if (t.treatmentID !== result.treatmentID) return false;
+              if (!t.testDate) return false;
+              let tDateKey = '';
+              try {
+                const d = new Date(t.testDate);
+                tDateKey = d.toISOString().split('T')[0];
+              } catch {
+                tDateKey = t.testDate;
+              }
+              return tDateKey === dateKey;
+            });
+          } else {
+            // Nếu không có treatmentID hoặc testDate, fallback như cũ
+            group = [{ ...result }];
+          }
         }
-        // If not found, fallback to just the selected test
         if (group.length === 0) group = [{ ...result }];
         setTestGroup(group);
 
-        // Patient info: fetch from appointmentAPI by treatmentID (like TestResultForm)
+        // Lấy thông tin bệnh nhân và mã lịch hẹn
         let patientName = result.customerName || 'Không có tên';
         let patientPhone = result.phone || '';
-        let appointmentCode = result.treatmentID ? String(result.treatmentID) : '';
-        if (result.treatmentID) {
-          try {
-            const aptRes = await appointmentAPI.getAllAppointments();
-            if (aptRes && aptRes.data) {
-              const foundApt = (aptRes.data as AppointmentData[]).find(
-                (apt) => apt.treatmentID === result.treatmentID
-              );
-              if (foundApt && foundApt.customer) {
-                patientName = foundApt.customer.name || patientName;
-                patientPhone = foundApt.customer.phone || patientPhone;
-                appointmentCode = foundApt.appointmentCode || appointmentCode;
-              }
+        let appointmentCode = '';
+        try {
+          const aptRes = await appointmentAPI.getAllAppointments();
+          if (aptRes && aptRes.data) {
+            const foundApt = (aptRes.data as any[]).find(
+              (apt) => (apt.treatmentID && result.treatmentID && apt.treatmentID === result.treatmentID) ||
+                (apt.treatmentOutcome && apt.treatmentOutcome.treatmentID && result.treatmentID && apt.treatmentOutcome.treatmentID === result.treatmentID)
+            );
+            if (foundApt) {
+              patientName = foundApt.customer?.name || patientName;
+              patientPhone = foundApt.customer?.phone || patientPhone;
+              appointmentCode = foundApt.appointmentCode || (foundApt.treatmentOutcome?.appointmentID ? String(foundApt.treatmentOutcome.appointmentID) : '');
             }
-          } catch {}
-        }
+          }
+        } catch {}
         setPatientInfo({
           name: patientName,
           phone: patientPhone,
-          appointmentCode: appointmentCode
+          appointmentCode: appointmentCode || (result.treatmentID ? String(result.treatmentID) : '-')
         });
 
         // Format test date as yyyy-MM-dd (like TestResultForm)
@@ -218,33 +238,42 @@ const TestResultEdit: React.FC = () => {
 
 
   // Handle form submission: update all tests in the group
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setPendingSubmitEvent(e);
+    setShowConfirm(true);
+  };
+
+  // Hàm thực hiện lưu thực sự sau khi xác nhận
+  const handleConfirmSave = async () => {
+    setShowConfirm(false);
     setSaving(true);
     setError(null);
     try {
-      // Prepare update requests for all filled tests
+      // Prepare update requests for all tests in testGroup (không bỏ qua test nào)
       const updates: UpdateLabTestRequest[] = [];
       for (const test of testGroup) {
-        // Find test id by name
+        const uniqueId = String(test.labTestID || test.id);
+        // Tìm testId từ GROUPED_TEST_TYPES nếu có
         let testId = '';
         for (const groupType of GROUPED_TEST_TYPES) {
           const found = groupType.tests.find(tt => tt.name === test.testName);
           if (found) { testId = found.id; break; }
         }
-        if (!testId) continue;
-        const tableVal = testTable[testId];
-        if (!tableVal || !tableVal.result.trim()) continue;
+        // Lấy giá trị nhập từ testTable hoặc giá trị cũ
+        const tableVal = testTable[uniqueId];
+        const resultValue = tableVal && typeof tableVal.result === 'string' ? tableVal.result : (test.result || '');
+        const conclusionValue = tableVal && typeof tableVal.conclusion === 'string' ? tableVal.conclusion : (typeof test.isPositive === 'boolean' ? (test.isPositive ? 'Dương Tính' : 'Âm Tính') : '');
         updates.push({
           labTestID: test.labTestID || Number(test.id),
           customerID: test.customerID || '',
           staffID: test.staffID || '',
           treatmentID: test.treatmentID,
           testName: test.testName || '',
-          result: tableVal.result,
-          referenceRange: getTestInfoById(testId)?.referenceRange || '',
-          unit: getTestInfoById(testId)?.unit || '',
-          isPositive: tableVal.conclusion === 'Dương Tính',
+          result: resultValue,
+          referenceRange: test.referenceRange || (testId ? (getTestInfoById(testId)?.referenceRange || '') : ''),
+          unit: test.unit || (testId ? (getTestInfoById(testId)?.unit || '') : ''),
+          isPositive: conclusionValue === 'Dương Tính',
           testDate: testDate || ''
         });
       }
@@ -258,6 +287,7 @@ const TestResultEdit: React.FC = () => {
       setError('Không thể lưu kết quả xét nghiệm. Vui lòng thử lại sau.');
     } finally {
       setSaving(false);
+      setPendingSubmitEvent(null);
     }
   };
 
@@ -325,7 +355,7 @@ const TestResultEdit: React.FC = () => {
           </div>
         </div>
         <form onSubmit={handleSubmit} className="test-result-edit-form">
-          {/* Bảng kết quả xét nghiệm chuyên nghiệp */}
+          {/* Bảng kết quả xét nghiệm chuyên nghiệp (editable) */}
           <div className="test-result-table-pro" style={{ margin: '24px 0', overflowX: 'auto' }}>
             <table className="test-result-table" style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', fontSize: 15, border: '1.5px solid #64748b' }}>
               <thead>
@@ -338,32 +368,92 @@ const TestResultEdit: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {GROUPED_TEST_TYPES.map(group => (
-                  <React.Fragment key={group.group}>
-                    <tr style={{ background: '#f1f5f9', fontWeight: 'bold' }}>
-                      <td colSpan={5} style={{ border: '1.5px solid #64748b', padding: 8, color: '#0ea5e9', fontSize: 16 }}>{group.group}</td>
-                    </tr>
-                    {group.tests.map(test => (
-                      <tr key={test.id}>
-                        <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.name}</td>
+                {/* Sắp xếp: chỉ áp dụng cho các test cùng treatmentID, còn lại giữ nguyên thứ tự tạo */}
+                {(() => {
+                  if (testGroup.length === 0) return null;
+                  // Nếu tất cả test cùng treatmentID thì sort số lên trên, còn lại giữ nguyên thứ tự
+                  const allSameTreatment = testGroup.every(t => t.treatmentID === testGroup[0].treatmentID);
+                  let displayGroup = testGroup;
+                  if (allSameTreatment && testGroup[0].treatmentID) {
+                    // Nếu cùng treatmentID thì sort: Âm tính lên trên, sau đó Dương tính, còn lại số lên trên
+                    const isNumericResult = (result: string | undefined | null) => {
+                      if (!result) return false;
+                      const cleaned = result.replace(/,/g, '.').replace(/[^0-9.\-eE]/g, '');
+                      return !isNaN(Number(cleaned)) && cleaned.trim() !== '';
+                    };
+                    const getStatus = (test: TestResult) => {
+                      if (typeof test.isPositive === 'boolean') {
+                        return test.isPositive ? 2 : 1; // 1: Âm tính, 2: Dương tính
+                      }
+                      if (typeof test.result === 'string') {
+                        const val = test.result.toLowerCase();
+                        if (val.includes('âm')) return 1;
+                        if (val.includes('dương')) return 2;
+                      }
+                      return 0; // 0: chưa xác định
+                    };
+                    displayGroup = [...testGroup].sort((a, b) => {
+                      const aStatus = getStatus(a);
+                      const bStatus = getStatus(b);
+                      if (aStatus !== bStatus) return aStatus - bStatus;
+                      if (aStatus === 0 && bStatus === 0) {
+                        const aVal = typeof a.result === 'string' ? a.result : '';
+                        const bVal = typeof b.result === 'string' ? b.result : '';
+                        const aIsNum = isNumericResult(aVal);
+                        const bIsNum = isNumericResult(bVal);
+                        if (aIsNum && !bIsNum) return -1;
+                        if (!aIsNum && bIsNum) return 1;
+                      }
+                      return 0;
+                    });
+                  } else {
+                    // Nếu khác treatmentID thì sort theo ngày xét nghiệm tăng dần
+                    displayGroup = [...testGroup].sort((a, b) => {
+                      const aDate = a.testDate ? new Date(a.testDate).getTime() : 0;
+                      const bDate = b.testDate ? new Date(b.testDate).getTime() : 0;
+                      return aDate - bDate;
+                    });
+                  }
+                  return displayGroup.map((test, idx) => {
+                    const uniqueId = String(test.labTestID || test.id || idx);
+                    let testId = '';
+                    for (const groupType of GROUPED_TEST_TYPES) {
+                      const found = groupType.tests.find(tt => tt.name === test.testName);
+                      if (found) { testId = found.id; break; }
+                    }
+                    return (
+                      <tr key={uniqueId}>
+                        <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.testName || test.testType || 'N/A'}</td>
                         <td style={{ border: '1.5px solid #64748b', padding: 8 }}>
                           <input
                             type="text"
-                            value={testTable[test.id]?.result || ''}
-                            onChange={e => handleTestTableChange(test.id, e.target.value)}
+                            value={typeof testTable[uniqueId]?.result === 'string' ? testTable[uniqueId]?.result : (test.result || '')}
+                            onChange={e => handleTestTableChange(uniqueId, e.target.value)}
                             placeholder="Nhập kết quả"
                             style={{ width: 100, padding: '2px 6px', border: '1px solid #cbd5e1', borderRadius: 4 }}
                           />
                         </td>
-                        <td style={{ border: '1.5px solid #64748b', padding: 8, whiteSpace: 'pre-line' }}>{test.referenceRange}</td>
-                        <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.unit}</td>
-                        <td style={{ border: '1.5px solid #64748b', padding: 8, fontWeight: 'bold', color: testTable[test.id]?.conclusion === 'Dương Tính' ? 'red' : testTable[test.id]?.conclusion === 'Âm Tính' ? 'green' : '#333' }}>
-                          {testTable[test.id]?.conclusion || '-'}
+                        <td style={{ border: '1.5px solid #64748b', padding: 8, whiteSpace: 'pre-line' }}>{test.referenceRange || (testId ? (getTestInfoById(testId)?.referenceRange || '-') : '-')}</td>
+                        <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.unit || (testId ? (getTestInfoById(testId)?.unit || '') : '')}</td>
+                        <td
+                          style={{
+                            border: '1.5px solid #64748b',
+                            padding: 8,
+                            fontWeight: 'bold',
+                            color: (() => {
+                              const val = testTable[uniqueId]?.conclusion || (typeof test.isPositive === 'boolean' ? (test.isPositive ? 'Dương Tính' : 'Âm Tính') : '');
+                              if (val === 'Dương Tính') return 'red';
+                              if (val === 'Âm Tính') return 'green';
+                              return '#333';
+                            })()
+                          }}
+                        >
+                          {testTable[uniqueId]?.conclusion || (typeof test.isPositive === 'boolean' ? (test.isPositive ? 'Dương Tính' : 'Âm Tính') : '-')}
                         </td>
                       </tr>
-                    ))}
-                  </React.Fragment>
-                ))}
+                    );
+                  });
+                })()}
               </tbody>
             </table>
           </div>
@@ -385,6 +475,36 @@ const TestResultEdit: React.FC = () => {
               {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
             </button>
           </div>
+          {/* Modal xác nhận lưu thay đổi */}
+          {showConfirm && (
+            <div style={{
+              position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: '#0006', zIndex: 1000,
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <div style={{ background: '#fff', borderRadius: 10, padding: 32, minWidth: 320, boxShadow: '0 2px 16px #0003', textAlign: 'center' }}>
+                <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>Xác nhận lưu thay đổi</div>
+                <div style={{ fontSize: 15, marginBottom: 24 }}>Bạn có chắc chắn muốn lưu các thay đổi kết quả xét nghiệm này không?</div>
+                <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => { setShowConfirm(false); setPendingSubmitEvent(null); }}
+                    style={{ minWidth: 80 }}
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleConfirmSave}
+                    style={{ minWidth: 100 }}
+                  >
+                    Xác nhận
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </form>
       </div>
     </div>

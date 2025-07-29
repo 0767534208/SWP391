@@ -132,6 +132,7 @@ const SlotManagement = () => {
   });
 
   const [registerSlotForm, setRegisterSlotForm] = useState({
+    consultantId: '',
     slotId: 0,
     maxAppointment: 5
   });
@@ -142,6 +143,14 @@ const SlotManagement = () => {
     toConsultantId: '',
     toSlotId: 0
   });
+
+  // Confirm dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    message: string;
+    onConfirm: (() => void) | null;
+    onCancel?: (() => void) | null;
+  }>({ open: false, message: '', onConfirm: null, onCancel: null });
 
   // Constants
   const itemsPerPage = 10;
@@ -288,31 +297,7 @@ const SlotManagement = () => {
     }
   };
 
-  // Register a new slot for consultant
-  const handleRegisterSlot = async (slotId: number, maxAppointment: number) => {
-    try {
-      const response = await consultantSlotAPI.registerSlot(slotId, maxAppointment);
-      
-      if (response.statusCode === 200) {
-        alert('Đăng ký slot thành công!');
-        fetchConsultantSlots();
-      } else {
-        alert(`Đăng ký slot thất bại: ${response.message || 'Lỗi không xác định'}`);
-      }
-    } catch (error) {
-      console.error('Error registering slot:', error);
-      const errorMessage = (error as Error).message;
-      if (errorMessage.includes('403')) {
-        alert('Lỗi 403: Không thể đăng ký slot này.\n\nNguyên nhân có thể:\n• Bạn chưa tạo consultant profile\n• Slot đã đủ số lượng consultant\n• Bạn không có quyền hoặc token đã hết hạn\n\nVui lòng kiểm tra lại hoặc liên hệ quản trị viên.');
-      } else if (errorMessage.includes('401')) {
-        alert('Lỗi xác thực: Vui lòng đăng nhập lại');
-      } else {
-        alert(`Có lỗi xảy ra khi đăng ký slot: ${errorMessage}`);
-      }
-    }
-  };
-
-  // Create consultant profile
+  // Create consultant profile with confirm dialog
   const handleCreateProfile = async (profileData: {
     accountId: string;
     description: string;
@@ -320,80 +305,85 @@ const SlotManagement = () => {
     experience: string;
     consultantPrice: number;
   }) => {
-    try {
-      // Validate consultant price
-      if (profileData.consultantPrice <= 0) {
-        alert('Giá tư vấn phải lớn hơn 0!');
-        return;
-      }
-
-      // Check if profile already exists for this account
-      console.log('Checking for existing consultant profile...');
-      try {
-        const existingProfiles = await consultantSlotAPI.getAllConsultantProfiles();
-        if (existingProfiles.data) {
-          const existingProfile = existingProfiles.data.find(
-            profile => profile.accountID === profileData.accountId
-          );
-          
-          if (existingProfile) {
-            alert(`Tài khoản này đã có profile consultant (ID: ${existingProfile.consultantProfileID}).\n\nMỗi tài khoản chỉ được tạo một profile.\n\nBạn có thể:\n• Chọn tài khoản khác\n• Sử dụng chức năng "Sửa" để cập nhật profile hiện tại`);
+    setConfirmDialog({
+      open: true,
+      message: 'Bạn có chắc chắn muốn tạo profile consultant mới cho tài khoản này?',
+      onConfirm: async () => {
+        try {
+          if (profileData.consultantPrice <= 0) {
+            setConfirmDialog({ open: false, message: '', onConfirm: null });
+            alert('Giá tư vấn phải lớn hơn 0!');
             return;
           }
+          try {
+            const existingProfiles = await consultantSlotAPI.getAllConsultantProfiles();
+            if (existingProfiles.data) {
+              const existingProfile = existingProfiles.data.find(
+                profile => profile.accountID === profileData.accountId
+              );
+              if (existingProfile) {
+                setConfirmDialog({ open: false, message: '', onConfirm: null });
+                alert(`Tài khoản này đã có profile consultant (ID: ${existingProfile.consultantProfileID}).\n\nMỗi tài khoản chỉ được tạo một profile.\n\nBạn có thể:\n• Chọn tài khoản khác\n• Sử dụng chức năng "Sửa" để cập nhật profile hiện tại`);
+                return;
+              }
+            }
+          } catch (checkError) {
+            console.warn('Could not check existing profiles, proceeding with creation:', checkError);
+          }
+          const response = await consultantSlotAPI.createConsultantProfile(profileData);
+          const message = response.message?.toLowerCase() || '';
+          if (
+            response.statusCode === 200 ||
+            message.includes('success')
+          ) {
+            setConfirmDialog({ open: false, message: '', onConfirm: null });
+            alert('Tạo profile thành công!');
+            setIsCreateProfileModalOpen(false);
+            setCreateProfileForm({
+              accountId: '',
+              description: '',
+              specialty: '',
+              experience: '',
+              consultantPrice: 0
+            });
+            // Reload danh sách profile và user để option luôn cập nhật
+            await fetchConsultantProfiles();
+            await fetchAllUsers();
+          } else if (response.statusCode === 400) {
+            setConfirmDialog({ open: false, message: '', onConfirm: null });
+            if (response.message?.includes('ConsultantPrice must > 0')) {
+              alert('Giá tư vấn phải lớn hơn 0!');
+            } else {
+              alert(`Tạo profile thất bại: ${response.message || 'Dữ liệu không hợp lệ'}`);
+            }
+          } else {
+            setConfirmDialog({ open: false, message: '', onConfirm: null });
+            alert(`Tạo profile thất bại: ${response.message || 'Lỗi không xác định'}`);
+          }
+        } catch (error: unknown) {
+          setConfirmDialog({ open: false, message: '', onConfirm: null });
+          console.error('Error creating profile:', error);
+          const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';
+          if (
+            errorMessage.includes('duplicate key') ||
+            errorMessage.includes('IX_ConsultantProfiles_AccountID') ||
+            errorMessage.includes('Cannot insert duplicate key row')
+          ) {
+            alert('❌ Tài khoản này đã có profile consultant!\n\n📋 Mỗi tài khoản chỉ được tạo một profile.\n\n💡 Gợi ý:\n• Chọn tài khoản khác từ dropdown\n• Hoặc sử dụng chức năng "Sửa" để cập nhật profile hiện tại\n• Kiểm tra tab "Consultant Profiles" để xem các profile đã tồn tại');
+          } else if (errorMessage.includes('ConsultantPrice must > 0')) {
+            alert('Giá tư vấn phải lớn hơn 0!');
+          } else if (errorMessage.includes('500')) {
+            alert('⚠️ Lỗi server (500)\n\nCó thể do:\n• Tài khoản đã có profile (duplicate key)\n• Dữ liệu không hợp lệ\n• Kết nối database có vấn đề\n\nVui lòng thử lại hoặc liên hệ admin.');
+          } else {
+            alert(`Có lỗi xảy ra khi tạo profile: ${errorMessage}`);
+          }
         }
-      } catch (checkError) {
-        console.warn('Could not check existing profiles, proceeding with creation:', checkError);
-      }
-
-      const response = await consultantSlotAPI.createConsultantProfile(profileData);
-      const message = response.message?.toLowerCase() || '';
-      if (
-        response.statusCode === 200 ||
-        message.includes('success')
-      ) {
-        alert('Tạo profile thành công!');
-        setIsCreateProfileModalOpen(false);
-        setCreateProfileForm({
-          accountId: '',
-          description: '',
-          specialty: '',
-          experience: '',
-          consultantPrice: 0
-        });
-        if (activeTab === 'profiles') {
-          fetchConsultantProfiles();
-        }
-      } else if (response.statusCode === 400) {
-        if (response.message?.includes('ConsultantPrice must > 0')) {
-          alert('Giá tư vấn phải lớn hơn 0!');
-        } else {
-          alert(`Tạo profile thất bại: ${response.message || 'Dữ liệu không hợp lệ'}`);
-        }
-      } else {
-        alert(`Tạo profile thất bại: ${response.message || 'Lỗi không xác định'}`);
-      }
-    } catch (error: unknown) {
-      console.error('Error creating profile:', error);
-      
-      const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';
-      
-      if (
-        errorMessage.includes('duplicate key') ||
-        errorMessage.includes('IX_ConsultantProfiles_AccountID') ||
-        errorMessage.includes('Cannot insert duplicate key row')
-      ) {
-        alert('❌ Tài khoản này đã có profile consultant!\n\n📋 Mỗi tài khoản chỉ được tạo một profile.\n\n💡 Gợi ý:\n• Chọn tài khoản khác từ dropdown\n• Hoặc sử dụng chức năng "Sửa" để cập nhật profile hiện tại\n• Kiểm tra tab "Consultant Profiles" để xem các profile đã tồn tại');
-      } else if (errorMessage.includes('ConsultantPrice must > 0')) {
-        alert('Giá tư vấn phải lớn hơn 0!');
-      } else if (errorMessage.includes('500')) {
-        alert('⚠️ Lỗi server (500)\n\nCó thể do:\n• Tài khoản đã có profile (duplicate key)\n• Dữ liệu không hợp lệ\n• Kết nối database có vấn đề\n\nVui lòng thử lại hoặc liên hệ admin.');
-      } else {
-        alert(`Có lỗi xảy ra khi tạo profile: ${errorMessage}`);
-      }
-    }
+      },
+      onCancel: () => setConfirmDialog({ open: false, message: '', onConfirm: null })
+    });
   };
 
-  // Update consultant profile
+  // Update consultant profile with confirm dialog
   const handleUpdateProfile = async (profileData: {
     consultantProfileID: number;
     description: string;
@@ -401,104 +391,164 @@ const SlotManagement = () => {
     experience: string;
     consultantPrice: number;
   }) => {
-    try {
-      // Validate consultant price
-      if (profileData.consultantPrice <= 0) {
-        alert('Giá tư vấn phải lớn hơn 0!');
-        return;
-      }
-
-      const response = await consultantSlotAPI.updateConsultantProfile(
-        profileData.consultantProfileID,
-        {
-          description: profileData.description,
-          specialty: profileData.specialty,
-          experience: profileData.experience,
-          consultantPrice: profileData.consultantPrice
+    setConfirmDialog({
+      open: true,
+      message: 'Bạn có chắc chắn muốn cập nhật profile consultant này?',
+      onConfirm: async () => {
+        try {
+          if (profileData.consultantPrice <= 0) {
+            setConfirmDialog({ open: false, message: '', onConfirm: null });
+            alert('Giá tư vấn phải lớn hơn 0!');
+            return;
+          }
+          const response = await consultantSlotAPI.updateConsultantProfile(
+            profileData.consultantProfileID,
+            {
+              description: profileData.description,
+              specialty: profileData.specialty,
+              experience: profileData.experience,
+              consultantPrice: profileData.consultantPrice
+            }
+          );
+          if (response.statusCode === 200) {
+            setConfirmDialog({ open: false, message: '', onConfirm: null });
+            alert('Cập nhật profile thành công!');
+            setIsEditProfileModalOpen(false);
+            setEditProfileForm({
+              consultantProfileID: 0,
+              description: '',
+              specialty: '',
+              experience: '',
+              consultantPrice: 0
+            });
+            if (activeTab === 'profiles') {
+              fetchConsultantProfiles();
+            }
+            // Refresh current profile if viewing
+            if (currentProfile?.consultantProfileID === profileData.consultantProfileID) {
+              fetchConsultantProfile(profileData.consultantProfileID);
+            }
+          } else if (response.statusCode === 400) {
+            setConfirmDialog({ open: false, message: '', onConfirm: null });
+            if (response.message?.includes('ConsultantPrice must > 0')) {
+              alert('Giá tư vấn phải lớn hơn 0!');
+            } else {
+              alert(`Cập nhật profile thất bại: ${response.message || 'Dữ liệu không hợp lệ'}`);
+            }
+          } else {
+            setConfirmDialog({ open: false, message: '', onConfirm: null });
+            alert(`Cập nhật profile thất bại: ${response.message || 'Lỗi không xác định'}`);
+          }
+        } catch (error: unknown) {
+          setConfirmDialog({ open: false, message: '', onConfirm: null });
+          console.error('Error updating profile:', error);
+          const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';
+          if (errorMessage.includes('ConsultantPrice must > 0')) {
+            alert('Giá tư vấn phải lớn hơn 0!');
+          } else {
+            alert(`Có lỗi xảy ra khi cập nhật profile: ${errorMessage}`);
+          }
         }
-      );
-      
-      if (response.statusCode === 200) {
-        alert('Cập nhật profile thành công!');
-        setIsEditProfileModalOpen(false);
-        setEditProfileForm({
-          consultantProfileID: 0,
-          description: '',
-          specialty: '',
-          experience: '',
-          consultantPrice: 0
-        });
-        if (activeTab === 'profiles') {
-          fetchConsultantProfiles();
-        }
-        // Refresh current profile if viewing
-        if (currentProfile?.consultantProfileID === profileData.consultantProfileID) {
-          fetchConsultantProfile(profileData.consultantProfileID);
-        }
-      } else if (response.statusCode === 400) {
-        if (response.message?.includes('ConsultantPrice must > 0')) {
-          alert('Giá tư vấn phải lớn hơn 0!');
-        } else {
-          alert(`Cập nhật profile thất bại: ${response.message || 'Dữ liệu không hợp lệ'}`);
-        }
-      } else {
-        alert(`Cập nhật profile thất bại: ${response.message || 'Lỗi không xác định'}`);
-      }
-    } catch (error: unknown) {
-      console.error('Error updating profile:', error);
-      
-      const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';
-      
-      if (errorMessage.includes('ConsultantPrice must > 0')) {
-        alert('Giá tư vấn phải lớn hơn 0!');
-      } else {
-        alert(`Có lỗi xảy ra khi cập nhật profile: ${errorMessage}`);
-      }
-    }
+      },
+      onCancel: () => setConfirmDialog({ open: false, message: '', onConfirm: null })
+    });
   };
 
-  // Swap slots between consultants
+  // Register a new slot for consultant with confirm dialog
+  const handleRegisterSlot = async (consultantId: string, slotId: number, maxAppointment: number) => {
+    setConfirmDialog({
+      open: true,
+      message: 'Bạn có chắc chắn muốn đăng ký slot mới này?',
+      onConfirm: async () => {
+        try {
+          // Nếu là manager, truyền thêm consultantId
+          const response = await consultantSlotAPI.registerSlot(slotId, maxAppointment, consultantId);
+          const message = response.message?.toLowerCase() || '';
+          if (
+            response.statusCode === 200 ||
+            message.includes('registered successfully') ||
+            message.includes('success')
+          ) {
+            setConfirmDialog({ open: false, message: '', onConfirm: null });
+            alert('Đăng ký slot thành công!');
+            fetchConsultantSlots();
+          } else {
+            setConfirmDialog({ open: false, message: '', onConfirm: null });
+            alert(`Đăng ký slot thất bại: ${response.message || 'Lỗi không xác định'}`);
+          }
+        } catch (error) {
+          setConfirmDialog({ open: false, message: '', onConfirm: null });
+          console.error('Error registering slot:', error);
+          const errorMessage = (error as Error).message;
+          if (errorMessage.includes('403')) {
+            alert('Lỗi 403: Không thể đăng ký slot này.\n\nNguyên nhân có thể:\n• Bạn chưa tạo consultant profile\n• Slot đã đủ số lượng consultant\n• Bạn không có quyền hoặc token đã hết hạn\n\nVui lòng kiểm tra lại hoặc liên hệ quản trị viên.');
+          } else if (errorMessage.includes('401')) {
+            alert('Lỗi xác thực: Vui lòng đăng nhập lại');
+          } else {
+            alert(`Có lỗi xảy ra khi đăng ký slot: ${errorMessage}`);
+          }
+        }
+      },
+      onCancel: () => setConfirmDialog({ open: false, message: '', onConfirm: null })
+    });
+  };
+
+  // Swap slots between consultants with confirm dialog
   const handleSwapSlots = async (fromConsultantId: string, fromSlotId: number, toConsultantId: string, toSlotId: number) => {
-    try {
-      // Validate swap parameters
-      if (fromConsultantId === toConsultantId) {
-        alert('Không thể hoán đổi slot của cùng một consultant!');
-        return;
-      }
-
-      if (fromSlotId === toSlotId) {
-        alert('Không thể hoán đổi cùng một slot! Vui lòng chọn các slot khác nhau.');
-        return;
-      }
-
-      // Sử dụng API với 4 tham số: consultantA, slotA, consultantB, slotB
-      const response = await consultantSlotAPI.swapSlots(
-        fromConsultantId, 
-        fromSlotId, 
-        toConsultantId, 
-        toSlotId
-      );
-      
-      if (response.statusCode === 200) {
-        alert('Hoán đổi slot thành công!');
-        setIsSwapModalOpen(false);
-        setSwapSlotsForm({ fromConsultantId: '', fromSlotId: 0, toConsultantId: '', toSlotId: 0 });
-        fetchConsultantSlots();
-      } else {
-        alert(`Hoán đổi slot thất bại: ${response.message || 'Lỗi không xác định'}`);
-      }
-    } catch (error) {
-      console.error('Error swapping slots:', error);
-      const errorMessage = (error as Error).message;
-      
-      if (errorMessage.includes('Cannot swap the same slot')) {
-        alert('Không thể hoán đổi cùng một slot!\nVui lòng chọn các slot khác nhau để hoán đổi.');
-      } else if (errorMessage.includes('405')) {
-        alert('Chức năng hoán đổi slot hiện tại không khả dụng');
-      } else {
-        alert(`Có lỗi xảy ra khi hoán đổi slot: ${errorMessage}`);
-      }
-    }
+    setConfirmDialog({
+      open: true,
+      message: 'Bạn có chắc chắn muốn hoán đổi 2 slot này giữa các consultant?',
+      onConfirm: async () => {
+        try {
+          if (fromConsultantId === toConsultantId) {
+            setConfirmDialog({ open: false, message: '', onConfirm: null });
+            alert('Không thể hoán đổi slot của cùng một consultant!');
+            return;
+          }
+          if (fromSlotId === toSlotId) {
+            setConfirmDialog({ open: false, message: '', onConfirm: null });
+            alert('Không thể hoán đổi cùng một slot! Vui lòng chọn các slot khác nhau.');
+            return;
+          }
+          // Kiểm tra nếu consultant A đã có slot B hoặc consultant B đã có slot A
+          const consultantAHasSlotB = consultantSlots.some(cs => cs.consultantID === fromConsultantId && cs.slotID === toSlotId);
+          const consultantBHasSlotA = consultantSlots.some(cs => cs.consultantID === toConsultantId && cs.slotID === fromSlotId);
+          if (consultantAHasSlotB || consultantBHasSlotA) {
+            setConfirmDialog({ open: false, message: '', onConfirm: null });
+            alert('Không thể hoán đổi vì một trong hai consultant đã sở hữu slot của người kia!');
+            return;
+          }
+          const response = await consultantSlotAPI.swapSlots(
+            fromConsultantId, 
+            fromSlotId, 
+            toConsultantId, 
+            toSlotId
+          );
+          if (response.statusCode === 200) {
+            setConfirmDialog({ open: false, message: '', onConfirm: null });
+            alert('Hoán đổi slot thành công!');
+            setIsSwapModalOpen(false);
+            setSwapSlotsForm({ fromConsultantId: '', fromSlotId: 0, toConsultantId: '', toSlotId: 0 });
+            fetchConsultantSlots();
+          } else {
+            setConfirmDialog({ open: false, message: '', onConfirm: null });
+            alert(`Hoán đổi slot thất bại: ${response.message || 'Lỗi không xác định'}`);
+          }
+        } catch (error) {
+          setConfirmDialog({ open: false, message: '', onConfirm: null });
+          console.error('Error swapping slots:', error);
+          const errorMessage = (error as Error).message;
+          if (errorMessage.includes('Cannot swap the same slot')) {
+            alert('Không thể hoán đổi cùng một slot!\nVui lòng chọn các slot khác nhau để hoán đổi.');
+          } else if (errorMessage.includes('405')) {
+            alert('Chức năng hoán đổi slot hiện tại không khả dụng');
+          } else {
+            alert(`Có lỗi xảy ra khi hoán đổi slot: ${errorMessage}`);
+          }
+        }
+      },
+      onCancel: () => setConfirmDialog({ open: false, message: '', onConfirm: null })
+    });
   };
   // Fetch available slots
   const fetchAvailableSlots = async () => {
@@ -519,17 +569,10 @@ const SlotManagement = () => {
       
       if (response && Array.isArray(response)) {
         // API response từ GetAllAccounts trả về array trực tiếp
-        const users = response.map((user: {
-          userID: string;
-          name: string;
-          email: string;
-          phone: string;
-          address: string;
-          roles: string[];
-          isActive: boolean;
-        }) => ({
+        const users = response.map((user: any) => ({
           accountID: user.userID, // API dùng userID
           userID: user.userID,
+          userName: user.userName,
           name: user.name,
           email: user.email,
           phone: user.phone,
@@ -552,10 +595,12 @@ const SlotManagement = () => {
     if (isRegisterSlotModalOpen) {
       fetchAvailableSlots();
     }
-    if (isCreateProfileModalOpen || isSwapModalOpen) {
+    // Only fetch users when opening the create profile modal
+    if (isCreateProfileModalOpen) {
       fetchAllUsers();
     }
-  }, [isRegisterSlotModalOpen, isCreateProfileModalOpen, isSwapModalOpen]);
+    // Swap modal logic can be handled separately if needed
+  }, [isRegisterSlotModalOpen, isCreateProfileModalOpen]);
 
   // Pagination
   const currentData = activeTab === 'slots' ? filteredSlots : filteredProfiles;
@@ -876,7 +921,6 @@ const SlotManagement = () => {
               <thead>
                 <tr>
                   <th>Profile ID</th>
-                  <th>Account ID</th>
                   <th>Tên</th>
                   <th>Chuyên Môn</th>
                   <th>Kinh Nghiệm</th>
@@ -888,7 +932,6 @@ const SlotManagement = () => {
                 {(currentItems as ConsultantProfile[]).map((profile, index) => (
                   <tr key={`${profile.consultantProfileID}-${index}`}>
                     <td>{profile.consultantProfileID}</td>
-                    <td>{profile.accountID}</td>
                     <td>{profile.account?.name || 'Chưa có tên'}</td>
                     <td>{profile.specialty || 'Chưa có chuyên môn'}</td>
                     <td>{profile.experience || 'Chưa có thông tin'}</td>
@@ -1002,32 +1045,29 @@ const SlotManagement = () => {
               handleCreateProfile(createProfileForm);
             }}>
               <div style={{ marginBottom: '1rem' }}>
-                <label>Account ID:</label>
+                <label>Account:</label>
                 <select
                   value={createProfileForm.accountId}
                   onChange={e => setCreateProfileForm({ ...createProfileForm, accountId: e.target.value })}
                   required
                   style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
+                  onFocus={() => fetchAllUsers()}
                 >
-                  <option value="">Chọn Account</option>
+                  <option value="">Chọn Tên</option>
                   {allUsers
                     .filter(user => user.roles && user.roles.includes('Consultant'))
-                    .map(user => {
-                      const hasProfile = consultantProfiles.some(profile => profile.accountID === user.accountID);
-                      return (
-                        <option
-                          key={user.accountID}
-                          value={user.accountID}
-                          disabled={hasProfile}
-                          style={{ color: hasProfile ? '#9ca3af' : 'inherit', fontStyle: hasProfile ? 'italic' : 'normal' }}
-                        >
-                          {user.name} ({user.email}) - {hasProfile ? '✅ Đã có profile' : '⭕ Chưa có profile'}
-                        </option>
-                      );
-                    })}
+                    .filter(user => !consultantProfiles.some(profile => profile.accountID === user.userID))
+                    .map(user => (
+                      <option
+                        key={user.userID}
+                        value={user.userID}
+                      >
+                        {user.name || user.userName}
+                      </option>
+                    ))}
                 </select>
                 <small style={{ color: '#666', fontSize: '0.8rem', marginTop: '0.25rem', display: 'block' }}>
-                  ✅ = Đã có profile (không thể chọn) | ⭕ = Chưa có profile (có thể tạo mới)
+                  Chỉ hiển thị tên của consultant chưa có profile khi bạn bấm vào mục tạo
                 </small>
               </div>
               <div style={{ marginBottom: '1rem' }}>
@@ -1104,7 +1144,7 @@ const SlotManagement = () => {
         </div>
       )}
 
-      {/* Register Slot Modal */}
+      {/* Register Slot Modal - Refactored */}
       {isRegisterSlotModalOpen && (
         <div className="modal-overlay" style={{
           position: 'fixed',
@@ -1122,65 +1162,142 @@ const SlotManagement = () => {
             backgroundColor: 'white',
             padding: '2rem',
             borderRadius: '0.5rem',
-            maxWidth: '400px',
+            maxWidth: '420px',
             width: '90%'
           }}>
             <h2>Đăng Ký Slot Mới</h2>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              handleRegisterSlot(registerSlotForm.slotId, registerSlotForm.maxAppointment);
-              setIsRegisterSlotModalOpen(false);
-            }}>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                // Validate
+                if (!registerSlotForm.consultantId) {
+                  alert('Vui lòng chọn consultant!');
+                  return;
+                }
+                if (!registerSlotForm.slotId || registerSlotForm.slotId === 0) {
+                  alert('Vui lòng chọn slot!');
+                  return;
+                }
+                // Check if already registered
+                const alreadyRegistered = consultantSlots.some(cs => cs.slotID === registerSlotForm.slotId && cs.consultantID === registerSlotForm.consultantId);
+                if (alreadyRegistered) {
+                  alert('Consultant đã đăng ký slot này!');
+                  return;
+                }
+                // Check if slot is full
+                const slotObj = availableSlots.find(s => s.slotID === registerSlotForm.slotId);
+                if (slotObj) {
+                  const count = consultantSlots.filter(cs => cs.slotID === slotObj.slotID).length;
+                  if (count >= slotObj.maxConsultant) {
+                    alert('Slot đã đầy, không thể đăng ký!');
+                    return;
+                  }
+                }
+                if (registerSlotForm.maxAppointment < 1 || registerSlotForm.maxAppointment > 10) {
+                  alert('Số lượng appointment tối đa phải từ 1 đến 10!');
+                  return;
+                }
+                await handleRegisterSlot(registerSlotForm.consultantId, registerSlotForm.slotId, registerSlotForm.maxAppointment);
+                setIsRegisterSlotModalOpen(false);
+                setRegisterSlotForm({ consultantId: '', slotId: 0, maxAppointment: 5 });
+              }}
+            >
               <div style={{ marginBottom: '1rem' }}>
-                <label>Slot:</label>
-                <select 
-                  value={registerSlotForm.slotId}
-                  onChange={(e) => setRegisterSlotForm({...registerSlotForm, slotId: Number(e.target.value)})}
+                <label>Consultant:</label>
+                <select
+                  value={registerSlotForm.consultantId}
+                  onChange={e => {
+                    setRegisterSlotForm({ consultantId: e.target.value, slotId: 0, maxAppointment: 5 });
+                  }}
                   required
                   style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
+                  autoFocus
+                  onFocus={fetchAllUsers}
                 >
-                  <option value={0}>Chọn Slot</option>
-                  {availableSlots.map(slot => {
-                    // Đếm số lượng consultant đã đăng ký slot này
-                    const count = consultantSlots.filter(cs => cs.slotID === slot.slotID).length;
-                    const isFull = count >= slot.maxConsultant;
-                    return (
+                  <option value="">Chọn Consultant</option>
+                  {allUsers
+                    .filter(user => user.roles && user.roles.includes('Consultant'))
+                    .map(user => (
                       <option
-                        key={slot.slotID}
-                        value={slot.slotID}
-                        disabled={isFull}
-                        style={{ color: isFull ? '#9ca3af' : 'inherit', fontStyle: isFull ? 'italic' : 'normal' }}
+                        key={user.userID}
+                        value={user.userID}
                       >
-                        Slot {slot.slotID}: {formatTime(slot.startTime)} - {formatTime(slot.endTime)}{isFull ? ' (Đã đầy)' : ''}
+                        {user.name || user.userName || user.userID}
                       </option>
-                    );
-                  })}
+                    ))}
                 </select>
               </div>
               <div style={{ marginBottom: '1rem' }}>
+                <label>Slot:</label>
+                <select
+                  value={registerSlotForm.slotId}
+                  onChange={e => setRegisterSlotForm({ ...registerSlotForm, slotId: Number(e.target.value) })}
+                  required
+                  style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
+                  disabled={!registerSlotForm.consultantId}
+                >
+                  <option value={0}>Chọn Slot</option>
+                  {registerSlotForm.consultantId && availableSlots
+                    .filter(slot => slot.slotID !== undefined && slot.slotID !== null)
+                    .map(slot => {
+                      const count = consultantSlots.filter(cs => cs.slotID === slot.slotID).length;
+                      const isFull = count >= slot.maxConsultant;
+                      const alreadyRegistered = consultantSlots.some(cs => cs.slotID === slot.slotID && cs.consultantID === registerSlotForm.consultantId);
+                      return (
+                        <option
+                          key={slot.slotID}
+                          value={slot.slotID}
+                          disabled={isFull || alreadyRegistered}
+                          style={{ color: (isFull || alreadyRegistered) ? '#9ca3af' : 'inherit', fontStyle: (isFull || alreadyRegistered) ? 'italic' : 'normal' }}
+                        >
+                          Slot {slot.slotID}: {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+                          {isFull ? ' (Đã đầy)' : alreadyRegistered ? ' (Đã đăng ký)' : ''}
+                        </option>
+                      );
+                    })}
+                </select>
+                {registerSlotForm.slotId !== 0 && (
+                  (() => {
+                    const slot = availableSlots.find(s => s.slotID === registerSlotForm.slotId);
+                    if (!slot) return null;
+                    const count = consultantSlots.filter(cs => cs.slotID === slot.slotID).length;
+                    return (
+                      <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#374151', background: '#f3f4f6', borderRadius: '0.25rem', padding: '0.5rem' }}>
+                        <div><strong>Thời gian:</strong> {formatTime(slot.startTime)} - {formatTime(slot.endTime)}</div>
+                        <div><strong>Max Consultant:</strong> {slot.maxConsultant}</div>
+                        <div><strong>Đã đăng ký:</strong> {count} / {slot.maxConsultant}</div>
+                      </div>
+                    );
+                  })()
+                )}
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
                 <label>Số lượng appointment tối đa:</label>
-                <input 
+                <input
                   type="number"
                   value={registerSlotForm.maxAppointment}
-                  onChange={(e) => setRegisterSlotForm({...registerSlotForm, maxAppointment: Number(e.target.value)})}
+                  onChange={(e) => setRegisterSlotForm({ ...registerSlotForm, maxAppointment: Number(e.target.value) })}
                   required
                   min="1"
                   max="10"
                   style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
                 />
+                <small style={{ color: '#666', fontSize: '0.8rem' }}>
+                  Tối đa 10 appointment cho mỗi slot
+                </small>
               </div>
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                <button 
+                <button
                   type="button"
                   onClick={() => {
                     setIsRegisterSlotModalOpen(false);
-                    setRegisterSlotForm({ slotId: 0, maxAppointment: 5 });
+                    setRegisterSlotForm({ consultantId: '', slotId: 0, maxAppointment: 5 });
                   }}
                   style={{ padding: '0.5rem 1rem', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '0.25rem' }}
                 >
                   Hủy
                 </button>
-                <button 
+                <button
                   type="submit"
                   style={{ padding: '0.5rem 1rem', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '0.25rem' }}
                 >
@@ -1622,6 +1739,51 @@ const SlotManagement = () => {
         </div>
       )}
 
+      {confirmDialog.open && (
+        <div className="modal-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000
+        }}>
+          <div className="modal-content" style={{
+            backgroundColor: 'white',
+            padding: '2rem',
+            borderRadius: '0.5rem',
+            maxWidth: '400px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 2px 16px rgba(0,0,0,0.15)'
+          }}>
+            <p style={{ marginBottom: '2rem', fontSize: '1.1rem', color: '#374151' }}>{confirmDialog.message}</p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <button
+                onClick={() => {
+                  if (confirmDialog.onConfirm) confirmDialog.onConfirm();
+                }}
+                style={{ padding: '0.5rem 1.5rem', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '0.25rem', fontWeight: 500 }}
+              >
+                Xác nhận
+              </button>
+              <button
+                onClick={() => {
+                  if (confirmDialog.onCancel) confirmDialog.onCancel();
+                  else setConfirmDialog({ open: false, message: '', onConfirm: null });
+                }}
+                style={{ padding: '0.5rem 1.5rem', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '0.25rem', fontWeight: 500 }}
+              >
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

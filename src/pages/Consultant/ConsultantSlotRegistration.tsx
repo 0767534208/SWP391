@@ -380,28 +380,30 @@ const ConsultantSlotRegistration: React.FC = () => {
       return;
     }
 
-    const slotId = selectedSlot.id;
-    const maxAppointment = maxAppointmentValues[slotId] || 1;
-    
+    // Use slotID if available, fallback to id
+    const slotId = selectedSlot.slotID || selectedSlot.id;
+    // Always use a valid number for maxAppointment
+    const maxAppointment = Number(maxAppointmentValues[slotId]) > 0 ? Number(maxAppointmentValues[slotId]) : 1;
+
     if (maxAppointment <= 0) {
       showNotification('Số lượng cuộc hẹn phải lớn hơn 0.', true);
       return;
     }
-    
+
     setShowConfirmation(false);
     setIsLoading(true);
     try {
       console.log('Attempting to register slot with ID:', slotId, 'and maxAppointment:', maxAppointment);
-      const response = await consultantSlotAPI.registerSlot(slotId, maxAppointment);
+      const response = await consultantSlotAPI.registerSlot(consultantId, slotId, maxAppointment);
       console.log('Register response:', response);
-      
+
       if (response.statusCode === 200 || response.statusCode === 201) {
         // Get registered slot details from response if available
         const newRegisteredSlot = response.data || {
           slotID: slotId,
           maxAppointment: maxAppointment
         };
-        
+
         // Update the registeredSlots array with the new slot
         const updatedRegisteredSlots = [...registeredSlots, {
           id: newRegisteredSlot.id || newRegisteredSlot.consultantSlotID || Date.now(), // Fallback to timestamp if no ID
@@ -412,7 +414,7 @@ const ConsultantSlotRegistration: React.FC = () => {
           maxAppointment: maxAppointment
         }];
         setRegisteredSlots(updatedRegisteredSlots);
-        
+
         // Immediately mark the slot as registered in the UI
         const updatedSlots = [...availableSlots];
         for (const day of updatedSlots) {
@@ -424,9 +426,9 @@ const ConsultantSlotRegistration: React.FC = () => {
           }
         }
         setAvailableSlots(updatedSlots);
-        
+
         showNotification('Đăng ký khung giờ thành công!');
-        
+
         // Refresh data from server (but keep our UI updates)
         setTimeout(() => {
           fetchRegisteredSlots();

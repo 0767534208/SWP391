@@ -548,7 +548,7 @@ const TestResultConsultant: React.FC = () => {
         </div>
       )}
 
-      {/* Lab Test Modal - Professional Table (chỉ bảng kết quả) */}
+      {/* Lab Test Modal - Professional Table (chỉ bảng kết quả thực tế, giống TestResultManagementStaff) */}
       {showLabTestModal && selectedLabTests && (
         <div className="modal-overlay" onClick={closeLabTestModal}>
           <div className="modal-content" style={{ maxWidth: 900, minWidth: 600, width: '90%' }} onClick={(e) => e.stopPropagation()}>
@@ -562,7 +562,7 @@ const TestResultConsultant: React.FC = () => {
               </button>
             </div>
             <div className="modal-body">
-              {/* Bảng kết quả xét nghiệm chuyên nghiệp */}
+              {/* Bảng kết quả xét nghiệm thực tế */}
               <div className="test-result-table-pro" style={{ margin: '24px 0', overflowX: 'auto' }}>
                 <table className="test-result-table" style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', fontSize: 15, border: '1.5px solid #64748b' }}>
                   <thead>
@@ -575,31 +575,16 @@ const TestResultConsultant: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {GROUPED_TEST_TYPES.map(group => (
-                      <React.Fragment key={group.group}>
-                        <tr style={{ background: '#f1f5f9', fontWeight: 'bold' }}>
-                          <td colSpan={5} style={{ border: '1.5px solid #64748b', padding: 8, color: '#0ea5e9', fontSize: 16 }}>{group.group}</td>
-                        </tr>
-                        {group.tests.map(test => {
-                          const testResult = selectedLabTests.find(t => t.testName === test.name);
-                          const result = testResult?.result || '';
-                          let conclusion = '';
-                          if (typeof testResult?.isPositive === 'boolean') {
-                            conclusion = testResult.isPositive ? 'Dương Tính' : 'Âm Tính';
-                          }
-                          return (
-                            <tr key={test.id}>
-                              <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.name}</td>
-                              <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{result || '-'}</td>
-                              <td style={{ border: '1.5px solid #64748b', padding: 8, whiteSpace: 'pre-line' }}>{test.referenceRange}</td>
-                              <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.unit}</td>
-                              <td style={{ border: '1.5px solid #64748b', padding: 8, fontWeight: 'bold', color: conclusion === 'Dương Tính' ? 'red' : conclusion === 'Âm Tính' ? 'green' : '#333' }}>
-                                {conclusion || '-'}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </React.Fragment>
+                    {selectedLabTests.map((test, idx) => (
+                      <tr key={test.labTestID || test.id || idx}>
+                        <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.testName || test.testType || 'N/A'}</td>
+                        <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.result || '-'}</td>
+                        <td style={{ border: '1.5px solid #64748b', padding: 8, whiteSpace: 'pre-line' }}>{test.referenceRange || '-'}</td>
+                        <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.unit || ''}</td>
+                        <td style={{ border: '1.5px solid #64748b', padding: 8, fontWeight: 'bold', color: test.isPositive ? 'red' : 'green' }}>
+                          {typeof test.isPositive === 'boolean' ? (test.isPositive ? 'Dương Tính' : 'Âm Tính') : '-'}
+                        </td>
+                      </tr>
                     ))}
                   </tbody>
                 </table>
