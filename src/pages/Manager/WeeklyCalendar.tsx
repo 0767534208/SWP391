@@ -164,6 +164,8 @@ const WeeklyCalendar: React.FC = () => {
   const [workingHours, setWorkingHours] = useState<any[]>([]);
   const [editMaxConsultant, setEditMaxConsultant] = useState<number>(0);
   const [editMaxTestAppointment, setEditMaxTestAppointment] = useState<number>(0);
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
+  const [confirmAction, setConfirmAction] = useState<string>(''); // 'update' or 'create'
   
   // Working Hour management states
   const [isWorkingHourModalOpen, setIsWorkingHourModalOpen] = useState<boolean>(false);
@@ -469,13 +471,22 @@ const WeeklyCalendar: React.FC = () => {
 
   // Navigate to slot creation page
   const navigateToSlotCreation = () => {
-    if (selectedDate) {
-      // Format the date as YYYY-MM-DD for passing as a query parameter
-      const formattedDate = formatDateForComparison(selectedDate);
-      navigate(`/manager/slot-creation?date=${formattedDate}`);
-    } else {
-      navigate('/manager/slot-creation');
+    if (!selectedDate) {
+      // If no date is selected, show error notification
+      setNotification({
+        show: true,
+        message: 'Vui lòng chọn một ngày trước khi tạo khung giờ!'
+      });
+      
+      setTimeout(() => {
+        setNotification({ show: false, message: '' });
+      }, 3000);
+      return;
     }
+    
+    // Format the date as YYYY-MM-DD for passing as a query parameter
+    const formattedDate = formatDateForComparison(selectedDate);
+    navigate(`/manager/slot-creation?date=${formattedDate}&clinicID=1`); // Default clinicID=1
   };
 
   // Handle day selection
@@ -641,15 +652,26 @@ const WeeklyCalendar: React.FC = () => {
     });
   }
 
-  // Trong modal, lấy working hour tương ứng với slot đang sửa
-  const editingWorkingHour = selectedSlot && selectedSlot.slot.workingHourID
-    ? workingHours.find(wh => wh.workingHourID === Number(selectedSlot.slot.workingHourID))
-    : null;
+  // Trong modal, lấy working hour tương ứng với ngày trong tuần của slot đang sửa
+  const getWorkingHourForSelectedDate = () => {
+    if (!selectedSlot) return null;
+    
+    // Convert the date string to a Date object
+    const selectedDate = new Date(selectedSlot.date);
+    
+    // Get the day of week (0 = Sunday, 1 = Monday, etc.)
+    const dayOfWeek = selectedDate.getDay();
+    
+    // Find the working hour for this day of week
+    return workingHours.find(wh => wh.dayInWeek === dayOfWeek);
+  };
+  
+  const editingWorkingHour = getWorkingHourForSelectedDate();
   const minTime = editingWorkingHour ? editingWorkingHour.openingTime.slice(0,5) : '07:00';
   const maxTime = editingWorkingHour ? editingWorkingHour.closingTime.slice(0,5) : '17:00';
 
-  // Lưu thay đổi thời gian slot
-  const handleSaveSlot = async () => {
+  // Hiển thị modal xác nhận trước khi lưu
+  const showUpdateConfirmation = () => {
     if (!selectedSlot) return;
 
     let error = '';
@@ -673,6 +695,14 @@ const WeeklyCalendar: React.FC = () => {
       return;
     }
 
+    setConfirmAction('update');
+    setShowConfirmModal(true);
+  };
+
+  // Lưu thay đổi thời gian slot
+  const handleSaveSlot = async () => {
+    if (!selectedSlot) return;
+
     try {
       setIsLoading(true);
 
@@ -691,10 +721,20 @@ const WeeklyCalendar: React.FC = () => {
       const formattedStartTime = formatLocalDateTime(selectedSlot.date, editStart);
       const formattedEndTime = formatLocalDateTime(selectedSlot.date, editEnd);
 
+      // Get the day of week from the selectedSlot date
+      const selectedDate = new Date(selectedSlot.date);
+      const dayOfWeek = selectedDate.getDay(); // 0 is Sunday, 1 is Monday, etc.
+      
+      // Find the working hour for this day of week
+      const workingHourForDay = workingHours.find(wh => wh.dayInWeek === dayOfWeek);
+      
+      // Use the workingHourID from the found working hour, or fallback to the day number if not found
+      const workingHourID = workingHourForDay ? workingHourForDay.workingHourID : (dayOfWeek === 0 ? 7 : dayOfWeek);
+
       if (selectedSlot.slot.slotID) {
         // Update slot using slotAPI
         await slotAPI.updateSlot(selectedSlot.slot.slotID, {
-          workingHourID: selectedSlot.slot.workingHourID,
+          workingHourID: workingHourID,
           maxConsultant: editMaxConsultant,
           maxTestAppointment: editMaxTestAppointment,
           startTime: formattedStartTime,
@@ -705,6 +745,7 @@ const WeeklyCalendar: React.FC = () => {
         await fetchSlots();
 
         setModalOpen(false);
+        setShowConfirmModal(false);
         setNotification({
           show: true,
           message: 'Khung giờ đã được cập nhật thành công!'
@@ -719,6 +760,7 @@ const WeeklyCalendar: React.FC = () => {
       setModalError('Đã xảy ra lỗi khi cập nhật khung giờ');
     } finally {
       setIsLoading(false);
+      setShowConfirmModal(false);
     }
   };
 
@@ -920,7 +962,7 @@ const WeeklyCalendar: React.FC = () => {
             </div>
             <button
               className={`modal-save ${isLoading ? 'disabled' : ''}`}
-              onClick={handleSaveSlot}
+              onClick={showUpdateConfirmation}
               disabled={isLoading}
             >
               {isLoading ? 'Đang lưu...' : 'Lưu thay đổi'}
@@ -1152,6 +1194,69 @@ const WeeklyCalendar: React.FC = () => {
           <p style={{ color: '#6b7280', fontStyle: 'italic' }}>Chưa có giờ làm việc nào được thiết lập.</p>
         )}
       </div>
+
+      {/* Confirm Modal */}
+      {showConfirmModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1050
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '1.5rem',
+            borderRadius: '0.5rem',
+            width: '90%',
+            maxWidth: '400px'
+          }}>
+            <h3 style={{ marginBottom: '1rem', fontWeight: '600', fontSize: '1.125rem' }}>
+              Xác nhận cập nhật khung giờ?
+            </h3>
+            <p style={{ marginBottom: '1.5rem', color: '#4b5563', fontSize: '0.875rem' }}>
+              Bạn có chắc chắn muốn cập nhật thông tin khung giờ này?
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#e5e7eb',
+                  color: '#374151',
+                  border: 'none',
+                  borderRadius: '0.25rem',
+                  fontWeight: '500',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleSaveSlot}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.25rem',
+                  fontWeight: '500',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Working Hour Modal */}
       {isWorkingHourModalOpen && (

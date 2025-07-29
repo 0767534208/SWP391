@@ -262,9 +262,9 @@ const SlotCreation = () => {
   const [endTime, setEndTime] = useState<string>('');
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [clinicId, setClinicId] = useState<number>(1); // Default clinic ID
   const [maxConsultant, setMaxConsultant] = useState<number>(5); // Default max consultant
   const [maxTestAppointment, setMaxTestAppointment] = useState<number>(5); // Default max test appointments
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false); // Confirmation modal
 
   // Working hours state
   const [workingHours, setWorkingHours] = useState<any[]>([]);
@@ -300,8 +300,8 @@ const SlotCreation = () => {
     return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}T${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:00`;
   };
 
-  // Create slot using API
-  const createSlot = async () => {
+  // Show confirmation modal before creating slot
+  const showConfirmCreateSlot = () => {
     if (!selectedDate) {
       showNotification('error', 'Vui lòng chọn ngày');
       return;
@@ -318,21 +318,36 @@ const SlotCreation = () => {
       showNotification('error', `Thời gian phải trong khung giờ làm việc (${minWorkingHour} - ${maxWorkingHour})`);
       return;
     }
+
+    // Show confirmation modal
+    setShowConfirmModal(true);
+  };
+
+  // Create slot using API
+  const createSlot = async () => {
+    setShowConfirmModal(false);
     
     // Tự động chọn working hour đầu tiên nếu có
     const selectedWorkingHourId = workingHours.length > 0 ? workingHours[0].workingHourID : 1;
     setIsLoading(true);
+    
     try {
       const startDateTime = formatDateTimeForApi(selectedDate, startTime);
       const endDateTime = formatDateTimeForApi(selectedDate, endTime);
+      
+      // Get clinicID from URL parameters or default to 1
+      const searchParams = new URLSearchParams(location.search);
+      const clinicID = parseInt(searchParams.get('clinicID') || '1');
+      
       const response = await api.post('/api/slot', {
-        clinicID: clinicId,
+        clinicID: clinicID, // Use the clinicID from URL or default to 1
         workingHourID: selectedWorkingHourId,
         maxConsultant: maxConsultant,
         maxTestAppointment: maxTestAppointment,
         startTime: startDateTime,
         endTime: endDateTime
       });
+      
       if (response.statusCode === 201) {
         showNotification('success', 'Đã tạo khung giờ làm việc thành công!');
         setStartTime('');
@@ -387,6 +402,69 @@ const SlotCreation = () => {
         <h1 className="page-title">Tạo khung giờ làm việc</h1>
         <p className="page-subtitle">Tạo và quản lý lịch làm việc cho chuyên gia</p>
       </div>
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1050
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '1.5rem',
+            borderRadius: '0.5rem',
+            width: '90%',
+            maxWidth: '400px'
+          }}>
+            <h3 style={{ marginBottom: '1rem', fontWeight: '600', fontSize: '1.125rem' }}>
+              Xác nhận tạo khung giờ mới?
+            </h3>
+            <p style={{ marginBottom: '1.5rem', color: '#4b5563', fontSize: '0.875rem' }}>
+              Bạn có chắc chắn muốn tạo khung giờ này từ {startTime} đến {endTime}?
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#e5e7eb',
+                  color: '#374151',
+                  border: 'none',
+                  borderRadius: '0.25rem',
+                  fontWeight: '500',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Hủy
+              </button>
+              <button
+                onClick={createSlot}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.25rem',
+                  fontWeight: '500',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="slot-creation-form bg-white p-6 rounded-lg shadow-sm mb-6">
         <h2 className="text-xl font-semibold mb-4 text-gray-700">Tạo khung giờ mới</h2>
         {/* Date Selection */}
@@ -430,19 +508,7 @@ const SlotCreation = () => {
             </div>
           </div>
         </div>
-        {/* Clinic and Working Hour Settings */}
-        <div className="form-group mb-4">
-          <label htmlFor="clinicId" className="block text-sm font-medium text-gray-700 mb-1">Phòng khám:</label>
-          <input
-            type="number"
-            id="clinicId"
-            className="form-input w-full p-2 border border-gray-300 rounded-md"
-            value={clinicId}
-            onChange={(e) => setClinicId(parseInt(e.target.value))}
-            min={1}
-            required
-          />
-        </div>
+        {/* Max Consultant and Test Appointment Settings */}
 
         <div className="form-group mb-4">
           <label htmlFor="maxConsultant" className="block text-sm font-medium text-gray-700 mb-1">Số lượng tư vấn viên tối đa:</label>
@@ -475,7 +541,7 @@ const SlotCreation = () => {
               ? 'bg-gray-400 cursor-not-allowed'
               : 'bg-indigo-600 hover:bg-indigo-700'
           }`}
-          onClick={createSlot}
+          onClick={showConfirmCreateSlot}
           disabled={isLoading}
         >
           {isLoading ? (

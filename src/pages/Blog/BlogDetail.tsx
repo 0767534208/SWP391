@@ -24,6 +24,8 @@ const BlogDetail = () => {
   
   // Kiểm tra xem người dùng đến từ trang quản lý hay không
   const isFromManager = location.state?.fromManager || false;
+  // Kiểm tra xem người dùng đến từ trang quản lý của staff hay không
+  const isFromStaff = location.state?.fromStaff || false;
   
   // Lấy role từ localStorage (hoặc nơi lưu trữ khác)
   const userRole = localStorage.getItem('userRole') || 'customer';
@@ -54,7 +56,9 @@ const BlogDetail = () => {
 
   // Xử lý quay lại
   const handleGoBack = () => {
-    if (isFromManager || userRole === 'manager' || userRole === 'admin') {
+    if (isFromStaff || userRole === 'staff') {
+      navigate('/staff/blogs');
+    } else if (isFromManager || userRole === 'manager' || userRole === 'admin') {
       navigate('/manager/blogs');
     } else {
       navigate('/blogUser');
@@ -140,7 +144,11 @@ const BlogDetail = () => {
         <div className="blog-detail-container">
           <div className="detail-nav">
             <button onClick={handleGoBack} className="back-link">
-              ← Quay lại
+              ← {
+                isFromStaff || userRole === 'staff' ? 'Quay lại trang quản lý bài viết' : 
+                isFromManager || userRole === 'manager' || userRole === 'admin' ? 'Quay lại trang quản lý bài viết' : 
+                'Quay lại trang bài viết'
+              }
             </button>
           </div>
 
@@ -184,7 +192,11 @@ const BlogDetail = () => {
       <div className="blog-detail-container">
         <div className="detail-nav">
           <button onClick={handleGoBack} className="back-link">
-            ← {isFromManager || userRole === 'manager' || userRole === 'admin' ? 'Quay lại trang quản lý bài viết' : 'Quay lại trang bài viết'}
+            ← {
+              isFromStaff || userRole === 'staff' ? 'Quay lại trang quản lý bài viết' : 
+              isFromManager || userRole === 'manager' || userRole === 'admin' ? 'Quay lại trang quản lý bài viết' : 
+              'Quay lại trang bài viết'
+            }
           </button>
         </div>
 

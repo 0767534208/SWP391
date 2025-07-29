@@ -68,6 +68,13 @@ const StaffLayout = () => {
               </svg>
               <span className="staff-nav-text text-xs font-medium">Quản lý giao dịch</span>
             </Link>
+
+            <Link to="/staff/blogs" className={`staff-nav-link flex items-center px-2 py-1.5 rounded-lg transition-colors ${isActive('/staff/blogs') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800'}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="staff-sidebar-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+              </svg>
+              <span className="staff-nav-text text-xs font-medium">Quản lý bài viết</span>
+            </Link>
             
             <a href="/qna" className={`staff-nav-link flex items-center px-2 py-1.5 rounded-lg transition-colors text-indigo-100 hover:bg-indigo-800`}>
               <svg xmlns="http://www.w3.org/2000/svg" className="staff-sidebar-icon" viewBox="0 0 20 20" fill="currentColor">
