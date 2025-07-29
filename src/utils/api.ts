@@ -1466,8 +1466,13 @@ export const consultantSlotAPI = {
    * @param slotId - ID của slot
    * @param maxAppointment - Số lượng appointment tối đa
    */
-  registerSlot: async (slotId: number, maxAppointment: number): Promise<ApiResponse<any>> => {
-    return apiRequest<any>(`/api/consultantSlot/register?slotId=${slotId}&maxAppointment=${maxAppointment}`, 'POST');
+  registerSlot: async (slotId: number, maxAppointment: number, consultantId?: string): Promise<ApiResponse<any>> => {
+    // Nếu là manager, cần truyền consultantId
+    let url = `/api/consultantSlot/register?slotId=${slotId}&maxAppointment=${maxAppointment}`;
+    if (consultantId) {
+      url += `&consultantId=${consultantId}`;
+    }
+    return apiRequest<any>(url, 'POST');
   },
 
   /**
@@ -1508,14 +1513,15 @@ export const consultantSlotAPI = {
    * @param profileData - Dữ liệu cập nhật
    */
   updateConsultantProfile: async (profileId: number, profileData: any): Promise<ApiResponse<any>> => {
-    const queryParams = new URLSearchParams({
-      consultantProfileID: profileId.toString(),
+    // Đúng chuẩn backend: consultantProfileID ở query, body chỉ có các trường update
+    const query = `consultantProfileID=${profileId}`;
+    const requestBody = {
       description: profileData.description || '',
       specialty: profileData.specialty || '',
       experience: profileData.experience || '',
-      consultantPrice: profileData.consultantPrice?.toString() || '0'
-    });
-    return apiRequest<any>(`/api/consultantSlot/UpdateConsultantProfile?${queryParams.toString()}`, 'PUT');
+      consultantPrice: Number(profileData.consultantPrice) || 0
+    };
+    return apiRequest<any>(`/api/consultantSlot/UpdateConsultantProfile?${query}`, 'PUT', requestBody);
   },
 
   /**

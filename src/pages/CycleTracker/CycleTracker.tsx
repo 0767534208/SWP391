@@ -3,6 +3,7 @@ import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 import './CycleTracker.css'
 import './loading-indicator.css'
+import * as signalR from '@microsoft/signalr';
 import { FaSave, FaSpinner, FaSync, FaCheck, FaExclamationCircle, FaInfoCircle, FaTimes } from 'react-icons/fa'
 import { 
   menstrualCycleAPI, 
@@ -12,7 +13,6 @@ import {
   type UpdateMenstrualCycleRequest 
 } from '../../utils/api'
 import { authUtils } from '../../utils/auth'
-import type { CyclePredictionData, CyclePhases } from '../../types/cycleTracker'
 
 // Vietnamese day names for calendar formatting
 // Vietnamese day names for calendar formatting - must include all 7 days
@@ -71,7 +71,6 @@ const CycleTracker: React.FC = () => {
     
     // API related states
     const [menstrualCycleFromDB, setMenstrualCycleFromDB] = useState<MenstrualCycleData | null>(null)
-    const [cyclePrediction, setCyclePrediction] = useState<any | null>(null)
     const [isLoading, setIsLoading] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
     const [isPredictionLoading, setIsPredictionLoading] = useState(false)
@@ -116,6 +115,52 @@ const CycleTracker: React.FC = () => {
         nextPeriodDates: []
     })
 
+    // SignalR connection for notification from Hangfire
+    useEffect(() => {
+        if (!currentUserId) return;
+
+        // Kết nối tới NotificationHub ở backend
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("https://localhost:7084/notificationHub", {
+                withCredentials: true
+                // Nếu cần JWT: accessTokenFactory: () => "JWT_TOKEN"
+            })
+            .withAutomaticReconnect()
+            .build();
+
+        // Đăng ký handler trước khi start để không bị miss event
+        const notificationHandler = (data: { Message: string }) => {
+            console.log("[SignalR] Received event: Receive Notification", data, "currentUserId:", currentUserId);
+            showNotification('success', data?.Message || 'Bạn có thông báo mới về dự đoán chu kỳ!');
+            loadCyclePredictionData(currentUserId);
+        };
+        connection.on("Receive Notification", notificationHandler);
+
+        connection.onclose((err) => {
+            console.warn("SignalR connection closed", err);
+        });
+        connection.onreconnecting((err) => {
+            console.warn("SignalR reconnecting", err);
+        });
+        connection.onreconnected((connectionId) => {
+            console.log("SignalR reconnected", connectionId);
+        });
+
+        connection.start()
+            .then(() => {
+                console.log("SignalR connected to notificationHub (userId:", currentUserId, ")");
+            })
+            .catch(err => {
+                console.error("SignalR connection error:", err);
+                showNotification('error', 'Không thể kết nối tới hệ thống dự đoán tự động');
+            });
+
+        return () => {
+            connection.off("Receive Notification", notificationHandler);
+            connection.stop();
+        };
+    }, [currentUserId]);
+
     // Debug logging for state changes
     useEffect(() => {
         console.log('State changed - cycleLength:', cycleLength);
@@ -138,27 +183,39 @@ const CycleTracker: React.FC = () => {
     }, [currentUserId]);
     
     // Load cycle prediction data from API
+    type CyclePrediction = {
+        cyclePredictionID: number;
+        menstrualCycleID: number;
+        customerID: string;
+        customerName: string;
+        ovulationDate: string;
+        fertileStartDate: string;
+        fertileEndDate: string;
+        nextPeriodStartDate: string;
+        cycleStartDate: string;
+        cycleLength: number;
+    };
     const loadCyclePredictionData = async (userId: string) => {
         try {
             setIsPredictionLoading(true);
             console.log('Đang tải dữ liệu dự đoán chu kỳ cho user:', userId);
             const response = await cyclePredictionAPI.getCyclePredictionByCustomer(userId);
             console.log('Response dự đoán từ API:', response);
-            
             if (response.statusCode === 200 && response.data) {
-                // Handle both single object and array response
-                let predictionData = response.data;
-                
-                // If data is an array, take the first item
+                const predictionData = response.data as CyclePrediction | CyclePrediction[];
+                let singlePrediction: CyclePrediction | null = null;
                 if (Array.isArray(predictionData) && predictionData.length > 0) {
-                    // Sort by most recent prediction
                     predictionData.sort((a, b) => {
                         return new Date(b.cycleStartDate).getTime() - new Date(a.cycleStartDate).getTime();
                     });
-                    predictionData = predictionData[0]; // Use most recent prediction
-                } else if (Array.isArray(predictionData) && predictionData.length === 0) {
+                    singlePrediction = predictionData[0];
+                } else if (!Array.isArray(predictionData) && predictionData) {
+                    singlePrediction = predictionData;
+                } else {
+                    singlePrediction = null;
+                }
+                if (!singlePrediction) {
                     console.log('Không có dữ liệu dự đoán chu kỳ');
-                    setCyclePrediction(null);
                     setCyclePhases({
                         periodDates: [],
                         fertileDates: [],
@@ -167,16 +224,11 @@ const CycleTracker: React.FC = () => {
                     });
                     return;
                 }
-                
-                setCyclePrediction(predictionData);
-                console.log('Đã tải dữ liệu dự đoán từ API:', predictionData);
-                
-                // Process prediction dates
-                const processedDates = processPredictionDates(predictionData);
+                console.log('Đã tải dữ liệu dự đoán từ API:', singlePrediction);
+                const processedDates = processPredictionDates(singlePrediction);
                 setCyclePhases(processedDates);
             } else {
                 console.log('Không có dữ liệu dự đoán chu kỳ');
-                setCyclePrediction(null);
                 setCyclePhases({
                     periodDates: [],
                     fertileDates: [],
@@ -186,7 +238,6 @@ const CycleTracker: React.FC = () => {
             }
         } catch (error) {
             console.error('Lỗi khi tải dữ liệu dự đoán chu kỳ:', error);
-            setCyclePrediction(null);
             setCyclePhases({
                 periodDates: [],
                 fertileDates: [],
@@ -199,7 +250,7 @@ const CycleTracker: React.FC = () => {
     };
     
     // Process the prediction dates from API to array of Date objects
-    const processPredictionDates = (prediction: any): { periodDates: Date[], fertileDates: Date[], ovulationDates: Date[], nextPeriodDates: Date[] } => {
+    const processPredictionDates = (prediction: CyclePrediction | null): { periodDates: Date[], fertileDates: Date[], ovulationDates: Date[], nextPeriodDates: Date[] } => {
         const result = {
             periodDates: [],
             fertileDates: [],
@@ -226,7 +277,7 @@ const CycleTracker: React.FC = () => {
                 const fertileEndDate = new Date(prediction.fertileEndDate);
                 
                 // Loop through all dates in the fertile window
-                let currentDate = new Date(fertileStartDate);
+                const currentDate = new Date(fertileStartDate);
                 while (currentDate <= fertileEndDate) {
                     result.fertileDates.push(new Date(currentDate));
                     currentDate.setDate(currentDate.getDate() + 1);
@@ -483,7 +534,7 @@ const CycleTracker: React.FC = () => {
         window.scrollTo(0, 0);
         
         // Get current user ID from auth system only
-        let userId = authUtils.getCurrentUserId();
+        const userId = authUtils.getCurrentUserId();
         
         if (userId) {
             setCurrentUserId(userId);
@@ -497,7 +548,6 @@ const CycleTracker: React.FC = () => {
             setCycleLength('');
             setPeriodLength('');
             setLastPeriodStart(null);
-            setCyclePrediction(null);
             setCyclePhases({
                 periodDates: [],
                 fertileDates: [],
@@ -634,8 +684,90 @@ const CycleTracker: React.FC = () => {
         )
     }
 
+    // Thêm nút thông báo nổi (bell) ở góc phải
+    const [showNotificationList, setShowNotificationList] = useState(false);
+    const unreadCount = notifications.length;
+
     return (
         <div className="cycle-tracker">
+            {/* Notification bell button */}
+            <div style={{ position: 'fixed', bottom: 32, right: 32, zIndex: 1000 }}>
+                <button
+                    style={{
+                        background: '#fff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '50%',
+                        width: 56,
+                        height: 56,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                        position: 'relative',
+                        cursor: 'pointer',
+                        outline: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 28
+                    }}
+                    aria-label="Thông báo"
+                    onClick={() => setShowNotificationList(v => !v)}
+                >
+                    <FaInfoCircle color="#6366f1" />
+                    {unreadCount > 0 && (
+                        <span style={{
+                            position: 'absolute',
+                            top: 8,
+                            right: 8,
+                            background: '#ef4444',
+                            color: '#fff',
+                            borderRadius: '50%',
+                            width: 20,
+                            height: 20,
+                            fontSize: 12,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 700
+                        }}>{unreadCount}</span>
+                    )}
+                </button>
+                {/* Notification popup list */}
+                {showNotificationList && (
+                    <div style={{
+                        position: 'absolute',
+                        bottom: 70,
+                        right: 0,
+                        width: 320,
+                        background: '#fff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: 12,
+                        boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+                        padding: 16,
+                        maxHeight: 400,
+                        overflowY: 'auto'
+                    }}>
+                        <div style={{ fontWeight: 600, marginBottom: 8 }}>Thông báo của bạn</div>
+                        {notifications.length === 0 ? (
+                            <div style={{ color: '#6b7280', fontSize: 14 }}>Không có thông báo nào.</div>
+                        ) : (
+                            notifications.slice().reverse().map(n => (
+                                <div key={n.id} style={{
+                                    background: '#f3f4f6',
+                                    borderRadius: 8,
+                                    padding: 10,
+                                    marginBottom: 8,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    fontSize: 15
+                                }}>
+                                    <span>{n.message}</span>
+                                    <button style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 16 }} onClick={() => removeNotification(n.id)}><FaTimes /></button>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
+            </div>
             {/* Notification system */}
             <div className="notification-container">
                 {notifications.map(notification => (
@@ -647,7 +779,6 @@ const CycleTracker: React.FC = () => {
                     />
                 ))}
             </div>
-            
             <div className="cycle-tracker-container">
                 <h1 className="cycle-tracker-title">Theo Dõi Chu Kỳ Kinh Nguyệt</h1>
                 

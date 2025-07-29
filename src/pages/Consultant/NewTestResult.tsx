@@ -1,55 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import testResultService from '../../services/testResultService';
 import type { LabTestData } from '../../utils/api';
-// Grouped test types for professional table (copy from TestResultConsultant)
-const GROUPED_TEST_TYPES = [
-  {
-    group: 'SINH HÓA',
-    tests: [
-      {
-        id: 'rpr',
-        name: 'Rapid Plasma Reagin (RPR - Kháng thể không đặc hiệu giang mai)',
-        referenceRange: '< 1',
-        unit: 'RU',
-      },
-    ],
-  },
-  {
-    group: 'MIỄN DỊCH',
-    tests: [
-      {
-        id: 'hiv_combo',
-        name: 'HIV Combo Ag + Ab',
-        referenceRange: '< 1',
-        unit: 'S/CO',
-      },
-      {
-        id: 'syphilis',
-        name: 'Syphilis',
-        referenceRange: 'Âm Tính: < 1.00\nDương Tính: ≥ 1.00',
-        unit: 'S/CO',
-      },
-    ],
-  },
-  {
-    group: 'SINH HỌC PHÂN TỬ',
-    tests: [
-      { id: 'chlamydia', name: 'Chlamydia trachomatis', referenceRange: 'Âm Tính', unit: '' },
-      { id: 'candida', name: 'Candida albicans', referenceRange: 'Âm Tính', unit: '' },
-      { id: 'treponema', name: 'Treponema pallidum', referenceRange: 'Âm Tính', unit: '' },
-      { id: 'hsv1', name: 'Herpes Simplex Virus 1', referenceRange: 'Âm Tính', unit: '' },
-      { id: 'hsv2', name: 'Herpes Simplex Virus 2', referenceRange: 'Âm Tính', unit: '' },
-      { id: 'ureaplasma_parvum', name: 'Ureaplasma parvum', referenceRange: 'Âm Tính', unit: '' },
-      { id: 'trichomonas', name: 'Trichomonas vaginalis', referenceRange: 'Âm Tính', unit: '' },
-      { id: 'mycoplasma_gen', name: 'Mycoplasma genitalium', referenceRange: 'Âm Tính', unit: '' },
-      { id: 'mycoplasma_hom', name: 'Mycoplasma hominis', referenceRange: 'Âm Tính', unit: '' },
-      { id: 'neisseria', name: 'Neisseria gonorrhoeae', referenceRange: 'Âm Tính', unit: '' },
-      { id: 'ureaplasma_urea', name: 'Ureaplasma urealyticum', referenceRange: 'Âm Tính', unit: '' },
-      { id: 'haemophilus', name: 'Haemophilus ducreyi', referenceRange: 'Âm Tính', unit: '' },
-      { id: 'gardnerella', name: 'Gardnerella vaginalis', referenceRange: 'Âm Tính', unit: '' },
-    ],
-  },
-];
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { FaArrowLeft, FaSave, FaSearch, FaTimes } from 'react-icons/fa';
@@ -79,6 +30,10 @@ const NewTestResult: React.FC = () => {
   const [appointments, setAppointments] = useState<GetAllAppointment[]>([]);
   const [customers, setCustomers] = useState<CustomerInfo[]>([]);
   const [consultants, setConsultants] = useState<ConsultantInfo[]>([]);
+
+  // Track which appointments already have treatment outcome
+  const [appointmentsWithOutcome, setAppointmentsWithOutcome] = useState<Set<string>>(new Set());
+  const [showOutcomeWarning, setShowOutcomeWarning] = useState(false);
 
   // Search states
   const [appointmentSearch, setAppointmentSearch] = useState('');
@@ -134,16 +89,16 @@ const NewTestResult: React.FC = () => {
   const loadInitialData = async () => {
     try {
       setLoading(true);
-      const [appointmentsRes, customersRes, consultantsRes] = await Promise.all([
+      const [appointmentsRes, customersRes, consultantsRes, outcomesRes] = await Promise.all([
         treatmentOutcomeService.getAllAppointments(),
         treatmentOutcomeService.getAllCustomers(),
-        treatmentOutcomeService.getAllConsultants()
+        treatmentOutcomeService.getAllConsultants(),
+        treatmentOutcomeService.getAllTreatmentOutcomes?.() // Optional chaining for backward compatibility
       ]);
 
       console.log('Appointments response:', appointmentsRes);
       console.log('Customers response:', customersRes);
       console.log('Consultants response:', consultantsRes);
-
       if (appointmentsRes.statusCode === 200 && appointmentsRes.data) {
         setAppointments(appointmentsRes.data);
         setFilteredAppointments(appointmentsRes.data);
@@ -168,6 +123,16 @@ const NewTestResult: React.FC = () => {
         console.error('Failed to load consultants:', consultantsRes);
         toast.error('Không thể tải danh sách bác sĩ');
       }
+
+      // Collect appointmentIDs that already have treatment outcome
+      if (outcomesRes && outcomesRes.statusCode === 200 && Array.isArray(outcomesRes.data)) {
+        const outcomeSet = new Set(
+          outcomesRes.data
+            .filter((o: any) => o.appointmentID)
+            .map((o: any) => o.appointmentID)
+        );
+        setAppointmentsWithOutcome(outcomeSet);
+      }
     } catch (error) {
       console.error('Error loading initial data:', error);
       toast.error('Không thể tải dữ liệu ban đầu');
@@ -177,6 +142,12 @@ const NewTestResult: React.FC = () => {
   };
 
   const handleAppointmentSelect = async (appointment: GetAllAppointment) => {
+    // Prevent selecting if already has outcome
+    if (appointmentsWithOutcome.has(appointment.appointmentID)) {
+      setShowOutcomeWarning(true);
+      return;
+    }
+    setShowOutcomeWarning(false);
     setAppointmentSearch(appointment.appointmentCode);
     setShowAppointmentDropdown(false);
 
@@ -337,6 +308,7 @@ const NewTestResult: React.FC = () => {
     setSelectedConsultant(null);
     setLabTests(null);
     setLabTestError(null);
+    setShowOutcomeWarning(false);
     setFormData(prev => ({
       ...prev,
       appointmentID: undefined,
@@ -385,35 +357,46 @@ const NewTestResult: React.FC = () => {
                   </button>
                 )}
               </div>
-              
               {showAppointmentDropdown && (
                 <div className="appointment-dropdown">
                   {filteredAppointments.length > 0 ? (
-                    filteredAppointments.map((appointment) => (
-                      <div
-                        key={appointment.appointmentID}
-                        className="appointment-item"
-                        onClick={() => handleAppointmentSelect(appointment)}
-                      >
-                        <div className="appointment-code">{appointment.appointmentCode}</div>
-                        <div className="appointment-details">
-                          <div className="appointment-info-row">
-                            <span className="info-label">Khách hàng:</span>
-                            <span className="customer-name">{appointment.customer?.name || 'Không có tên'}</span>
-                          </div>
-                          <div className="appointment-info-row">
-                            <span className="info-label">Bác sĩ:</span>
-                            <span className="consultant-name">{appointment.consultant?.name || 'Không có tên'}</span>
-                          </div>
-                          <div className="appointment-info-row">
-                            <span className="info-label">Ngày hẹn:</span>
-                            <span className="appointment-date">
-                              {new Date(appointment.appointmentDate).toLocaleDateString('vi-VN')}
-                            </span>
+                    filteredAppointments.map((appointment) => {
+                      const hasOutcome = appointmentsWithOutcome.has(appointment.appointmentID);
+                      return (
+                        <div
+                          key={appointment.appointmentID}
+                          className={`appointment-item${hasOutcome ? ' has-outcome' : ''}`}
+                          onClick={() => {
+                            if (!hasOutcome) handleAppointmentSelect(appointment);
+                          }}
+                          style={hasOutcome ? { opacity: 0.6, pointerEvents: 'none', cursor: 'not-allowed' } : {}}
+                        >
+                          <div className="appointment-code">{appointment.appointmentCode}</div>
+                          <div className="appointment-details">
+                            <div className="appointment-info-row">
+                              <span className="info-label">Khách hàng:</span>
+                              <span className="customer-name">{appointment.customer?.name || 'Không có tên'}</span>
+                            </div>
+                            <div className="appointment-info-row">
+                              <span className="info-label">Bác sĩ:</span>
+                              <span className="consultant-name">{appointment.consultant?.name || 'Không có tên'}</span>
+                            </div>
+                            <div className="appointment-info-row">
+                              <span className="info-label">Ngày hẹn:</span>
+                              <span className="appointment-date">
+                                {new Date(appointment.appointmentDate).toLocaleDateString('vi-VN')}
+                              </span>
+                            </div>
+                            <div className="appointment-info-row">
+                              <span className="info-label">Trạng thái:</span>
+                              <span className="outcome-status" style={{ color: hasOutcome ? 'red' : 'green', fontWeight: 600 }}>
+                                {hasOutcome ? 'ĐÃ CÓ KẾT QUẢ KHÁM' : 'Chưa có kết quả khám'}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="no-appointments">
                       {appointmentSearch.trim() ? 'Không tìm thấy cuộc hẹn nào' : 'Không có cuộc hẹn nào'}
@@ -423,6 +406,13 @@ const NewTestResult: React.FC = () => {
               )}
             </div>
           </div>
+
+          {/* Warning if appointment already has treatment outcome */}
+          {showOutcomeWarning && (
+            <div style={{ color: 'red', fontWeight: 600, marginBottom: 12, fontSize: 16, background: '#fff3cd', border: '1px solid #ffeeba', padding: 12, borderRadius: 6 }}>
+              ⚠️ Cuộc hẹn này đã có kết quả khám trước đó. Vui lòng chọn cuộc hẹn khác!
+            </div>
+          )}
 
 
           {/* Customer Info Display */}
@@ -476,31 +466,16 @@ const NewTestResult: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {GROUPED_TEST_TYPES.map(group => (
-                        <React.Fragment key={group.group}>
-                          <tr style={{ background: '#f1f5f9', fontWeight: 'bold' }}>
-                            <td colSpan={5} style={{ border: '1.5px solid #64748b', padding: 8, color: '#0ea5e9', fontSize: 16 }}>{group.group}</td>
-                          </tr>
-                          {group.tests.map(test => {
-                            const testResult = labTests.find(t => t.testName === test.name);
-                            const result = testResult?.result || '';
-                            let conclusion = '';
-                            if (typeof testResult?.isPositive === 'boolean') {
-                              conclusion = testResult.isPositive ? 'Dương Tính' : 'Âm Tính';
-                            }
-                            return (
-                              <tr key={test.id}>
-                                <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.name}</td>
-                                <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{result || '-'}</td>
-                                <td style={{ border: '1.5px solid #64748b', padding: 8, whiteSpace: 'pre-line' }}>{test.referenceRange}</td>
-                                <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.unit}</td>
-                                <td style={{ border: '1.5px solid #64748b', padding: 8, fontWeight: 'bold', color: conclusion === 'Dương Tính' ? 'red' : conclusion === 'Âm Tính' ? 'green' : '#333' }}>
-                                  {conclusion || '-'}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </React.Fragment>
+                      {labTests.map((test, idx) => (
+                        <tr key={test.labTestID || idx}>
+                          <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.testName || 'N/A'}</td>
+                          <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.result || '-'}</td>
+                          <td style={{ border: '1.5px solid #64748b', padding: 8, whiteSpace: 'pre-line' }}>{test.referenceRange || '-'}</td>
+                          <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.unit || ''}</td>
+                          <td style={{ border: '1.5px solid #64748b', padding: 8, fontWeight: 'bold', color: typeof test.isPositive === 'boolean' ? (test.isPositive ? 'red' : 'green') : '#333' }}>
+                            {typeof test.isPositive === 'boolean' ? (test.isPositive ? 'Dương Tính' : 'Âm Tính') : '-'}
+                          </td>
+                        </tr>
                       ))}
                     </tbody>
                   </table>

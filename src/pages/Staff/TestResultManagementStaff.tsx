@@ -163,15 +163,25 @@ const TestResultManagementStaff: React.FC = () => {
   };
 
 
-  // Group test results by customerID, staffID, testDate, treatmentID
+  // Group test results by customerID, staffID, treatmentID, testDate (ngày xét nghiệm)
   function groupTestResults(results: TestResult[]) {
     const groups: Record<string, TestResult[]> = {};
     for (const test of results) {
+      // Gom nhóm theo customerID, staffID, treatmentID, testDate (chỉ lấy phần ngày yyyy-MM-dd)
+      let dateKey = '';
+      if (test.testDate) {
+        try {
+          const d = new Date(test.testDate);
+          dateKey = d.toISOString().split('T')[0];
+        } catch {
+          dateKey = test.testDate;
+        }
+      }
       const key = [
         test.customerID || '',
         test.staffID || '',
-        test.testDate || '',
-        test.treatmentID || ''
+        test.treatmentID || '',
+        dateKey
       ].join('|');
       if (!groups[key]) groups[key] = [];
       groups[key].push(test);
@@ -180,8 +190,9 @@ const TestResultManagementStaff: React.FC = () => {
   }
 
   // Filter and group
-  const filteredTestResults = groupTestResults(
-    testResults.filter(test => {
+  // Lọc và gom nhóm, sau đó sắp xếp các nhóm theo ngày tạo (testDate) tăng dần
+  const filteredTestResults = (() => {
+    const filtered = testResults.filter(test => {
       if (!searchQuery) return true;
       const searchLower = searchQuery.toLowerCase();
       return (
@@ -192,8 +203,17 @@ const TestResultManagementStaff: React.FC = () => {
         (test.testType?.toLowerCase().includes(searchLower)) ||
         (test.result?.toLowerCase().includes(searchLower))
       );
-    })
-  );
+    });
+    // Gom nhóm
+    const groups = groupTestResults(filtered);
+    // Sắp xếp các nhóm theo ngày tạo (testDate) tăng dần (lấy ngày của phần tử đầu tiên trong nhóm)
+    groups.sort((a, b) => {
+      const aDate = a[0]?.testDate ? new Date(a[0].testDate).getTime() : 0;
+      const bDate = b[0]?.testDate ? new Date(b[0].testDate).getTime() : 0;
+      return aDate - bDate;
+    });
+    return groups;
+  })();
 
   const formatDate = (dateString?: string | null) => {
     if (!dateString) return 'N/A';
@@ -213,15 +233,23 @@ const TestResultManagementStaff: React.FC = () => {
     return test.staffName || `Nhân viên ${test.staffID || 'N/A'}`;
   };
 
-  // Xóa kết quả xét nghiệm
-  const handleDelete = async (testId: number | string) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa kết quả xét nghiệm này?')) return;
+  // Xóa toàn bộ group kết quả xét nghiệm
+  const handleDeleteGroup = async (group: TestResult[]) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa toàn bộ các kết quả xét nghiệm của nhóm này?')) return;
     setLoading(true);
     setError(null);
     try {
-      const idNum = typeof testId === 'string' ? parseInt(testId, 10) : testId;
-      if (isNaN(idNum)) throw new Error('ID không hợp lệ');
-      await testResultService.deleteTestResult(idNum);
+      // Xóa từng test trong group
+      for (const test of group) {
+        let idNum: number | undefined;
+        if (test.labTestID !== undefined) {
+          idNum = typeof test.labTestID === 'string' ? parseInt(test.labTestID, 10) : Number(test.labTestID);
+        } else if (test.id !== undefined) {
+          idNum = typeof test.id === 'string' ? parseInt(test.id, 10) : Number(test.id);
+        }
+        if (!idNum || isNaN(idNum)) continue;
+        await testResultService.deleteTestResult(idNum);
+      }
       await fetchTestResults();
     } catch {
       setError('Không thể xóa kết quả xét nghiệm. Vui lòng thử lại.');
@@ -250,6 +278,45 @@ const TestResultManagementStaff: React.FC = () => {
   const closeModal = () => {
     setShowModal(false);
     setSelectedTestGroup(null);
+  };
+
+  // Hàm kiểm tra xem kết quả có phải là số không
+  const isNumericResult = (result: string | undefined | null) => {
+    if (!result) return false;
+    // Loại bỏ dấu cách, ký tự đặc biệt phổ biến
+    const cleaned = result.replace(/,/g, '.').replace(/[^0-9.\-eE]/g, '');
+    // Kiểm tra nếu sau khi loại bỏ vẫn là số
+    return !isNaN(Number(cleaned)) && cleaned.trim() !== '';
+  };
+
+  // Hàm sắp xếp: Âm tính lên trên, sau đó Dương tính, còn lại thì số lên trên
+  const sortTestResults = (arr: TestResult[]) => {
+    return [...arr].sort((a, b) => {
+      // Ưu tiên Âm tính lên trên, sau đó Dương tính, còn lại thì số lên trên
+      const getStatus = (test: TestResult) => {
+        if (typeof test.isPositive === 'boolean') {
+          return test.isPositive ? 2 : 1; // 1: Âm tính, 2: Dương tính
+        }
+        // Nếu không có isPositive, kiểm tra chuỗi result
+        if (typeof test.result === 'string') {
+          const val = test.result.toLowerCase();
+          if (val.includes('âm')) return 1;
+          if (val.includes('dương')) return 2;
+        }
+        return 0; // 0: chưa xác định
+      };
+      const aStatus = getStatus(a);
+      const bStatus = getStatus(b);
+      if (aStatus !== bStatus) return aStatus - bStatus;
+      // Nếu đều chưa xác định, ưu tiên số lên trên
+      if (aStatus === 0 && bStatus === 0) {
+        const aIsNum = isNumericResult(a.result);
+        const bIsNum = isNumericResult(b.result);
+        if (aIsNum && !bIsNum) return -1;
+        if (!aIsNum && bIsNum) return 1;
+      }
+      return 0;
+    });
   };
 
   return (
@@ -307,6 +374,7 @@ const TestResultManagementStaff: React.FC = () => {
           <table className="results-table">
             <thead>
               <tr>
+                <th>Mã lịch hẹn</th>
                 <th>Bệnh nhân</th>
                 <th>Số điện thoại</th>
                 <th>Nhân viên xét nghiệm</th>
@@ -320,8 +388,18 @@ const TestResultManagementStaff: React.FC = () => {
                 filteredTestResults.map((group, idx) => {
                   const first = group[0];
                   const phone = (first.customerID && customerIdToPhone[first.customerID]) || '';
+                  // Lấy mã lịch hẹn từ treatmentID
+                  let appointmentCode = '';
+                  if (first.treatmentID && treatmentIdToAppointmentCode[first.treatmentID]) {
+                    appointmentCode = treatmentIdToAppointmentCode[first.treatmentID];
+                  } else if (first.treatmentID) {
+                    appointmentCode = String(first.treatmentID);
+                  } else {
+                    appointmentCode = '-';
+                  }
                   return (
                     <tr key={first.labTestID || first.id || idx}>
+                      <td>{appointmentCode}</td>
                       <td>{getPatientName(first)}</td>
                       <td>{phone || '-'}</td>
                       <td>{getStaffName(first)}</td>
@@ -338,7 +416,7 @@ const TestResultManagementStaff: React.FC = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {group.map(test => (
+                            {sortTestResults(group).map(test => (
                               <tr key={test.labTestID || test.id}>
                                 <td style={{ border: '1px solid #e5e7eb', padding: 4 }}>{test.testName || test.testType || 'N/A'}</td>
                                 <td style={{ border: '1px solid #e5e7eb', padding: 4 }}>{test.result || 'N/A'}</td>
@@ -369,13 +447,14 @@ const TestResultManagementStaff: React.FC = () => {
                             to={`/staff/test-results/edit/${first.labTestID || first.id}`}
                             className="action-btn edit-btn"
                             title="Chỉnh sửa"
+                            style={{ padding: 6, width: 36, height: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                           >
-                            <FaEdit />
+                            <FaEdit style={{ fontSize: 18 }} />
                           </Link>
                           <button
-                            onClick={() => handleDelete(first.labTestID || first.id || '')}
+                            onClick={() => handleDeleteGroup(group)}
                             className="action-btn delete-btn"
-                            title="Xóa"
+                            title="Xóa toàn bộ nhóm"
                             style={{ color: 'red' }}
                           >
                             <FaTrash />
@@ -387,7 +466,7 @@ const TestResultManagementStaff: React.FC = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="no-data">
+                  <td colSpan={7} className="no-data">
                     {searchQuery ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có kết quả xét nghiệm nào'}
                   </td>
                 </tr>
@@ -413,22 +492,22 @@ const TestResultManagementStaff: React.FC = () => {
             <div className="modal-body">
               {/* Thông tin chung mở rộng */}
               <div className="modal-info-grid">
-                <div className="modal-info-item">
-                  <label>Bệnh nhân:</label>
-                  <span>{getPatientName(selectedTestGroup[0])}</span>
-                </div>
-                <div className="modal-info-item">
-                  <label>Mã lịch hẹn:</label>
-                  <span>{
-                    (selectedTestGroup[0].treatmentID && treatmentIdToAppointmentCode[selectedTestGroup[0].treatmentID])
-                      ? treatmentIdToAppointmentCode[selectedTestGroup[0].treatmentID]
-                      : (selectedTestGroup[0].treatmentID || 'N/A')
-                  }</span>
-                </div>
-                <div className="modal-info-item">
-                  <label>Số điện thoại:</label>
-                  <span>{(selectedTestGroup[0].customerID && customerIdToPhone[selectedTestGroup[0].customerID]) || '-'}</span>
-                </div>
+              <div className="modal-info-item">
+                <label>Mã lịch hẹn:</label>
+                <span>{
+                  (selectedTestGroup[0].treatmentID && treatmentIdToAppointmentCode[selectedTestGroup[0].treatmentID])
+                    ? treatmentIdToAppointmentCode[selectedTestGroup[0].treatmentID]
+                    : (selectedTestGroup[0].treatmentID || 'N/A')
+                }</span>
+              </div>
+              <div className="modal-info-item">
+                <label>Bệnh nhân:</label>
+                <span>{getPatientName(selectedTestGroup[0])}</span>
+              </div>
+              <div className="modal-info-item">
+                <label>Số điện thoại:</label>
+                <span>{(selectedTestGroup[0].customerID && customerIdToPhone[selectedTestGroup[0].customerID]) || '-'}</span>
+              </div>
                 <div className="modal-info-item">
                   <label>Nhân viên xét nghiệm:</label>
                   <span>{getStaffName(selectedTestGroup[0])}</span>
@@ -455,32 +534,16 @@ const TestResultManagementStaff: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {GROUPED_TEST_TYPES.map(group => (
-                      <React.Fragment key={group.group}>
-                        <tr style={{ background: '#f1f5f9', fontWeight: 'bold' }}>
-                          <td colSpan={5} style={{ border: '1.5px solid #64748b', padding: 8, color: '#0ea5e9', fontSize: 16 }}>{group.group}</td>
-                        </tr>
-                        {group.tests.map(test => {
-                          // Find test result in selectedTestGroup by test name
-                          const testResult = selectedTestGroup.find(t => t.testName === test.name);
-                          let result = testResult?.result || '';
-                          let conclusion = '';
-                          if (typeof testResult?.isPositive === 'boolean') {
-                            conclusion = testResult.isPositive ? 'Dương Tính' : 'Âm Tính';
-                          }
-                          return (
-                            <tr key={test.id}>
-                              <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.name}</td>
-                              <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{result || '-'}</td>
-                              <td style={{ border: '1.5px solid #64748b', padding: 8, whiteSpace: 'pre-line' }}>{test.referenceRange}</td>
-                              <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.unit}</td>
-                              <td style={{ border: '1.5px solid #64748b', padding: 8, fontWeight: 'bold', color: conclusion === 'Dương Tính' ? 'red' : conclusion === 'Âm Tính' ? 'green' : '#333' }}>
-                                {conclusion || '-'}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </React.Fragment>
+                    {sortTestResults(selectedTestGroup).map(test => (
+                      <tr key={test.labTestID || test.id}>
+                        <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.testName || test.testType || 'N/A'}</td>
+                        <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.result || '-'}</td>
+                        <td style={{ border: '1.5px solid #64748b', padding: 8, whiteSpace: 'pre-line' }}>{test.referenceRange || '-'}</td>
+                        <td style={{ border: '1.5px solid #64748b', padding: 8 }}>{test.unit || ''}</td>
+                        <td style={{ border: '1.5px solid #64748b', padding: 8, fontWeight: 'bold', color: test.isPositive ? 'red' : 'green' }}>
+                          {typeof test.isPositive === 'boolean' ? (test.isPositive ? 'Dương Tính' : 'Âm Tính') : '-'}
+                        </td>
+                      </tr>
                     ))}
                   </tbody>
                 </table>
