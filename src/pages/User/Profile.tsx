@@ -12,6 +12,7 @@ type AppointmentData = BaseAppointmentData & {
 };
 import { format } from 'date-fns';
 import CancelAppointmentModal from '../../components/CancelAppointmentModal';
+import ConfirmChangeStatusModal from '../../components/ConfirmChangeStatusModal';
 
 // Helper function to get status text based on status code
 export const getStatusText = (status: number): string => {
@@ -457,8 +458,8 @@ const Profile = () => {
       // Clear any previous error
       setErrorMessage(null);
       
-      if (!updatedAppointmentCode) {
-        console.error('Missing appointment code for payment');
+      if (!selectedAppointment?.appointmentID) {
+        console.error('Missing appointment ID for payment');
         setErrorMessage('Không tìm thấy mã lịch hẹn. Vui lòng thử lại.');
         return;
       }
@@ -466,7 +467,7 @@ const Profile = () => {
       setIsLoading(true);
       
       // Get the payment URL using the imported function from api.ts
-      const response: any = await getAppointmentPaymentUrl(updatedAppointmentCode);
+      const response: any = await getAppointmentPaymentUrl(selectedAppointment.appointmentID);
       
       console.log('📡 Payment URL response:', response);
       
@@ -608,16 +609,16 @@ const Profile = () => {
       };
       
       // Call the API to update appointment with STI request
-      // Using the URL format: /api/appointment/UpdateAppointmentWithSTIRequest?appointmentCode=ABC123
-      const appointmentCode = selectedAppointment.appointmentCode;
-      console.log(`📡 Making API call to UpdateAppointmentWithSTIRequest for appointment code: ${appointmentCode}`);
+      // Using the URL format: /api/appointment/UpdateAppointmentWithSTIRequest?appointmentID=123
+      const appointmentID = selectedAppointment.appointmentID;
+      console.log(`📡 Making API call to UpdateAppointmentWithSTIRequest for appointment ID: ${appointmentID}`);
       console.log('📡 Request data:', JSON.stringify(requestData, null, 2));
       
-      const response = await appointmentAPI.updateAppointmentWithSTIRequest(appointmentCode, requestData);
+      const response = await appointmentAPI.updateAppointmentWithSTIRequest(appointmentID, requestData);
       
       if (response.statusCode === 200) {
-        // Save the appointmentCode for payment
-        setUpdatedAppointmentCode(appointmentCode);
+        // We don't need to save the code as we'll use appointmentID directly
+        // Keep the selectedAppointment in state for the payment process
         
         // Hide the service selection modal
         setShowSTIModal(false);

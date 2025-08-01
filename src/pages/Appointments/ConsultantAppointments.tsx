@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaSearch, FaTimes, FaCheck, FaCalendarAlt, FaListUl, FaEllipsisV } from 'react-icons/fa';
+import { FaSearch, FaTimes, FaCheck, FaCalendarAlt, FaListUl, FaEllipsisV, FaPlay } from 'react-icons/fa';
 import './ConsultantAppointments.css';
 import { consultantService } from '../../services';
 import { toast } from 'react-hot-toast';
@@ -35,21 +35,27 @@ interface Appointment {
 }
 
 const statusLabels = [
-  "Đang chờ xác nhận",
-  "Đã xác nhận",
-  "Đang chờ kết quả",
-  "Yêu cầu xét nghiệm STI",
-  "Đã hoàn thành",
-  "Đã hủy"
+  "Đang chờ xác nhận",     // Pending = 0
+  "Đã xác nhận",           // Confirmed = 1
+  "Đang xử lý",            // InProgress = 2
+  "Yêu cầu xét nghiệm STI", // RequireSTIsTest = 3
+  "Chờ kết quả",           // WaitingForResult = 4
+  "Đã hoàn thành",         // Completed = 5
+  "Đã hủy",                // Cancelled = 6
+  "Yêu cầu hoàn tiền",     // RequestRefund = 7
+  "Yêu cầu hủy"            // RequestCancel = 8
 ];
 
 const statusClasses = [
   "status-pending",
   "status-confirmed",
-  "status-awaiting",
+  "status-inprogress",
   "status-testing",
+  "status-waiting",
   "status-completed",
-  "status-cancelled"
+  "status-cancelled",
+  "status-refund",
+  "status-requestcancel"
 ];
 
 const appointmentTypeLabels = [
@@ -76,6 +82,8 @@ const ConsultantAppointments: React.FC = () => {
   const [showDetailModal, setShowDetailModal] = useState<boolean>(false);
   const [consultantSlots, setConsultantSlots] = useState<number[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState<boolean>(false);
+  const [pendingAction, setPendingAction] = useState<{appointmentId: string, newStatus: number, paymentStatus?: number} | null>(null);
 
   // Appointment Actions Component
   const AppointmentActions: React.FC<{appointment: Appointment}> = ({ appointment }) => {
@@ -121,13 +129,13 @@ const ConsultantAppointments: React.FC = () => {
                     <>
                       <button 
                         className="dropdown-item approve-item"
-                        onClick={() => handleAction(() => updateAppointmentStatus(appointment.appointmentID, 1))}
+                        onClick={() => handleAction(() => confirmStatusUpdate(appointment.appointmentID, 1))}
                       >
                         <FaCheck /> Xác nhận
                       </button>
                       <button 
                         className="dropdown-item cancel-item"
-                        onClick={() => handleAction(() => updateAppointmentStatus(appointment.appointmentID, 4))}
+                        onClick={() => handleAction(() => confirmStatusUpdate(appointment.appointmentID, 6))}
                       >
                         <FaTimes /> Từ chối
                       </button>
@@ -136,21 +144,55 @@ const ConsultantAppointments: React.FC = () => {
                     
                   {appointment.status === 1 && ( // Confirmed
                     <>
+                      <button 
+                        className="dropdown-item progress-item"
+                        onClick={() => handleAction(() => confirmStatusUpdate(appointment.appointmentID, 2))}
+                      >
+                        <FaPlay /> Bắt đầu xử lý
+                      </button>
+                    </>
+                  )}
+                  
+                  {appointment.status === 2 && ( // InProgress
+                    <>
+                      <button 
+                        className="dropdown-item approve-item"
+                        onClick={() => handleAction(() => confirmStatusUpdate(appointment.appointmentID, 5))}
+                      >
+                        <FaCheck /> Hoàn thành
+                      </button>
                       {canRequestSTITest(appointment) && (
                         <button 
                           className="dropdown-item testing-item"
-                          onClick={() => handleAction(() => updateAppointmentStatus(appointment.appointmentID, 3, 2))}
+                          onClick={() => handleAction(() => confirmStatusUpdate(appointment.appointmentID, 3, 2))}
                         >
                           🧪 Yêu cầu STI Test
                         </button>
                       )}
                     </>
                   )}
-                  
+                    
                   {appointment.status === 3 && ( // STI Test requested
-                    <div className="dropdown-item disabled-item">
-                      Đang chờ xét nghiệm STI
-                    </div>
+                    <>
+                      <div className="dropdown-item disabled-item">
+                        Đang chờ xét nghiệm STI
+                      </div>
+                      <button 
+                        className="dropdown-item testing-item"
+                        onClick={() => handleAction(() => confirmStatusUpdate(appointment.appointmentID, 4))}
+                      >
+                        🔄 Chuyển sang Chờ kết quả
+                      </button>
+                    </>
+                  )}
+                    
+                  {appointment.status === 4 && ( // WaitingForResult
+                    <button 
+                      className="dropdown-item approve-item"
+                      onClick={() => handleAction(() => confirmStatusUpdate(appointment.appointmentID, 5))}
+                    >
+                      <FaCheck /> Hoàn thành
+                    </button>
                   )}
                 </>
               )}
@@ -188,6 +230,10 @@ const ConsultantAppointments: React.FC = () => {
           setAppointments(response.data);
           setFilteredAppointments(response.data);
           console.log('Appointments loaded:', response.data);
+          // Check if appointmentCode exists in the data
+          if (response.data.length > 0) {
+            console.log('First appointment code:', response.data[0].appointmentCode);
+          }
         } else {
           setError(`Lỗi khi lấy dữ liệu: ${response.message}`);
           toast.error(`Lỗi khi lấy dữ liệu lịch hẹn: ${response.message}`);
@@ -266,7 +312,8 @@ const ConsultantAppointments: React.FC = () => {
         app.customer?.name?.toLowerCase().includes(searchTermLower) || 
         app.appointmentID.toLowerCase().includes(searchTermLower) ||
         app.customer?.phone?.toLowerCase().includes(searchTermLower) ||
-        app.customer?.email?.toLowerCase().includes(searchTermLower)
+        app.customer?.email?.toLowerCase().includes(searchTermLower) ||
+        (app.appointmentCode && app.appointmentCode.toLowerCase().includes(searchTermLower))
       );
     }
     
@@ -292,11 +339,18 @@ const ConsultantAppointments: React.FC = () => {
     return consultantSlots.includes(appointment.slot.slotID);
   };
 
-  // Validate STI test request - only for confirmed appointments
+  // Validate STI test request - only for in-progress appointments
   const canRequestSTITest = (appointment: Appointment): boolean => {
-    return appointment.status === 1 && canUpdateAppointment(appointment);
+    return appointment.status === 2 && canUpdateAppointment(appointment);
   };
 
+  // Show confirmation modal before updating status
+  const confirmStatusUpdate = (appointmentId: string, newStatus: number, paymentStatus?: number) => {
+    setPendingAction({ appointmentId, newStatus, paymentStatus });
+    setIsConfirmModalOpen(true);
+  };
+  
+  // Execute the status update after confirmation
   const updateAppointmentStatus = async (appointmentId: string, newStatus: number, paymentStatus?: number) => {
     try {
       const response = await consultantService.updateAppointmentStatus(appointmentId, newStatus, paymentStatus);
@@ -322,6 +376,10 @@ const ConsultantAppointments: React.FC = () => {
     } catch (error) {
       console.error('Error updating appointment status:', error);
       toast.error('Có lỗi khi cập nhật trạng thái lịch hẹn, vui lòng thử lại sau');
+    } finally {
+      // Close confirmation modal if open
+      setIsConfirmModalOpen(false);
+      setPendingAction(null);
     }
   };
 
@@ -369,10 +427,20 @@ const ConsultantAppointments: React.FC = () => {
     return formatTime(appointment.appointmentDate);
   };
 
-  // Sort appointments by date (newest first)
-  const sortedAppointments = [...filteredAppointments].sort((a, b) => 
-    new Date(b.appointmentDate).getTime() - new Date(a.appointmentDate).getTime()
-  );
+  // Sort appointments by ID (ascending order)
+  const sortedAppointments = [...filteredAppointments].sort((a, b) => {
+    // Try to parse IDs as numbers for numeric sorting if possible
+    const idA = parseInt(a.appointmentID);
+    const idB = parseInt(b.appointmentID);
+    
+    // If both IDs can be parsed as numbers, sort numerically
+    if (!isNaN(idA) && !isNaN(idB)) {
+      return idA - idB;
+    }
+    
+    // Otherwise sort as strings
+    return a.appointmentID.localeCompare(b.appointmentID);
+  });
 
   // View appointment details
   const viewAppointmentDetails = (appointment: Appointment) => {
@@ -489,6 +557,7 @@ const ConsultantAppointments: React.FC = () => {
               <table className="appointments-table">
                 <thead>
                   <tr>
+                    <th>ID</th>
                     <th>Mã lịch hẹn</th>
                     <th>Thông tin khách hàng</th>
                     <th>Ngày hẹn</th>
@@ -504,7 +573,10 @@ const ConsultantAppointments: React.FC = () => {
                       key={appointment.appointmentID}
                       className={!canUpdateAppointment(appointment) ? 'not-authorized' : ''}
                     >
-                      <td>{appointment.appointmentCode || appointment.appointmentID}</td>
+                      <td>{appointment.appointmentID}</td>
+                      <td>
+                        <span className="appointment-code">{appointment.appointmentCode || 'N/A'}</span>
+                      </td>
                       <td>
                         <div className="patient-info">
                           <span className="patient-name">{appointment.customer?.name || 'Không xác định'}</span>
@@ -566,6 +638,14 @@ const ConsultantAppointments: React.FC = () => {
             </div>
             
             <div className="modal-content">
+              {/* Appointment code section */}
+              <div className="detail-section code-section">
+                <div className="appointment-code-display">
+                  <div className="code-label">Mã lịch hẹn</div>
+                  <div className="code-value">{selectedAppointment.appointmentCode || 'Không có mã'}</div>
+                </div>
+              </div>
+              
               <div className="detail-section">
                 <h3>Thông tin khách hàng</h3>
                 <div className="detail-grid">
@@ -651,7 +731,7 @@ const ConsultantAppointments: React.FC = () => {
                     <button 
                       className="approve-button"
                       onClick={() => {
-                        updateAppointmentStatus(selectedAppointment.appointmentID, 1);
+                        confirmStatusUpdate(selectedAppointment.appointmentID, 1);
                         closeDetailModal();
                       }}
                     >
@@ -660,7 +740,7 @@ const ConsultantAppointments: React.FC = () => {
                     <button 
                       className="cancel-button"
                       onClick={() => {
-                        updateAppointmentStatus(selectedAppointment.appointmentID, 4);
+                        confirmStatusUpdate(selectedAppointment.appointmentID, 6);
                         closeDetailModal();
                       }}
                     >
@@ -670,12 +750,34 @@ const ConsultantAppointments: React.FC = () => {
                 )}
                 
                 {selectedAppointment.status === 1 && canUpdateAppointment(selectedAppointment) && (
+                  <button 
+                    className="progress-button"
+                    onClick={() => {
+                      confirmStatusUpdate(selectedAppointment.appointmentID, 2);
+                      closeDetailModal();
+                    }}
+                  >
+                    <FaPlay /> Bắt đầu xử lý
+                  </button>
+                )}
+                
+                {selectedAppointment.status === 2 && canUpdateAppointment(selectedAppointment) && (
                   <>
+                    <button 
+                      className="approve-button"
+                      onClick={() => {
+                        confirmStatusUpdate(selectedAppointment.appointmentID, 5);
+                        closeDetailModal();
+                      }}
+                    >
+                      <FaCheck /> Hoàn thành
+                    </button>
+                    
                     {canRequestSTITest(selectedAppointment) && (
                       <button 
                         className="testing-button"
                         onClick={() => {
-                          updateAppointmentStatus(selectedAppointment.appointmentID, 3, 2);
+                          confirmStatusUpdate(selectedAppointment.appointmentID, 3, 2);
                           closeDetailModal();
                         }}
                       >
@@ -685,18 +787,141 @@ const ConsultantAppointments: React.FC = () => {
                   </>
                 )}
                 
-                {selectedAppointment.status === 3 && (
-                  <div className="status-note">
-                    Đang chờ xét nghiệm STI - Không thể thay đổi trạng thái
+                {selectedAppointment.status === 3 && canUpdateAppointment(selectedAppointment) && (
+                  <button 
+                    className="testing-button"
+                    onClick={() => {
+                      confirmStatusUpdate(selectedAppointment.appointmentID, 4);
+                      closeDetailModal();
+                    }}
+                  >
+                    🔄 Chuyển sang Chờ kết quả
+                  </button>
+                )}
+                
+                {selectedAppointment.status === 4 && canUpdateAppointment(selectedAppointment) && (
+                  <button 
+                    className="approve-button"
+                    onClick={() => {
+                      confirmStatusUpdate(selectedAppointment.appointmentID, 5);
+                      closeDetailModal();
+                    }}
+                  >
+                    <FaCheck /> Hoàn thành
+                  </button>
+                )}
+                
+                {selectedAppointment.status === 5 && (
+                  <div className="status-note success">
+                    <FaCheck className="mr-2" /> Lịch hẹn đã được hoàn thành
+                  </div>
+                )}
+                
+                {selectedAppointment.status === 6 && (
+                  <div className="status-note danger">
+                    <FaTimes className="mr-2" /> Lịch hẹn đã bị hủy
                   </div>
                 )}
                 
                 {!canUpdateAppointment(selectedAppointment) && (
-                  <div className="status-note">
+                  <div className="status-note warning">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
                     Bạn không có quyền cập nhật lịch hẹn này (không trong slot được phân công)
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Confirmation Modal */}
+      {isConfirmModalOpen && pendingAction && (
+        <div className="confirm-modal">
+          <div className="confirm-modal-content">
+            <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {pendingAction.newStatus === 1 && "Xác nhận lịch hẹn"}
+                {pendingAction.newStatus === 2 && "Bắt đầu xử lý lịch hẹn"}
+                {pendingAction.newStatus === 3 && "Yêu cầu xét nghiệm STI"}
+                {pendingAction.newStatus === 4 && "Chuyển sang chờ kết quả"}
+                {pendingAction.newStatus === 5 && "Hoàn thành lịch hẹn"}
+                {pendingAction.newStatus === 6 && "Từ chối lịch hẹn"}
+              </h3>
+              <button 
+                className="text-gray-400 hover:text-gray-600"
+                onClick={() => setIsConfirmModalOpen(false)}
+                aria-label="Đóng"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4">
+              <div className="flex items-center mb-4">
+                {pendingAction.newStatus === 1 && (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-500 mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+                {pendingAction.newStatus === 2 && (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500 mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+                {pendingAction.newStatus === 3 && (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-yellow-500 mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                )}
+                {pendingAction.newStatus === 4 && (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-indigo-500 mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+                {pendingAction.newStatus === 5 && (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-600 mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+                {pendingAction.newStatus === 6 && (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-red-500 mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+                <p className="text-gray-700">
+                  {pendingAction.newStatus === 1 && "Bạn có chắc chắn muốn xác nhận lịch hẹn này? Sau khi xác nhận, lịch hẹn sẽ được chuyển sang trạng thái 'Đã xác nhận'."}
+                  {pendingAction.newStatus === 2 && "Bạn có chắc chắn muốn bắt đầu xử lý lịch hẹn này? Lịch hẹn sẽ được chuyển sang trạng thái 'Đang xử lý'."}
+                  {pendingAction.newStatus === 3 && "Bạn có chắc chắn muốn yêu cầu khách hàng xét nghiệm STI? Lịch hẹn sẽ được chuyển sang trạng thái 'Yêu cầu xét nghiệm STI'."}
+                  {pendingAction.newStatus === 4 && "Bạn có chắc chắn muốn chuyển lịch hẹn này sang trạng thái chờ kết quả? Lịch hẹn sẽ được chuyển sang trạng thái 'Chờ kết quả'."}
+                  {pendingAction.newStatus === 5 && "Bạn có chắc chắn muốn hoàn thành lịch hẹn này? Lịch hẹn sẽ được chuyển sang trạng thái 'Đã hoàn thành'."}
+                  {pendingAction.newStatus === 6 && "Bạn có chắc chắn muốn từ chối lịch hẹn này? Sau khi từ chối, lịch hẹn sẽ được chuyển sang trạng thái 'Đã hủy'."}
+                </p>
+              </div>
+            </div>
+            <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
+              <button 
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+                onClick={() => setIsConfirmModalOpen(false)}
+              >
+                Hủy
+              </button>
+              <button 
+                className={`px-4 py-2 rounded-md text-sm font-medium text-white focus:outline-none 
+                  ${pendingAction.newStatus === 1 ? 'bg-green-600 hover:bg-green-700 border-green-600' : 
+                    pendingAction.newStatus === 2 ? 'bg-blue-600 hover:bg-blue-700 border-blue-600' :
+                    pendingAction.newStatus === 3 ? 'bg-yellow-500 hover:bg-yellow-600 border-yellow-500' :
+                    pendingAction.newStatus === 4 ? 'bg-indigo-600 hover:bg-indigo-700 border-indigo-600' :
+                    pendingAction.newStatus === 5 ? 'bg-green-600 hover:bg-green-700 border-green-600' :
+                    'bg-red-600 hover:bg-red-700 border-red-600'}`}
+                onClick={() => updateAppointmentStatus(pendingAction.appointmentId, pendingAction.newStatus, pendingAction.paymentStatus)}
+              >
+                Xác nhận
+              </button>
             </div>
           </div>
         </div>

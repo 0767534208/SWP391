@@ -4,6 +4,50 @@
   padding: 1.5rem;
 }
 
+/* Appointment code styling */
+.appointment-code {
+  font-family: monospace;
+  font-weight: 500;
+  color: #4a5568;
+  display: block;
+  background-color: #f7fafc;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+/* Modal appointment code styling */
+.code-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: #f7fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.appointment-code-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.code-label {
+  font-weight: 600;
+  margin-right: 1rem;
+  color: #4a5568;
+}
+
+.code-value {
+  font-family: monospace;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2d3748;
+  padding: 0.5rem 1rem;
+  background-color: white;
+  border-radius: 4px;
+  border: 1px dashed #cbd5e0;
+}
+
 .appointments-header {
   display: flex;
   justify-content: space-between;
@@ -171,6 +215,18 @@
 .appointments-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;  /* This ensures column widths are respected */
+}
+
+/* Column width control */
+.appointments-table th:nth-child(1), 
+.appointments-table td:nth-child(1) {
+  width: 5%;  /* ID column */
+}
+
+.appointments-table th:nth-child(2), 
+.appointments-table td:nth-child(2) {
+  width: 12%;  /* Appointment code column */
 }
 
 .appointments-table th,
@@ -255,6 +311,52 @@
 .status-badge-danger {
   background-color: #fee2e2;
   color: #dc2626;
+}
+
+/* Status-specific badges */
+.status-pending {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.status-confirmed {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+
+.status-inprogress {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-testing {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.status-waiting {
+  background-color: #e0e7ff;
+  color: #4338ca;
+}
+
+.status-completed {
+  background-color: #d1fae5;
+  color: #059669;
+}
+
+.status-cancelled {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.status-refund {
+  background-color: #fef3c7;
+  color: #b45309;
+}
+
+.status-requestcancel {
+  background-color: #ffe4e6;
+  color: #e11d48;
 }
 
 .appointment-actions {
@@ -597,17 +699,63 @@
   transform: translateY(0);
 }
 
+/* Progress button style */
+.progress-button {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.progress-button:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.progress-button:active {
+  background-color: #1d4ed8;
+  transform: translateY(0);
+}
+
 /* Status note styling */
 .status-note {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: #6b7280;
-  font-style: italic;
-  padding: 0.25rem 0.5rem;
+  padding: 0.5rem 0.75rem;
   background-color: #f9fafb;
-  border-radius: 0.25rem;
+  border-radius: 0.375rem;
   border: 1px solid #e5e7eb;
-  max-width: 150px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.status-note.success {
+  color: #059669;
+  background-color: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.status-note.warning {
+  color: #d97706;
+  background-color: #fffbeb;
+  border-color: #fef3c7;
+}
+
+.status-note.danger {
+  color: #dc2626;
+  background-color: #fee2e2;
+  border-color: #fecaca;
 }
 
 /* Appointment Actions Dropdown */
@@ -702,6 +850,8 @@
 .dropdown-item.approve-item {
   color: #059669;
   background-color: #f0fdf4;
+  display: flex;
+  align-items: center;
 }
 
 .dropdown-item.approve-item:hover {
@@ -712,6 +862,8 @@
 .dropdown-item.cancel-item {
   color: #dc2626;
   background-color: #fef2f2;
+  display: flex;
+  align-items: center;
 }
 
 .dropdown-item.cancel-item:hover {
@@ -722,6 +874,8 @@
 .dropdown-item.complete-item {
   color: #059669;
   background-color: #f0fdf4;
+  display: flex;
+  align-items: center;
 }
 
 .dropdown-item.complete-item:hover {
@@ -732,6 +886,20 @@
 .dropdown-item.waiting-item {
   color: #d97706;
   background-color: #fffbeb;
+  display: flex;
+  align-items: center;
+}
+
+.dropdown-item.progress-item {
+  color: #2563eb;
+  background-color: #eff6ff;
+  display: flex;
+  align-items: center;
+}
+
+.dropdown-item.progress-item:hover {
+  background-color: #dbeafe;
+  transform: translateY(-1px);
 }
 
 .dropdown-item.waiting-item:hover {
@@ -886,5 +1054,40 @@
   .dropdown-item + .dropdown-item {
     border-left: none;
     border-top: none;
+  }
+}
+
+/* Confirmation Modal Styling */
+.confirm-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.confirm-modal-content {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  padding: 20px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
